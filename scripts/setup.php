@@ -1,266 +1,207 @@
 <?php
 /**
- * VisãoOS — Bootstrap Installer
+ * VisãoOS — Bootstrap Installer v2.1
  * ─────────────────────────────────────────────────────────────────────
- * 1. Faça upload DESTE ARQUIVO para: public_html/setup.php  (via SFTP)
- * 2. Acesse no browser: https://www.bemindmarketing.com.br/setup.php
- * 3. Siga os passos — leva menos de 2 minutos
- * 4. APAGUE este arquivo após a instalação!
+ * 1. Upload deste arquivo para: public_html/setup.php (via SFTP)
+ * 2. Acesse: https://www.bemindmarketing.com.br/setup.php
+ * 3. APAGUE após a instalação!
  * ─────────────────────────────────────────────────────────────────────
  */
 
-define('SETUP_VERSION', '2.0');
-define('REPO_ZIP',   'https://github.com/mauriliobetonico-sys/bemind/archive/refs/heads/claude/analyze-system-improvements-8RLOE.zip');
-define('REPO_DIR',   'bemind-claude-analyze-system-improvements-8RLOE');
-define('DOMAIN',     'bemindmarketing.com.br');
-define('TIMEOUT',    120);
+define('SETUP_VERSION', '2.1');
+define('REPO_ZIP', 'https://github.com/mauriliobetonico-sys/bemind/archive/refs/heads/claude/analyze-system-improvements-8RLOE.zip');
+define('REPO_DIR', 'bemind-claude-analyze-system-improvements-8RLOE');
+define('DOMAIN',   'bemindmarketing.com.br');
+define('TIMEOUT',  180);
 
-// ── Segurança: bloqueia acesso remoto se já instalado ──────────────
 if (file_exists(__DIR__ . '/.env') && !isset($_GET['force'])) {
-    die('<h2>Sistema já instalado.</h2><p>Se precisar reinstalar, adicione <code>?force=1</code> na URL.</p>');
+    die('<h2 style="font-family:sans-serif;padding:20px">Sistema já instalado. Para reinstalar adicione <code>?force=1</code></h2>');
 }
 
-session_start();
 set_time_limit(300);
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
-// ── Helpers ──────────────────────────────────────────────────────────
-function rnd(int $bytes = 16): string { return bin2hex(random_bytes($bytes)); }
+function rnd(int $b = 16): string { return bin2hex(random_bytes($b)); }
 
-function req(array $post): array {
-    $required = ['db_host','db_root_user','db_root_pass','db_name',
-                 'admin_email','smtp_host','smtp_port','smtp_user','smtp_pass'];
-    foreach ($required as $k) {
-        if (!isset($post[$k]) && !in_array($k, ['smtp_pass','db_root_pass'])) {
-            return ['ok' => false, 'msg' => "Campo obrigatório: $k"];
-        }
-    }
-    return ['ok' => true];
-}
-
-function testMysql(string $host, string $user, string $pass, string $db): array {
+function tryMysql(string $host, string $user, string $pass, string $db): array {
     try {
-        $dsn = "mysql:host=$host;charset=utf8mb4";
-        $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $pdo = new PDO(
+            "mysql:host=$host;charset=utf8mb4",
+            $user, $pass,
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 5]
+        );
         $pdo->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        // testa se consegue usar o banco
+        $pdo->exec("USE `$db`");
         return ['ok' => true, 'pdo' => $pdo];
     } catch (PDOException $e) {
         return ['ok' => false, 'msg' => $e->getMessage()];
     }
 }
 
-function downloadRepo(string $dest): array {
-    // Tenta baixar o zip do GitHub
-    $zip = $dest . '/repo.zip';
-    $ctx = stream_context_create(['http' => [
-        'timeout' => TIMEOUT,
-        'follow_location' => true,
-        'user_agent' => 'VisaOOS-Installer/2.0',
-    ]]);
+function downloadRepo(string $tmpDir): array {
+    $zip = $tmpDir . '/repo.zip';
 
-    $data = @file_get_contents(REPO_ZIP, false, $ctx);
-    if (!$data) {
-        // fallback via curl
+    // tenta curl primeiro
+    if (function_exists('curl_init')) {
         $ch = curl_init(REPO_ZIP);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT => TIMEOUT,
+            CURLOPT_TIMEOUT        => TIMEOUT,
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_USERAGENT => 'VisaOOS-Installer/2.0',
+            CURLOPT_USERAGENT      => 'VisaoOS-Installer/2.1',
         ]);
         $data = curl_exec($ch);
         $err  = curl_error($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        if (!$data) return ['ok' => false, 'msg' => "Erro ao baixar repo: $err"];
+        if (!$data || $code !== 200) return ['ok' => false, 'msg' => "Download falhou (HTTP $code): $err"];
+    } else {
+        $ctx  = stream_context_create(['http' => ['timeout' => TIMEOUT, 'follow_location' => true, 'user_agent' => 'VisaoOS-Installer/2.1']]);
+        $data = @file_get_contents(REPO_ZIP, false, $ctx);
+        if (!$data) return ['ok' => false, 'msg' => 'curl e file_get_contents falharam. Verifique se allow_url_fopen está habilitado.'];
     }
 
     file_put_contents($zip, $data);
-
-    // Extrai
     $z = new ZipArchive();
-    if ($z->open($zip) !== true) return ['ok' => false, 'msg' => 'Erro ao abrir zip'];
-    $z->extractTo($dest);
+    if ($z->open($zip) !== true) return ['ok' => false, 'msg' => 'Erro ao abrir ZIP baixado'];
+    $z->extractTo($tmpDir);
     $z->close();
     unlink($zip);
 
-    return ['ok' => true, 'dir' => $dest . '/' . REPO_DIR];
+    $dir = $tmpDir . '/' . REPO_DIR;
+    if (!is_dir($dir)) return ['ok' => false, 'msg' => "Pasta não encontrada após extração: $dir"];
+    return ['ok' => true, 'dir' => $dir];
 }
 
-function copyFiles(string $repoDir, string $appDir): void {
+function copyVisaoos(string $repoDir, string $appDir): void {
     $src = $repoDir . '/visaoos';
     if (!is_dir($src)) throw new RuntimeException("Pasta visaoos não encontrada em: $src");
-
-    // Copia tudo exceto .env.example
-    $iter = new RecursiveIteratorIterator(
+    $it = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($src, RecursiveDirectoryIterator::SKIP_DOTS),
         RecursiveIteratorIterator::SELF_FIRST
     );
-    foreach ($iter as $item) {
-        $dest = $appDir . DIRECTORY_SEPARATOR . $iter->getSubPathname();
-        if ($item->isDir()) {
-            if (!is_dir($dest)) mkdir($dest, 0755, true);
-        } else {
-            copy($item->getRealPath(), $dest);
-            chmod($dest, 0644);
-        }
+    foreach ($it as $item) {
+        $dst = $appDir . '/' . $it->getSubPathname();
+        if ($item->isDir()) { if (!is_dir($dst)) mkdir($dst, 0755, true); }
+        else                 { copy($item->getRealPath(), $dst); chmod($dst, 0644); }
     }
-
-    // Uploads e logs
     foreach (['uploads', 'logs'] as $d) {
         if (!is_dir("$appDir/$d")) mkdir("$appDir/$d", 0775, true);
         chmod("$appDir/$d", 0775);
     }
 }
 
-function writeEnv(string $appDir, array $cfg): string {
-    $apiToken = rnd(24);
-    $jwt      = rnd(32);
-    $ws       = rnd(16);
-    $ncPass   = rnd(12);
-
-    $env = <<<ENV
-# VisãoOS — Gerado automaticamente em {$cfg['date']}
-APP_URL=https://{$cfg['domain']}
-APP_ENV=production
-APP_VERSION=2.0
-
-DB_HOST={$cfg['db_host']}
-DB_PORT=3306
-DB_NAME={$cfg['db_name']}
-DB_USER=visaoos_user
-DB_PASS={$cfg['db_app_pass']}
-
-JWT_SECRET=$jwt
-JWT_EXPIRES=86400
-
-WS_PORT=6001
-WS_SECRET=$ws
-
-N8N_WEBHOOK_BASE=https://n8n.{$cfg['domain']}/webhook
-
-NEXTCLOUD_URL=https://cloud2.{$cfg['domain']}
-NEXTCLOUD_USER=admin
-NEXTCLOUD_PASS=$ncPass
-
-SMTP_HOST={$cfg['smtp_host']}
-SMTP_PORT={$cfg['smtp_port']}
-SMTP_USER={$cfg['smtp_user']}
-SMTP_PASS={$cfg['smtp_pass']}
-SMTP_FROM=noreply@{$cfg['domain']}
-ADMIN_EMAIL={$cfg['admin_email']}
-
-VISAOOS_API_TOKEN=$apiToken
-ENV;
-
+function buildEnv(string $appDir, array $c, string $dbAppPass): void {
+    $env = "# VisãoOS — gerado em " . date('d/m/Y H:i') . "\n"
+         . "APP_URL=https://{$c['domain']}\nAPP_ENV=production\nAPP_VERSION=2.0\n\n"
+         . "DB_HOST={$c['db_host']}\nDB_PORT=3306\nDB_NAME={$c['db_name']}\n"
+         . "DB_USER=visaoos_user\nDB_PASS=$dbAppPass\n\n"
+         . "JWT_SECRET=" . rnd(32) . "\nJWT_EXPIRES=86400\n\n"
+         . "WS_PORT=6001\nWS_SECRET=" . rnd(16) . "\n\n"
+         . "N8N_WEBHOOK_BASE=https://n8n.{$c['domain']}/webhook\n"
+         . "NEXTCLOUD_URL=https://cloud2.{$c['domain']}\nNEXTCLOUD_USER=admin\nNEXTCLOUD_PASS=" . rnd(12) . "\n\n"
+         . "SMTP_HOST={$c['smtp_host']}\nSMTP_PORT={$c['smtp_port']}\n"
+         . "SMTP_USER={$c['smtp_user']}\nSMTP_PASS={$c['smtp_pass']}\n"
+         . "SMTP_FROM=noreply@{$c['domain']}\nADMIN_EMAIL={$c['admin_email']}\n\n"
+         . "VISAOOS_API_TOKEN=" . rnd(24) . "\n";
     file_put_contents("$appDir/.env", $env);
     chmod("$appDir/.env", 0600);
-    return $ncPass;
 }
 
-function createDbUser(PDO $pdo, string $db, string $pass): void {
-    $pdo->exec("CREATE USER IF NOT EXISTS 'visaoos_user'@'localhost' IDENTIFIED BY '$pass'");
-    $pdo->exec("GRANT ALL PRIVILEGES ON `$db`.* TO 'visaoos_user'@'localhost'");
-    $pdo->exec("FLUSH PRIVILEGES");
-}
-
-function installSchema(string $appDir): bool {
+function runSchema(string $appDir): bool {
     try {
-        // Carrega .env manualmente
-        $envLines = file("$appDir/.env");
-        foreach ($envLines as $line) {
+        foreach (file("$appDir/.env") as $line) {
             $line = trim($line);
-            if (!$line || str_starts_with($line, '#')) continue;
+            if (!$line || $line[0] === '#') continue;
             [$k, $v] = array_pad(explode('=', $line, 2), 2, '');
-            putenv("$k=$v");
+            putenv(trim($k) . '=' . trim($v));
+            $_ENV[trim($k)] = trim($v);
         }
         define('_VISAOOS_', true);
         require_once "$appDir/config/database.php";
         installDB();
         return true;
     } catch (Throwable $e) {
-        error_log("installSchema: " . $e->getMessage());
+        error_log('VisaoOS installSchema: ' . $e->getMessage());
         return false;
     }
 }
 
-// ── Processa instalação (POST) ────────────────────────────────────────
-$result  = null;
-$logText = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+// ── Endpoints AJAX ────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
+    $action = $_POST['action'] ?? '';
 
-    if ($_POST['action'] === 'install') {
+    // Testa conexão MySQL
+    if ($action === 'test_mysql') {
+        $r = tryMysql($_POST['db_host'] ?? '', $_POST['db_user'] ?? '', $_POST['db_pass'] ?? '', $_POST['db_name'] ?? 'visaoos');
+        echo json_encode(['ok' => $r['ok'], 'msg' => $r['msg'] ?? 'Conectado com sucesso!']);
+        exit;
+    }
+
+    // Instalação completa
+    if ($action === 'install') {
+        $appDir = __DIR__;
+        $tmpDir = sys_get_temp_dir() . '/vsinstall-' . time();
+        mkdir($tmpDir, 0755, true);
         try {
-            $appDir  = __DIR__;
-            $tmpDir  = sys_get_temp_dir() . '/visaoos-install-' . time();
-            mkdir($tmpDir, 0755, true);
+            // 1. MySQL
+            $r = tryMysql($_POST['db_host'], $_POST['db_user'], $_POST['db_pass'], $_POST['db_name']);
+            if (!$r['ok']) throw new RuntimeException('MySQL: ' . $r['msg']);
 
-            // 1. Testa MySQL
-            $dbTest = testMysql(
-                $_POST['db_host'],
-                $_POST['db_root_user'],
-                $_POST['db_root_pass'],
-                $_POST['db_name']
-            );
-            if (!$dbTest['ok']) throw new RuntimeException('MySQL: ' . $dbTest['msg']);
-
-            // 2. Cria usuário da aplicação
-            $dbAppPass = rnd(12);
+            // 2. Cria usuário da aplicação (ignora se não tiver permissão)
+            $appPass = rnd(12);
             try {
-                createDbUser($dbTest['pdo'], $_POST['db_name'], $dbAppPass);
+                $r['pdo']->exec("CREATE USER IF NOT EXISTS 'visaoos_user'@'localhost' IDENTIFIED BY '$appPass'");
+                $r['pdo']->exec("GRANT ALL PRIVILEGES ON `{$_POST['db_name']}`.* TO 'visaoos_user'@'localhost'");
+                $r['pdo']->exec("FLUSH PRIVILEGES");
             } catch (Exception $e) {
-                // Se falhar (sem permissão de CREATE USER), usa o root
-                $dbAppPass = $_POST['db_root_pass'];
-                // Será usado root temporariamente — .env terá visaoos_user mas usará root pass
-                // Isso é seguro pois o .env tem permissão 600
+                // Hospedagem compartilhada: usa o próprio usuário fornecido
+                $appPass = $_POST['db_pass'];
+                // Atualiza o .env para usar o usuário fornecido diretamente
             }
 
-            // 3. Baixa repositório
+            // 3. Download
             $dl = downloadRepo($tmpDir);
             if (!$dl['ok']) throw new RuntimeException($dl['msg']);
-            $repoDir = $dl['dir'];
 
-            // 4. Copia arquivos PHP
-            copyFiles($repoDir, $appDir);
+            // 4. Copia arquivos
+            copyVisaoos($dl['dir'], $appDir);
 
-            // 5. Cria .env
-            $ncPass = writeEnv($appDir, [
-                'domain'      => $_POST['domain']     ?? DOMAIN,
+            // 5. .env
+            buildEnv($appDir, [
+                'domain'      => $_POST['domain']      ?? DOMAIN,
                 'db_host'     => $_POST['db_host'],
                 'db_name'     => $_POST['db_name'],
-                'db_app_pass' => $dbAppPass,
-                'smtp_host'   => $_POST['smtp_host']  ?? 'smtp.' . DOMAIN,
-                'smtp_port'   => $_POST['smtp_port']  ?? '587',
-                'smtp_user'   => $_POST['smtp_user']  ?? '',
-                'smtp_pass'   => $_POST['smtp_pass']  ?? '',
-                'admin_email' => $_POST['admin_email'],
-                'date'        => date('d/m/Y H:i'),
-            ]);
+                'admin_email' => $_POST['admin_email'] ?? 'admin@' . DOMAIN,
+                'smtp_host'   => $_POST['smtp_host']   ?? 'smtp.' . DOMAIN,
+                'smtp_port'   => $_POST['smtp_port']   ?? '587',
+                'smtp_user'   => $_POST['smtp_user']   ?? '',
+                'smtp_pass'   => $_POST['smtp_pass']   ?? '',
+            ], $appPass);
 
-            // 6. Instala schema no banco
-            $schemaOk = installSchema($appDir);
+            // Atualiza DB_USER no .env se usou o usuário fornecido
+            if ($appPass === $_POST['db_pass']) {
+                $env = file_get_contents("$appDir/.env");
+                $env = preg_replace('/^DB_USER=visaoos_user/m', 'DB_USER=' . $_POST['db_user'], $env);
+                file_put_contents("$appDir/.env", $env);
+            }
 
-            // 7. Limpa tmp
-            exec("rm -rf " . escapeshellarg($tmpDir));
+            // 6. Schema
+            $schema = runSchema($appDir);
 
-            echo json_encode([
-                'ok'        => true,
-                'schema'    => $schemaOk,
-                'nc_pass'   => $ncPass,
-                'db_pass'   => $dbAppPass,
-                'msg'       => 'Instalação concluída!',
-            ]);
+            exec('rm -rf ' . escapeshellarg($tmpDir));
+            echo json_encode(['ok' => true, 'schema' => $schema, 'db_pass' => $appPass]);
         } catch (Throwable $e) {
-            @exec("rm -rf " . escapeshellarg($tmpDir ?? ''));
+            @exec('rm -rf ' . escapeshellarg($tmpDir));
             echo json_encode(['ok' => false, 'msg' => $e->getMessage()]);
         }
         exit;
     }
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -270,35 +211,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 <title>VisãoOS — Instalador</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#3b5bdb 0%,#1971c2 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:540px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
-.logo{text-align:center;margin-bottom:28px}
-.logo h1{font-size:28px;color:#3b5bdb;font-weight:800}
-.logo p{color:#868e96;font-size:14px;margin-top:4px}
-.steps{display:flex;gap:6px;margin-bottom:28px}
-.step{flex:1;height:4px;border-radius:2px;background:#e9ecef;transition:background .3s}
-.step.done{background:#2f9e44}
-.step.active{background:#3b5bdb}
-label{display:block;font-size:12px;font-weight:700;color:#495057;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 6px}
-input,select{width:100%;padding:11px 14px;border:1.5px solid #dee2e6;border-radius:8px;font-size:14px;outline:none;transition:border .2s}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#3b5bdb,#1971c2);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{background:#fff;border-radius:16px;padding:36px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.logo{text-align:center;margin-bottom:24px}
+.logo h1{font-size:26px;color:#3b5bdb;font-weight:800;margin-bottom:4px}
+.logo p{color:#868e96;font-size:13px}
+.progress{display:flex;gap:6px;margin-bottom:24px}
+.bar{flex:1;height:4px;border-radius:2px;background:#e9ecef;transition:.3s}
+.bar.on{background:#3b5bdb}.bar.ok{background:#2f9e44}
+label{display:block;font-size:11px;font-weight:700;color:#495057;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 5px}
+input{width:100%;padding:10px 13px;border:1.5px solid #dee2e6;border-radius:8px;font-size:14px;outline:none;transition:.2s}
 input:focus{border-color:#3b5bdb}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.btn{width:100%;padding:14px;background:#3b5bdb;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:24px;transition:background .2s}
-.btn:hover{background:#2f4ac4}
-.btn:disabled{background:#adb5bd;cursor:not-allowed}
-.alert{padding:14px;border-radius:8px;margin-bottom:16px;font-size:13px;line-height:1.5}
-.alert-error{background:#fff5f5;border:1.5px solid #ffa8a8;color:#c92a2a}
-.alert-success{background:#ebfbee;border:1.5px solid #8ce99a;color:#2f9e44}
-.log{background:#1a1b1e;color:#a9e34b;padding:16px;border-radius:8px;font-family:monospace;font-size:12px;max-height:200px;overflow-y:auto;margin-top:16px;white-space:pre-wrap;display:none}
-.final-box{background:#f8f9fa;border-radius:10px;padding:20px;margin-top:16px}
-.final-box h3{color:#333;margin-bottom:12px;font-size:15px}
-.cred{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #e9ecef;font-size:13px}
-.cred:last-child{border:none}
-.cred strong{color:#495057}
-.cred code{background:#e9ecef;padding:3px 8px;border-radius:4px;font-size:12px;color:#3b5bdb}
-.warn-box{background:#fff9db;border:1.5px solid #ffd43b;border-radius:8px;padding:14px;font-size:13px;color:#664d03;margin-top:16px}
-.spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.3);border-radius:50%;border-top-color:#fff;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
-@keyframes spin{to{transform:rotate(360deg)}}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{width:100%;padding:13px;background:#3b5bdb;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:20px;transition:.2s}
+.btn:hover{background:#2c4fcc}.btn:disabled{background:#adb5bd;cursor:not-allowed}
+.btn-green{background:#2f9e44}.btn-green:hover{background:#237032}
+.alert{padding:13px 15px;border-radius:8px;font-size:13px;margin-bottom:14px;line-height:1.5}
+.err{background:#fff5f5;border:1.5px solid #ffa8a8;color:#c92a2a}
+.suc{background:#ebfbee;border:1.5px solid #8ce99a;color:#2f9e44}
+.info{background:#e7f5ff;border:1.5px solid #74c0fc;color:#1864ab;font-size:12px}
+.log{background:#1a1b1e;color:#a9e34b;padding:14px;border-radius:8px;font:12px/1.6 monospace;max-height:160px;overflow-y:auto;margin-top:14px;white-space:pre-wrap;display:none}
+.creds{background:#f8f9fa;border-radius:10px;padding:18px;margin-top:14px}
+.creds h3{font-size:14px;color:#333;margin-bottom:10px}
+.cr{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #e9ecef;font-size:13px}
+.cr:last-child{border:none}
+.cr code{background:#e9ecef;padding:2px 7px;border-radius:4px;font-size:12px;color:#3b5bdb}
+.warn{background:#fff9db;border:1.5px solid #ffd43b;border-radius:8px;padding:13px;font-size:13px;color:#664d03;margin-top:14px;line-height:1.6}
+.sp{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-radius:50%;border-top-color:#fff;animation:sp .8s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -307,156 +247,165 @@ input:focus{border-color:#3b5bdb}
         <h1>⚙️ VisãoOS</h1>
         <p>Instalador Automático v<?= SETUP_VERSION ?></p>
     </div>
-
-    <div class="steps" id="steps">
-        <div class="step active" id="s1"></div>
-        <div class="step" id="s2"></div>
-        <div class="step" id="s3"></div>
+    <div class="progress">
+        <div class="bar on"  id="b1"></div>
+        <div class="bar"     id="b2"></div>
+        <div class="bar"     id="b3"></div>
     </div>
 
-    <!-- PASSO 1: Banco de Dados -->
-    <div id="page1">
-        <div class="alert alert-error" id="err1" style="display:none"></div>
+    <!-- ── PASSO 1: MySQL ───────────────────────────────────────────── -->
+    <div id="p1">
+        <div class="alert info">
+            💡 <strong>Onde encontrar as credenciais MySQL no Cloudez:</strong><br>
+            Painel Cloudez → <strong>Databases</strong> → crie um banco e anote:<br>
+            • Host do MySQL (geralmente <code>localhost</code> ou um IP)<br>
+            • Usuário e senha criados no painel
+        </div>
+        <div class="alert err" id="e1" style="display:none"></div>
         <label>Host MySQL</label>
-        <input id="db_host" value="localhost">
-        <label>Usuário com permissão CREATE (root ou similar)</label>
-        <input id="db_root_user" value="root">
-        <label>Senha do usuário acima</label>
-        <input id="db_root_pass" type="password" placeholder="Senha do MySQL">
-        <label>Nome do Banco de Dados a criar</label>
-        <input id="db_name" value="visaoos">
-        <button class="btn" onclick="goStep2()">Testar conexão →</button>
+        <input id="db_host" value="localhost" placeholder="localhost ou IP fornecido pelo Cloudez">
+        <label>Nome do Banco de Dados</label>
+        <input id="db_name" value="visaoos" placeholder="Ex: bemindmarketing5_visaoos">
+        <label>Usuário MySQL</label>
+        <input id="db_user" placeholder="Usuário criado no painel Cloudez">
+        <label>Senha MySQL</label>
+        <input id="db_pass" type="password" placeholder="Senha do usuário MySQL">
+        <button class="btn" id="btn1" onclick="testDb()">Testar Conexão →</button>
     </div>
 
-    <!-- PASSO 2: Configurações -->
-    <div id="page2" style="display:none">
-        <div class="alert alert-success">✅ MySQL conectado com sucesso!</div>
+    <!-- ── PASSO 2: Config ──────────────────────────────────────────── -->
+    <div id="p2" style="display:none">
+        <div class="alert suc" id="db_ok_msg"></div>
+        <div class="alert err" id="e2" style="display:none"></div>
         <label>Domínio principal</label>
         <input id="domain" value="<?= DOMAIN ?>">
         <label>E-mail do administrador</label>
         <input id="admin_email" type="email" value="admin@<?= DOMAIN ?>">
         <label>Servidor SMTP</label>
         <input id="smtp_host" value="smtp.<?= DOMAIN ?>">
-        <div class="row">
-            <div>
-                <label>Porta SMTP</label>
-                <input id="smtp_port" value="587">
-            </div>
-            <div>
-                <label>Usuário SMTP</label>
-                <input id="smtp_user" value="noreply@<?= DOMAIN ?>">
-            </div>
+        <div class="row2">
+            <div><label>Porta SMTP</label><input id="smtp_port" value="587"></div>
+            <div><label>Usuário SMTP</label><input id="smtp_user" value="noreply@<?= DOMAIN ?>"></div>
         </div>
-        <label>Senha SMTP</label>
-        <input id="smtp_pass" type="password" placeholder="Senha do e-mail">
-        <button class="btn" id="btnInstall" onclick="doInstall()">🚀 Instalar VisãoOS</button>
+        <label>Senha SMTP <span style="font-weight:400;text-transform:none">(pode deixar em branco por enquanto)</span></label>
+        <input id="smtp_pass" type="password" placeholder="Opcional por enquanto">
+        <button class="btn" id="btn2" onclick="install()">🚀 Instalar VisãoOS</button>
+        <div class="log" id="log"></div>
     </div>
 
-    <!-- PASSO 3: Concluído -->
-    <div id="page3" style="display:none">
-        <div class="alert alert-success" id="doneMsg">✅ VisãoOS instalado com sucesso!</div>
-
-        <div class="final-box" id="creds"></div>
-
-        <div class="warn-box">
+    <!-- ── PASSO 3: Concluído ───────────────────────────────────────── -->
+    <div id="p3" style="display:none">
+        <div class="alert suc">✅ VisãoOS instalado com sucesso!</div>
+        <div class="creds" id="creds"></div>
+        <div class="warn">
             ⚠️ <strong>Faça isso agora:</strong><br>
-            1. Copie as senhas acima para um lugar seguro<br>
-            2. <strong>Apague este arquivo</strong> <code>setup.php</code> do servidor<br>
-            3. Acesse o sistema e troque a senha padrão
+            1. Copie as senhas acima para um local seguro<br>
+            2. <strong>Apague este arquivo</strong> <code>setup.php</code> do servidor via SFTP<br>
+            3. Acesse o sistema e troque a senha padrão <code>admin123</code>
         </div>
-
-        <a id="btnGo" href="https://<?= DOMAIN ?>" style="display:block;text-align:center;background:#2f9e44;color:#fff;padding:14px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:20px">
-            Acessar VisãoOS →
-        </a>
+        <a id="link" href="https://<?= DOMAIN ?>" style="display:block;text-align:center;background:#2f9e44;color:#fff;padding:13px;border-radius:8px;font-weight:700;text-decoration:none;margin-top:16px">Acessar VisãoOS →</a>
     </div>
-
-    <div class="log" id="log"></div>
 </div>
 
 <script>
-const $ = id => document.getElementById(id);
+const $  = id => document.getElementById(id);
+const L  = msg => { const el = $('log'); el.style.display='block'; el.textContent += msg+'\n'; el.scrollTop=el.scrollHeight; };
 let dbCfg = {};
 
-function log(msg) {
-    const el = $('log');
-    el.style.display = 'block';
-    el.textContent += msg + '\n';
-    el.scrollTop = el.scrollHeight;
+async function post(data) {
+    const fd = new FormData();
+    Object.entries(data).forEach(([k,v]) => fd.append(k,v));
+    const r = await fetch(location.href, {method:'POST', body:fd});
+    return r.json();
 }
 
-async function goStep2() {
-    const btn = document.querySelector('#page1 .btn');
+async function testDb() {
+    const btn = $('btn1');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Conectando...';
-    $('err1').style.display = 'none';
+    btn.innerHTML = '<span class="sp"></span>Testando conexão...';
+    $('e1').style.display = 'none';
 
     dbCfg = {
-        db_host:      $('db_host').value,
-        db_root_user: $('db_root_user').value,
-        db_root_pass: $('db_root_pass').value,
-        db_name:      $('db_name').value,
+        db_host: $('db_host').value.trim(),
+        db_name: $('db_name').value.trim(),
+        db_user: $('db_user').value.trim(),
+        db_pass: $('db_pass').value,
     };
 
-    // Faz uma request para testar (vamos só avançar, o teste real é no install)
-    $('page1').style.display = 'none';
-    $('page2').style.display = 'block';
-    $('s1').className = 'step done';
-    $('s2').className = 'step active';
+    try {
+        const r = await post({action:'test_mysql', ...dbCfg});
+        if (!r.ok) {
+            $('e1').textContent = '❌ ' + r.msg;
+            $('e1').style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = 'Testar novamente →';
+            return;
+        }
+        // Sucesso
+        $('b1').className = 'bar ok';
+        $('b2').className = 'bar on';
+        $('db_ok_msg').textContent = '✅ MySQL conectado! Banco "' + dbCfg.db_name + '" pronto.';
+        $('p1').style.display = 'none';
+        $('p2').style.display = 'block';
+    } catch(e) {
+        $('e1').textContent = 'Erro de rede: ' + e.message;
+        $('e1').style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = 'Testar novamente →';
+    }
 }
 
-async function doInstall() {
-    const btn = $('btnInstall');
+async function install() {
+    const btn = $('btn2');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Instalando... aguarde até 2 min';
+    btn.innerHTML = '<span class="sp"></span>Instalando... aguarde ~2 min';
+    $('e2').style.display = 'none';
     $('log').textContent = '';
-    log('[→] Iniciando instalação...');
-    log('[→] Baixando arquivos do GitHub...');
+    L('[→] Iniciando instalação...');
+    L('[→] Baixando arquivos do GitHub (~15 MB)...');
 
-    const payload = new FormData();
-    payload.append('action', 'install');
-    Object.entries(dbCfg).forEach(([k,v]) => payload.append(k, v));
-    payload.append('domain',      $('domain').value);
-    payload.append('admin_email', $('admin_email').value);
-    payload.append('smtp_host',   $('smtp_host').value);
-    payload.append('smtp_port',   $('smtp_port').value);
-    payload.append('smtp_user',   $('smtp_user').value);
-    payload.append('smtp_pass',   $('smtp_pass').value);
+    const data = {
+        action:      'install',
+        domain:      $('domain').value,
+        admin_email: $('admin_email').value,
+        smtp_host:   $('smtp_host').value,
+        smtp_port:   $('smtp_port').value,
+        smtp_user:   $('smtp_user').value,
+        smtp_pass:   $('smtp_pass').value,
+        ...dbCfg,
+    };
 
     try {
-        const res  = await fetch(location.href, { method: 'POST', body: payload });
-        const data = await res.json();
-
-        if (!data.ok) {
-            log('[✗] ERRO: ' + data.msg);
+        const r = await post(data);
+        if (!r.ok) {
+            L('[✗] ERRO: ' + r.msg);
+            $('e2').textContent = '❌ ' + r.msg;
+            $('e2').style.display = 'block';
             btn.disabled = false;
             btn.innerHTML = 'Tentar novamente';
             return;
         }
+        L('[✓] Arquivos copiados');
+        L('[✓] .env configurado');
+        L(r.schema ? '[✓] Banco instalado' : '[!] Schema: acesse /api/health para verificar');
+        L('[✓] Instalação concluída!');
 
-        log('[✓] Arquivos copiados');
-        log('[✓] .env configurado');
-        log(data.schema ? '[✓] Banco de dados instalado' : '[!] Schema: configure manualmente');
-        log('[✓] Instalação concluída!');
+        $('b2').className = 'bar ok';
+        $('b3').className = 'bar ok';
+        $('p2').style.display = 'none';
+        $('p3').style.display = 'block';
 
-        // Mostra tela de sucesso
-        $('page2').style.display = 'none';
-        $('page3').style.display = 'block';
-        $('s2').className = 'step done';
-        $('s3').className = 'step done';
-
-        $('creds').innerHTML = `
-            <h3>🔑 Credenciais de Acesso</h3>
-            <div class="cred"><strong>Sistema</strong><code>admin@${$('domain').value} / admin123</code></div>
-            <div class="cred"><strong>DB User</strong><code>visaoos_user</code></div>
-            <div class="cred"><strong>DB Pass</strong><code>${data.db_pass}</code></div>
-            <div class="cred"><strong>n8n</strong><code>https://n8n.${$('domain').value}</code></div>
-            <div class="cred"><strong>Nextcloud</strong><code>https://cloud2.${$('domain').value} — pass: ${data.nc_pass}</code></div>
-            <div class="cred"><strong>Metabase</strong><code>https://metabase.${$('domain').value}</code></div>
-        `;
-        $('btnGo').href = 'https://' + $('domain').value;
-
+        $('creds').innerHTML = `<h3>🔑 Credenciais</h3>
+            <div class="cr"><strong>Sistema</strong><code>admin@${$('domain').value} / admin123</code></div>
+            <div class="cr"><strong>DB senha (app)</strong><code>${r.db_pass}</code></div>
+            <div class="cr"><strong>n8n</strong><code>https://n8n.${$('domain').value}</code></div>
+            <div class="cr"><strong>Nextcloud</strong><code>https://cloud2.${$('domain').value}</code></div>
+            <div class="cr"><strong>Metabase</strong><code>https://metabase.${$('domain').value}</code></div>`;
+        $('link').href = 'https://' + $('domain').value;
     } catch(e) {
-        log('[✗] Erro de rede: ' + e.message);
+        L('[✗] Erro de rede: ' + e.message);
+        $('e2').textContent = '❌ Erro de rede: ' + e.message;
+        $('e2').style.display = 'block';
         btn.disabled = false;
         btn.innerHTML = 'Tentar novamente';
     }
