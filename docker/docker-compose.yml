@@ -9,11 +9,11 @@ version: '3.8'
 #   docker compose up -d   # sobe tudo
 #
 # Subdomínios necessários (configure no seu DNS):
-#   n8n.seusite.com.br
-#   metabase.seusite.com.br
-#   cloud.seusite.com.br
-#   mautic.seusite.com.br
-#   ci.seusite.com.br
+#   n8n.bemindmarketing.com.br
+#   metabase.bemindmarketing.com.br
+#   cloud.bemindmarketing.com.br
+#   mautic.bemindmarketing.com.br
+#   ci.bemindmarketing.com.br
 # ══════════════════════════════════════════════════════════════════════════
 
 networks:
@@ -61,10 +61,10 @@ services:
     ports:
       - "5678:5678"
     environment:
-      - N8N_HOST=${N8N_HOST:-n8n.seusite.com.br}
+      - N8N_HOST=${N8N_HOST:-n8n.bemindmarketing.com.br}
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
-      - WEBHOOK_URL=https://${N8N_HOST:-n8n.seusite.com.br}/
+      - WEBHOOK_URL=https://${N8N_HOST:-n8n.bemindmarketing.com.br}/
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
@@ -88,7 +88,7 @@ services:
     environment:
       - MB_DB_TYPE=h2
       - MB_DB_FILE=/metabase-data/metabase.db
-      - MB_SITE_URL=https://${METABASE_HOST:-metabase.seusite.com.br}
+      - MB_SITE_URL=https://${METABASE_HOST:-metabase.bemindmarketing.com.br}
       - JAVA_TIMEZONE=America/Sao_Paulo
     volumes:
       - metabase_data:/metabase-data
@@ -124,9 +124,9 @@ services:
       - MYSQL_PASSWORD=${NEXTCLOUD_DB_PASS}
       - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER:-admin}
       - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASS}
-      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_HOST:-cloud.seusite.com.br}
+      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_HOST:-cloud.bemindmarketing.com.br}
       - OVERWRITEPROTOCOL=https
-      - OVERWRITEHOST=${NEXTCLOUD_HOST:-cloud.seusite.com.br}
+      - OVERWRITEHOST=${NEXTCLOUD_HOST:-cloud.bemindmarketing.com.br}
     volumes:
       - nextcloud_data:/var/www/html
     depends_on:

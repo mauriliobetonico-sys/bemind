@@ -109,7 +109,7 @@ pipeline {
 
                         # Health check
                         sleep 5
-                        curl -sf https://seusite.com.br/api/health | grep -q '\"status\":\"ok\"'
+                        curl -sf https://bemindmarketing.com.br/api/health | grep -q '\"status\":\"ok\"'
                         echo "Deploy concluído com sucesso!"
                     '''
                 }
@@ -123,7 +123,7 @@ pipeline {
             echo "Pipeline concluído com sucesso! Commit: ${env.GIT_COMMIT[0..7]}"
         }
         failure {
-            mail to: 'admin@seusite.com.br',
+            mail to: 'admin@bemindmarketing.com.br',
                  subject: "VisãoOS CI — Falha: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                  body: "Build falhou. Verifique: ${env.BUILD_URL}"
         }
