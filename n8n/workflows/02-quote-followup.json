@@ -1,0 +1,98 @@
+{
+  "name": "VisãoOS — Follow-up de Orçamento",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "quote-created",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-quote",
+      "name": "Webhook — Orçamento Criado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "quote-created-webhook"
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "days"
+      },
+      "id": "wait-3-days",
+      "name": "Aguarda 3 dias",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.APP_URL }}/api/quotes/{{ $json.quote_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Authorization", "value": "Bearer {{ $env.VISAOOS_API_TOKEN }}" }]
+        },
+        "options": {}
+      },
+      "id": "check-quote-status",
+      "name": "Verifica status do orçamento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "pendente",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "still-pending",
+      "name": "Ainda pendente?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SMTP_FROM }}",
+        "toEmail": "={{ $('Webhook — Orçamento Criado').item.json.client_email }}",
+        "subject": "=Seu orçamento {{ $('Webhook — Orçamento Criado').item.json.quote_number }} ainda está disponível",
+        "emailType": "html",
+        "message": "=<html><body style=\"font-family:Arial,sans-serif;background:#f5f6fa;padding:20px\">\n<div style=\"max-width:520px;margin:0 auto;background:#fff;border-radius:12px;padding:24px\">\n  <div style=\"background:#3b5bdb;color:#fff;padding:14px 18px;border-radius:8px;margin-bottom:18px\">\n    <span style=\"font-size:20px;font-weight:800\">VisãoOS</span>\n  </div>\n  <h2 style=\"color:#1e2240\">Olá, {{ $('Webhook — Orçamento Criado').item.json.client_name }}!</h2>\n  <p style=\"color:#5a607a\">Seu orçamento ainda está disponível para aprovação:</p>\n  <div style=\"background:#fff4ee;border:1.5px solid #f08c00;border-radius:8px;padding:14px;margin:14px 0\">\n    <div style=\"font-size:18px;font-weight:800;color:#e67700\">{{ $('Webhook — Orçamento Criado').item.json.quote_number }}</div>\n    <div style=\"font-size:15px;margin-top:6px\"><strong>Valor:</strong> R$ {{ $('Webhook — Orçamento Criado').item.json.total }}</div>\n    {{ $('Webhook — Orçamento Criado').item.json.valid_until ? '<div style=\"color:#c92a2a;font-size:13px;margin-top:4px\">⚠️ Válido até: ' + $('Webhook — Orçamento Criado').item.json.valid_until + '</div>' : '' }}\n  </div>\n  <p style=\"color:#5a607a\">Entre em contato conosco para aprovar ou tirar dúvidas!</p>\n</div></body></html>",
+        "options": {}
+      },
+      "id": "send-followup-email",
+      "name": "Enviar Follow-up",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"received\": true }"
+      },
+      "id": "respond",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [460, 500]
+    }
+  ],
+  "connections": {
+    "Webhook — Orçamento Criado": { "main": [[{ "node": "Aguarda 3 dias", "type": "main", "index": 0 }, { "node": "Responder", "type": "main", "index": 0 }]] },
+    "Aguarda 3 dias": { "main": [[{ "node": "Verifica status do orçamento", "type": "main", "index": 0 }]] },
+    "Verifica status do orçamento": { "main": [[{ "node": "Ainda pendente?", "type": "main", "index": 0 }]] },
+    "Ainda pendente?": { "main": [[{ "node": "Enviar Follow-up", "type": "main", "index": 0 }], []] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "visaoos" }, { "name": "orcamentos" }]
+}

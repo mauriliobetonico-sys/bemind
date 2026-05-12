@@ -1,0 +1,115 @@
+{
+  "name": "VisãoOS — Notificação de Status de OS",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "os-status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook — OS Status",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "os-status-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "check-email",
+              "leftValue": "={{ $json.client_email }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ]
+        }
+      },
+      "id": "check-has-email",
+      "name": "Tem e-mail?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SMTP_FROM }}",
+        "toEmail": "={{ $json.client_email }}",
+        "subject": "=Sua OS {{ $json.os_number }} foi atualizada — {{ $json.status_label }}",
+        "emailType": "html",
+        "message": "=<html><body style=\"font-family:Arial,sans-serif;background:#f5f6fa;padding:20px\">\n<div style=\"max-width:520px;margin:0 auto;background:#fff;border-radius:12px;padding:24px;border:1.5px solid #e2e5ef\">\n  <div style=\"background:#3b5bdb;color:#fff;padding:14px 18px;border-radius:8px;margin-bottom:18px\">\n    <span style=\"font-size:20px;font-weight:800\">VisãoOS</span>\n  </div>\n  <h2 style=\"color:#1e2240;margin:0 0 8px\">Olá, {{ $json.client_name }}!</h2>\n  <p style=\"color:#5a607a\">Sua Ordem de Serviço foi atualizada:</p>\n  <div style=\"background:#eef1ff;border-radius:8px;padding:14px;margin:14px 0\">\n    <div style=\"font-size:22px;font-weight:800;color:#3b5bdb\">{{ $json.os_number }}</div>\n    <div style=\"font-size:14px;margin-top:6px\"><strong>Status:</strong> {{ $json.status_label }}</div>\n    {{ $json.due_date ? '<div style=\"font-size:13px;color:#5a607a;margin-top:4px\"><strong>Prazo:</strong> ' + $json.due_date + '</div>' : '' }}\n  </div>\n  <a href=\"{{ $json.tracking_url }}\" style=\"display:inline-block;background:#3b5bdb;color:#fff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:600\">Acompanhar Pedido</a>\n  <p style=\"color:#9299b5;font-size:11px;margin-top:18px\">Atualizado por: {{ $json.changed_by }}</p>\n</div></body></html>",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Enviar E-mail",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "check-whatsapp",
+              "leftValue": "={{ $json.client_whatsapp }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ]
+        }
+      },
+      "id": "check-has-whatsapp",
+      "name": "Tem WhatsApp?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 480]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3001/message/sendText/visaoos",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "={{ $env.EVOLUTION_API_KEY }}" }]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.client_whatsapp.replace(/\\D/g, '') }}@s.whatsapp.net" },
+            { "name": "text",   "value": "=*VisãoOS* — Olá {{ $json.client_name }}! \\n\\nSua OS *{{ $json.os_number }}* foi atualizada para: *{{ $json.status_label }}*\\n\\nAcompanhe em tempo real:\\n{{ $json.tracking_url }}" }
+          ]
+        },
+        "options": { "timeout": 10000 }
+      },
+      "id": "send-whatsapp",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 480]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"received\": true, \"os\": \"{{ $('Webhook — OS Status').item.json.os_number }}\" }"
+      },
+      "id": "respond",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook — OS Status": { "main": [[{ "node": "Tem e-mail?", "type": "main", "index": 0 }, { "node": "Tem WhatsApp?", "type": "main", "index": 0 }]] },
+    "Tem e-mail?": { "main": [[{ "node": "Enviar E-mail", "type": "main", "index": 0 }], []] },
+    "Tem WhatsApp?": { "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }], []] },
+    "Enviar E-mail": { "main": [[{ "node": "Responder", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "visaoos" }, { "name": "notificacoes" }]
+}

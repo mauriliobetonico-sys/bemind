@@ -1,0 +1,131 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_DIR     = '/var/www/visaoos'
+        DEPLOY_USER = 'deploy'
+        SERVER_HOST = credentials('visaoos-server-host')
+        SSH_KEY     = credentials('visaoos-ssh-key')
+    }
+
+    triggers {
+        githubPush()
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+                echo "Branch: ${env.BRANCH_NAME} | Commit: ${env.GIT_COMMIT[0..7]}"
+            }
+        }
+
+        stage('Lint PHP') {
+            steps {
+                sh '''
+                    echo "=== Verificando sintaxe PHP ==="
+                    find visaoos -name "*.php" -print0 | xargs -0 -n1 php -l
+                    echo "PHP Lint: OK"
+                '''
+            }
+        }
+
+        stage('Security Check') {
+            steps {
+                sh '''
+                    echo "=== Verificações de segurança ==="
+                    # Verifica se não há credenciais hardcoded
+                    if grep -r "DB_PASS.*=.*['\"].\+['\"]" visaoos/config/database.php | grep -v getenv; then
+                        echo "AVISO: Credenciais hardcoded detectadas!"
+                        exit 1
+                    fi
+                    # Verifica se .env não está sendo commitado
+                    if [ -f "visaoos/.env" ]; then
+                        echo "ERRO: arquivo .env no repositório!"
+                        exit 1
+                    fi
+                    echo "Security Check: OK"
+                '''
+            }
+        }
+
+        stage('Node.js Build') {
+            steps {
+                dir('websocket') {
+                    sh '''
+                        npm ci --production
+                        node -e "require('./server.js')" 2>&1 | head -5 || true
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy — Staging') {
+            when { branch 'develop' }
+            steps {
+                sshagent(credentials: ['visaoos-ssh-key']) {
+                    sh '''
+                        rsync -avz --delete \
+                            --exclude='.git' \
+                            --exclude='.env' \
+                            --exclude='uploads/' \
+                            --exclude='node_modules/' \
+                            visaoos/ ${DEPLOY_USER}@${SERVER_HOST}:${APP_DIR}-staging/
+                        ssh ${DEPLOY_USER}@${SERVER_HOST} "cd ${APP_DIR}-staging && php -r 'require_once \"config/database.php\"; echo \"DB OK\";'"
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy — Production') {
+            when { branch 'main' }
+            steps {
+                input message: 'Confirma deploy em produção?', ok: 'Deploy!'
+                sshagent(credentials: ['visaoos-ssh-key']) {
+                    sh '''
+                        # Backup antes do deploy
+                        ssh ${DEPLOY_USER}@${SERVER_HOST} "
+                            tar -czf /var/backups/visaoos/backup-\$(date +%Y%m%d-%H%M%S).tar.gz ${APP_DIR} 2>/dev/null || true
+                        "
+
+                        # Deploy dos arquivos PHP
+                        rsync -avz --delete \
+                            --exclude='.git' \
+                            --exclude='.env' \
+                            --exclude='uploads/' \
+                            --exclude='node_modules/' \
+                            visaoos/ ${DEPLOY_USER}@${SERVER_HOST}:${APP_DIR}/
+
+                        # Deploy e restart do WebSocket
+                        rsync -avz --delete \
+                            --exclude='node_modules/' \
+                            websocket/ ${DEPLOY_USER}@${SERVER_HOST}:${APP_DIR}-ws/
+                        ssh ${DEPLOY_USER}@${SERVER_HOST} "
+                            cd ${APP_DIR}-ws && npm ci --production
+                            pm2 restart visaoos-ws || pm2 start ecosystem.config.js
+                            pm2 save
+                        "
+
+                        # Health check
+                        sleep 5
+                        curl -sf https://seusite.com.br/api/health | grep -q '\"status\":\"ok\"'
+                        echo "Deploy concluído com sucesso!"
+                    '''
+                }
+            }
+        }
+
+    }
+
+    post {
+        success {
+            echo "Pipeline concluído com sucesso! Commit: ${env.GIT_COMMIT[0..7]}"
+        }
+        failure {
+            mail to: 'admin@seusite.com.br',
+                 subject: "VisãoOS CI — Falha: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "Build falhou. Verifique: ${env.BUILD_URL}"
+        }
+    }
+}

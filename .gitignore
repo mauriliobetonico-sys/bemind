@@ -1,0 +1,17 @@
+# Env files
+.env
+docker/.env
+visaoos/.env
+
+# Uploads
+visaoos/uploads/*/
+
+# Logs
+*.log
+
+# Node
+websocket/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

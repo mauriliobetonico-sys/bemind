@@ -1,0 +1,82 @@
+{
+  "name": "VisãoOS — Alerta de Pagamentos em Atraso",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 24, "triggerAtHour": 9 }] }
+      },
+      "id": "cron-trigger",
+      "name": "Todo dia às 9h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.APP_URL }}/api/os?payment_status=pendente&limit=100",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Authorization", "value": "Bearer {{ $env.VISAOOS_API_TOKEN }}" }]
+        },
+        "options": {}
+      },
+      "id": "get-overdue",
+      "name": "Busca OS em Atraso",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = new Date();\nconst overdue = [];\n\nfor (const item of $input.all()) {\n  const os = item.json;\n  if (!os.due_date) continue;\n  const due = new Date(os.due_date);\n  const diffDays = Math.floor((today - due) / (1000 * 60 * 60 * 24));\n  if (diffDays > 0) {\n    overdue.push({ ...os, days_overdue: diffDays });\n  }\n}\n\nif (overdue.length === 0) return [{ json: { skip: true } }];\nreturn overdue.map(os => ({ json: os }));"
+      },
+      "id": "filter-overdue",
+      "name": "Filtra Atrasadas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "notEquals" }
+            }
+          ]
+        }
+      },
+      "id": "has-overdue",
+      "name": "Tem atrasadas?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SMTP_FROM }}",
+        "toEmail": "={{ $env.ADMIN_EMAIL }}",
+        "subject": "=VisãoOS ⚠️ OS com pagamento em atraso — {{ $json.os_number }}",
+        "emailType": "html",
+        "message": "=<html><body style=\"font-family:Arial;padding:20px\">\n<div style=\"max-width:520px;margin:0 auto;background:#fff;border-radius:12px;padding:24px;border:2px solid #c92a2a\">\n  <h2 style=\"color:#c92a2a\">⚠️ Pagamento em Atraso</h2>\n  <p><strong>OS:</strong> {{ $json.os_number }}</p>\n  <p><strong>Cliente:</strong> {{ $json.client_name }}</p>\n  <p><strong>Valor:</strong> R$ {{ Number($json.total).toFixed(2).replace('.', ',') }}</p>\n  <p><strong>Prazo era:</strong> {{ $json.due_date }}</p>\n  <p><strong>Dias em atraso:</strong> {{ $json.days_overdue }} dia(s)</p>\n  <a href=\"{{ $env.APP_URL }}\" style=\"background:#c92a2a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none\">Ver no Sistema</a>\n</div></body></html>",
+        "options": {}
+      },
+      "id": "send-overdue-alert",
+      "name": "Alerta de Atraso",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1100, 200]
+    }
+  ],
+  "connections": {
+    "Todo dia às 9h": { "main": [[{ "node": "Busca OS em Atraso", "type": "main", "index": 0 }]] },
+    "Busca OS em Atraso": { "main": [[{ "node": "Filtra Atrasadas", "type": "main", "index": 0 }]] },
+    "Filtra Atrasadas": { "main": [[{ "node": "Tem atrasadas?", "type": "main", "index": 0 }]] },
+    "Tem atrasadas?": { "main": [[{ "node": "Alerta de Atraso", "type": "main", "index": 0 }], []] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "visaoos" }, { "name": "financeiro" }]
+}
