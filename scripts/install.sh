@@ -69,7 +69,7 @@ APP_URL=https://$DOMAIN
 JWT_SECRET=$JWT_SECRET
 JWT_EXPIRES=86400
 N8N_WEBHOOK_BASE=https://n8n.$DOMAIN/webhook
-NEXTCLOUD_URL=https://cloud.$DOMAIN
+NEXTCLOUD_URL=https://cloud2.$DOMAIN
 WS_PORT=6001
 WS_SECRET=$WS_SECRET
 EOF
@@ -141,7 +141,7 @@ echo "Acesse os serviços:"
 echo "  Sistema:  https://$DOMAIN"
 echo "  n8n:      https://n8n.$DOMAIN"
 echo "  Metabase: https://metabase.$DOMAIN"
-echo "  Nextcloud:https://cloud.$DOMAIN"
+echo "  Nextcloud:https://cloud2.$DOMAIN"
 echo "  Mautic:   https://mautic.$DOMAIN"
 echo "  Jenkins:  https://ci.$DOMAIN"
 echo ""

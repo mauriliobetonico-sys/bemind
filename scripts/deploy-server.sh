@@ -125,7 +125,7 @@ WS_SECRET=$WS_SECRET
 N8N_WEBHOOK_BASE=https://n8n.$DOMAIN/webhook
 
 # Nextcloud (após subir Docker stack)
-NEXTCLOUD_URL=https://cloud.$DOMAIN
+NEXTCLOUD_URL=https://cloud2.$DOMAIN
 NEXTCLOUD_USER=admin
 NEXTCLOUD_PASS=$NC_PASS
 
@@ -223,7 +223,7 @@ N8N_USER=admin
 N8N_PASSWORD=$N8N_PASS
 N8N_ENCRYPTION_KEY=$N8N_ENC_KEY
 METABASE_HOST=metabase.$DOMAIN
-NEXTCLOUD_HOST=cloud.$DOMAIN
+NEXTCLOUD_HOST=cloud2.$DOMAIN
 NEXTCLOUD_ADMIN_USER=admin
 NEXTCLOUD_ADMIN_PASS=$NC_PASS
 NEXTCLOUD_DB_PASS=$NC_DB_PASS
@@ -282,7 +282,7 @@ echo "    URL:   https://n8n.$DOMAIN"
 echo "    Login: admin / $N8N_PASS"
 echo ""
 echo "  Nextcloud (Arquivos):"
-echo "    URL:   https://cloud.$DOMAIN"
+echo "    URL:   https://cloud2.$DOMAIN"
 echo "    Login: admin / $NC_PASS"
 echo ""
 echo "  Metabase (Dashboards):"
@@ -301,7 +301,7 @@ echo -e "${BLUE}PRÓXIMOS PASSOS:${NC}"
 echo "  1. Configure subdomínios DNS apontando para IP: $(curl -s4 ifconfig.me 2>/dev/null || echo 'SEU_IP_DO_SERVIDOR')"
 echo "     → n8n.$DOMAIN"
 echo "     → metabase.$DOMAIN"
-echo "     → cloud.$DOMAIN"
+echo "     → cloud2.$DOMAIN"
 echo "     → mautic.$DOMAIN"
 echo "     → ci.$DOMAIN"
 echo ""
@@ -327,7 +327,7 @@ DB MySQL:
 n8n: https://n8n.$DOMAIN
   admin / $N8N_PASS
 
-Nextcloud: https://cloud.$DOMAIN
+Nextcloud: https://cloud2.$DOMAIN
   admin / $NC_PASS
   DB pass: $NC_DB_PASS
 

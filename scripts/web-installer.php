@@ -74,7 +74,7 @@ function createEnvFile(array $config): bool {
     $content .= "JWT_SECRET=$jwt\nJWT_EXPIRES=86400\n\n";
     $content .= "WS_PORT=6001\nWS_SECRET=$ws\n\n";
     $content .= "N8N_WEBHOOK_BASE=https://n8n.{$config['domain']}/webhook\n";
-    $content .= "NEXTCLOUD_URL=https://cloud.{$config['domain']}\n\n";
+    $content .= "NEXTCLOUD_URL=https://cloud2.{$config['domain']}\n\n";
     $content .= "SMTP_HOST={$config['smtp_host']}\n";
     $content .= "SMTP_PORT={$config['smtp_port']}\n";
     $content .= "SMTP_USER={$config['smtp_user']}\n";
@@ -232,7 +232,7 @@ function createEnvFile(array $config): bool {
             3. Configure os subdomínios DNS no painel da Cloudez:<br>
             &nbsp;&nbsp;&nbsp;• <code>n8n.<?= htmlspecialchars($config['domain']) ?></code><br>
             &nbsp;&nbsp;&nbsp;• <code>metabase.<?= htmlspecialchars($config['domain']) ?></code><br>
-            &nbsp;&nbsp;&nbsp;• <code>cloud.<?= htmlspecialchars($config['domain']) ?></code><br>
+            &nbsp;&nbsp;&nbsp;• <code>cloud2.<?= htmlspecialchars($config['domain']) ?></code><br>
             &nbsp;&nbsp;&nbsp;• <code>mautic.<?= htmlspecialchars($config['domain']) ?></code>
         </div>
 

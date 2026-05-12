@@ -11,7 +11,7 @@ version: '3.8'
 # Subdomínios necessários (configure no seu DNS):
 #   n8n.bemindmarketing.com.br
 #   metabase.bemindmarketing.com.br
-#   cloud.bemindmarketing.com.br
+#   cloud2.bemindmarketing.com.br
 #   mautic.bemindmarketing.com.br
 #   ci.bemindmarketing.com.br
 # ══════════════════════════════════════════════════════════════════════════
@@ -124,9 +124,9 @@ services:
       - MYSQL_PASSWORD=${NEXTCLOUD_DB_PASS}
       - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER:-admin}
       - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASS}
-      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_HOST:-cloud.bemindmarketing.com.br}
+      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_HOST:-cloud2.bemindmarketing.com.br}
       - OVERWRITEPROTOCOL=https
-      - OVERWRITEHOST=${NEXTCLOUD_HOST:-cloud.bemindmarketing.com.br}
+      - OVERWRITEHOST=${NEXTCLOUD_HOST:-cloud2.bemindmarketing.com.br}
     volumes:
       - nextcloud_data:/var/www/html
     depends_on:
