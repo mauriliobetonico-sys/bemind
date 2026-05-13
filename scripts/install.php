@@ -63,7 +63,6 @@ if ($action === 'test_db') {
     $name = trim($_POST['db_name'] ?? 'visaoos');
     $user = trim($_POST['db_user'] ?? '');
     $pass = trim($_POST['db_pass'] ?? '');
-    $lastErr = '';
     foreach ([
         "mysql:host=$host;dbname=$name;charset=utf8mb4",
         "mysql:host=127.0.0.1;port=3306;dbname=$name;charset=utf8mb4",
@@ -74,20 +73,20 @@ if ($action === 'test_db') {
             new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
             echo json_encode(['ok' => true, 'msg' => 'Conectado com sucesso!']);
             exit;
-        } catch (PDOException $e) { $lastErr = $e->getMessage(); }
+        } catch (PDOException $e) { $err = $e->getMessage(); }
     }
-    echo json_encode(['ok' => false, 'msg' => $lastErr]);
+    echo json_encode(['ok' => false, 'msg' => $err]);
     exit;
 }
 
 // Action: write .env and install database
 if ($action === 'install') {
     header('Content-Type: application/json');
-    $host   = trim($_POST['db_host']     ?? 'localhost');
-    $name   = trim($_POST['db_name']     ?? 'visaoos');
-    $user   = trim($_POST['db_user']     ?? '');
-    $pass   = trim($_POST['db_pass']     ?? '');
-    $domain = trim($_POST['domain']      ?? 'bemindmarketing.com.br');
+    $host   = trim($_POST['db_host'] ?? 'localhost');
+    $name   = trim($_POST['db_name'] ?? 'visaoos');
+    $user   = trim($_POST['db_user'] ?? '');
+    $pass   = trim($_POST['db_pass'] ?? '');
+    $domain = trim($_POST['domain']  ?? 'bemindmarketing.com.br');
     $admin  = trim($_POST['admin_email'] ?? "admin@$domain");
     $webRoot = __DIR__;
 
@@ -146,24 +145,18 @@ if ($action === 'install') {
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
     min-height: 100vh;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 20px;
-    color: #e2e8f0;
+    padding: 40px 16px 60px;
   }
-  .card {
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 20px;
-    padding: 40px;
+  .container {
     width: 100%;
-    max-width: 560px;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+    max-width: 680px;
   }
   .logo {
     text-align: center;
@@ -171,71 +164,57 @@ if ($action === 'install') {
   }
   .logo h1 {
     font-size: 2rem;
-    font-weight: 800;
-    background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+    font-weight: 700;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     letter-spacing: -0.5px;
   }
   .logo p {
-    color: #94a3b8;
+    color: #64748b;
     font-size: 0.9rem;
     margin-top: 4px;
   }
 
   /* Step indicator */
-  .steps {
+  .steps-bar {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 36px;
     gap: 0;
+    margin-bottom: 32px;
   }
   .step-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    flex: 1;
     position: relative;
   }
-  .step-item:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    top: 18px;
-    left: 60%;
-    width: 80%;
-    height: 2px;
-    background: rgba(255,255,255,0.15);
-    transition: background 0.4s;
-  }
-  .step-item.done:not(:last-child)::after,
-  .step-item.active:not(:last-child)::after {
-    background: linear-gradient(90deg, #6366f1, rgba(255,255,255,0.15));
-  }
   .step-circle {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.2);
+    border: 2px solid #334155;
+    background: #1e293b;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 0.9rem;
-    color: #94a3b8;
-    background: rgba(255,255,255,0.05);
-    transition: all 0.4s;
+    font-size: 0.95rem;
+    color: #64748b;
+    transition: all 0.3s ease;
+    position: relative;
     z-index: 1;
   }
-  .step-item.active .step-circle {
+  .step-circle.active {
     border-color: #6366f1;
     background: #6366f1;
     color: #fff;
-    box-shadow: 0 0 0 4px rgba(99,102,241,0.25);
+    box-shadow: 0 0 20px rgba(99,102,241,0.4);
   }
-  .step-item.done .step-circle {
+  .step-circle.done {
     border-color: #10b981;
     background: #10b981;
     color: #fff;
@@ -244,53 +223,91 @@ if ($action === 'install') {
     font-size: 0.72rem;
     color: #64748b;
     text-align: center;
-    font-weight: 500;
+    max-width: 80px;
+    line-height: 1.3;
+    transition: color 0.3s;
   }
-  .step-item.active .step-label { color: #a5b4fc; }
-  .step-item.done .step-label  { color: #6ee7b7; }
+  .step-label.active { color: #a5b4fc; }
+  .step-label.done   { color: #6ee7b7; }
+  .step-connector {
+    width: 80px;
+    height: 2px;
+    background: #334155;
+    margin-bottom: 22px;
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .step-connector.done { background: #10b981; }
 
-  /* Panels */
-  .panel { display: none; }
-  .panel.active { display: block; }
-
-  h2 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #e2e8f0;
+  /* Cards */
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .card.active { display: block; }
+  .card h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #f1f5f9;
     margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
-  p.desc {
+  .card h2 .step-badge {
+    background: #6366f1;
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .card p.desc {
     color: #94a3b8;
     font-size: 0.88rem;
     margin-bottom: 24px;
-    line-height: 1.5;
+    line-height: 1.6;
   }
 
-  /* Form */
-  .form-group { margin-bottom: 16px; }
-  label {
-    display: block;
-    font-size: 0.8rem;
+  /* Form fields */
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .field-grid.single { grid-template-columns: 1fr; }
+  @media (max-width: 480px) { .field-grid { grid-template-columns: 1fr; } }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .field label {
+    font-size: 0.78rem;
     font-weight: 600;
     color: #94a3b8;
-    margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.5px;
   }
-  input[type="text"], input[type="password"], input[type="email"] {
-    width: 100%;
-    padding: 10px 14px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 10px;
+  .field input {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px 12px;
     color: #e2e8f0;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
-  input:focus {
+  .field input:focus {
     border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
   }
 
   /* Buttons */
@@ -300,232 +317,320 @@ if ($action === 'install') {
     justify-content: center;
     gap: 8px;
     padding: 12px 24px;
-    border: none;
-    border-radius: 12px;
-    font-size: 0.95rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
     font-weight: 600;
+    border: none;
     cursor: pointer;
     transition: all 0.2s;
     text-decoration: none;
   }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
   .btn-primary {
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
     color: #fff;
     width: 100%;
-    padding: 14px;
-    font-size: 1rem;
-    box-shadow: 0 4px 15px rgba(99,102,241,0.35);
   }
   .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(99,102,241,0.45);
+    box-shadow: 0 6px 20px rgba(99,102,241,0.35);
   }
   .btn-secondary {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.15);
+    background: #334155;
     color: #e2e8f0;
-    width: 100%;
-    margin-top: 10px;
+    flex: 1;
   }
   .btn-secondary:hover:not(:disabled) {
-    background: rgba(255,255,255,0.13);
+    background: #475569;
   }
   .btn-success {
     background: linear-gradient(135deg, #10b981, #059669);
     color: #fff;
-    width: 100%;
-    padding: 14px;
-    font-size: 1rem;
-    box-shadow: 0 4px 15px rgba(16,185,129,0.35);
-    margin-top: 12px;
+    flex: 1;
   }
   .btn-success:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669, #047857);
     transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(16,185,129,0.35);
   }
-
-  /* Alert box */
-  .alert {
-    padding: 12px 16px;
-    border-radius: 10px;
-    font-size: 0.88rem;
-    margin-top: 16px;
+  .btn-row {
     display: flex;
-    align-items: flex-start;
     gap: 10px;
+    margin-top: 16px;
+  }
+
+  /* Status / alerts */
+  .alert {
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 0.88rem;
     line-height: 1.5;
+    margin-top: 16px;
     display: none;
+    border: 1px solid transparent;
   }
-  .alert.show { display: flex; }
-  .alert-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.35); color: #6ee7b7; }
-  .alert-error   { background: rgba(239,68,68,0.15);  border: 1px solid rgba(239,68,68,0.35);  color: #fca5a5; }
-  .alert-info    { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.35); color: #a5b4fc; }
-  .alert-icon { font-size: 1.1rem; flex-shrink: 0; }
+  .alert.show { display: block; }
+  .alert-success {
+    background: #052e16;
+    border-color: #166534;
+    color: #86efac;
+  }
+  .alert-error {
+    background: #450a0a;
+    border-color: #991b1b;
+    color: #fca5a5;
+  }
+  .alert-info {
+    background: #1e1b4b;
+    border-color: #4338ca;
+    color: #a5b4fc;
+  }
+  .alert ul { padding-left: 18px; margin-top: 6px; }
+  .alert li { margin-bottom: 3px; }
 
-  /* Spinner */
-  .spinner {
-    width: 18px; height: 18px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #fff;
+  /* File list */
+  .file-list {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  @media (max-width: 480px) { .file-list { grid-template-columns: 1fr; } }
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: #64748b;
+    padding: 3px 0;
+  }
+  .file-item .dot {
+    width: 6px; height: 6px;
     border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    display: none;
+    background: #334155;
+    flex-shrink: 0;
+    transition: background 0.3s;
   }
-  .btn.loading .spinner { display: inline-block; }
-  .btn.loading .btn-label { display: none; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .file-item.ok .dot { background: #10b981; }
+  .file-item.ok    { color: #6ee7b7; }
+  .file-item.fail .dot { background: #ef4444; }
+  .file-item.fail  { color: #fca5a5; }
 
-  /* Step 3 — success */
+  /* Step 3 success */
   .success-box {
     text-align: center;
-    padding: 12px 0;
+    padding: 16px 0 8px;
   }
   .success-icon {
     font-size: 3.5rem;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     display: block;
   }
+  .success-box h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 8px;
+  }
+  .success-box p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+  }
   .cred-box {
-    background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: #0f172a;
+    border: 1px solid #334155;
     border-radius: 12px;
     padding: 20px;
     text-align: left;
-    margin: 20px 0;
+    margin-bottom: 20px;
+  }
+  .cred-box h4 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 12px;
   }
   .cred-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.07);
+    border-bottom: 1px solid #1e293b;
     font-size: 0.9rem;
   }
   .cred-row:last-child { border-bottom: none; }
-  .cred-key { color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
-  .cred-val { color: #e2e8f0; font-weight: 600; font-family: monospace; }
-
+  .cred-row span:first-child { color: #64748b; }
+  .cred-row span:last-child  { color: #e2e8f0; font-family: monospace; font-weight: 600; }
   .warning-box {
-    background: rgba(245,158,11,0.15);
-    border: 1px solid rgba(245,158,11,0.35);
+    background: #431407;
+    border: 1px solid #9a3412;
     border-radius: 10px;
-    padding: 12px 16px;
-    color: #fcd34d;
+    padding: 14px 16px;
     font-size: 0.85rem;
-    margin-top: 16px;
-    line-height: 1.5;
+    color: #fdba74;
+    text-align: center;
+    margin-bottom: 16px;
   }
+  .btn-open {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+  }
+  .btn-open:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(16,185,129,0.4);
+  }
+
+  /* Spinner */
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-<div class="card">
+<div class="container">
+
   <div class="logo">
-    <h1>VisãoOS</h1>
-    <p>Instalador de Sistema v3.0</p>
+    <h1>⚡ VisãoOS</h1>
+    <p>Instalador Único v3.0 — Siga os passos abaixo</p>
   </div>
 
-  <!-- Step Indicator -->
-  <div class="steps">
-    <div class="step-item active" id="si-1">
-      <div class="step-circle">1</div>
-      <div class="step-label">Arquivos</div>
+  <!-- Step indicator -->
+  <div class="steps-bar">
+    <div class="step-item">
+      <div class="step-circle active" id="sc1">1</div>
+      <div class="step-label active" id="sl1">Instalar<br>Arquivos</div>
     </div>
-    <div class="step-item" id="si-2">
-      <div class="step-circle">2</div>
-      <div class="step-label">Banco de Dados</div>
+    <div class="step-connector" id="conn1"></div>
+    <div class="step-item">
+      <div class="step-circle" id="sc2">2</div>
+      <div class="step-label" id="sl2">Banco de<br>Dados</div>
     </div>
-    <div class="step-item" id="si-3">
-      <div class="step-circle">3</div>
-      <div class="step-label">Concluído</div>
+    <div class="step-connector" id="conn2"></div>
+    <div class="step-item">
+      <div class="step-circle" id="sc3">3</div>
+      <div class="step-label" id="sl3">Concluído</div>
     </div>
   </div>
 
-  <!-- STEP 1: Install Files -->
-  <div class="panel active" id="panel-1">
-    <h2>Instalar Arquivos do Sistema</h2>
+  <!-- STEP 1 -->
+  <div class="card active" id="card1">
+    <h2><span class="step-badge">PASSO 1</span> Instalar Arquivos do Sistema</h2>
     <p class="desc">
-      Este passo extrai todos os arquivos da aplicação — PHP, configurações e rotas —
-      para os diretórios corretos no servidor.
+      Todos os arquivos da aplicação estão embutidos neste instalador. Clique no botão abaixo para
+      extraí-los e gravá-los no servidor. Este processo criará as pastas <code>config/</code>,
+      <code>routes/</code>, <code>uploads/</code> e <code>logs/</code> automaticamente.
     </p>
-    <button class="btn btn-primary" id="btn-write" onclick="writeFiles()">
-      <div class="spinner"></div>
-      <span class="btn-label">&#128194; Instalar Arquivos do Sistema</span>
+
+    <div class="file-list" id="fileList">
+      <?php foreach (array_keys($APP_FILES) as $f): ?>
+      <div class="file-item" id="fi_<?= preg_replace('/[^a-z0-9]/i','_',$f) ?>">
+        <span class="dot"></span><?= htmlspecialchars($f) ?>
+      </div>
+      <?php endforeach; ?>
+    </div>
+
+    <button class="btn btn-primary" id="btnWrite" onclick="doWriteFiles()" style="margin-top:20px;">
+      📦 Instalar Arquivos do Sistema
     </button>
-    <div class="alert" id="alert-1"></div>
+    <div class="alert" id="alertWrite"></div>
   </div>
 
-  <!-- STEP 2: Database -->
-  <div class="panel" id="panel-2">
-    <h2>Configurar Banco de Dados</h2>
+  <!-- STEP 2 -->
+  <div class="card" id="card2">
+    <h2><span class="step-badge">PASSO 2</span> Configurar Banco de Dados</h2>
     <p class="desc">
-      Preencha as credenciais do MySQL, teste a conexão e depois clique em
-      <strong>Instalar Banco</strong> para criar as tabelas e o usuário administrador.
+      Preencha os dados de conexão MySQL e as informações do site. Teste a conexão antes de instalar.
     </p>
-    <div class="form-group">
-      <label>Host do Banco</label>
-      <input type="text" id="db_host" value="localhost" placeholder="localhost">
+
+    <div class="field-grid">
+      <div class="field">
+        <label>Host MySQL</label>
+        <input type="text" id="db_host" value="localhost" placeholder="localhost">
+      </div>
+      <div class="field">
+        <label>Nome do Banco</label>
+        <input type="text" id="db_name" value="visaoos" placeholder="visaoos">
+      </div>
+      <div class="field">
+        <label>Usuário MySQL</label>
+        <input type="text" id="db_user" value="visaoos26" placeholder="visaoos26">
+      </div>
+      <div class="field">
+        <label>Senha MySQL</label>
+        <input type="password" id="db_pass" value="Visaoos2025" placeholder="••••••••">
+      </div>
     </div>
-    <div class="form-group">
-      <label>Nome do Banco</label>
-      <input type="text" id="db_name" value="visaoos" placeholder="visaoos">
+
+    <div class="field-grid">
+      <div class="field">
+        <label>Domínio do Site</label>
+        <input type="text" id="domain" value="bemindmarketing.com.br" placeholder="exemplo.com.br">
+      </div>
+      <div class="field">
+        <label>E-mail Admin</label>
+        <input type="email" id="admin_email" value="admin@bemindmarketing.com.br" placeholder="admin@dominio.com.br">
+      </div>
     </div>
-    <div class="form-group">
-      <label>Usuário do Banco</label>
-      <input type="text" id="db_user" value="visaoos26" placeholder="visaoos26">
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="doTestDB()">🔌 Testar Conexão</button>
+      <button class="btn btn-success"   id="btnInstall" onclick="doInstall()">🚀 Instalar Banco</button>
     </div>
-    <div class="form-group">
-      <label>Senha do Banco</label>
-      <input type="password" id="db_pass" value="Visaoos2025" placeholder="senha">
-    </div>
-    <div class="form-group">
-      <label>Domínio</label>
-      <input type="text" id="domain" value="bemindmarketing.com.br" placeholder="seudominio.com.br">
-    </div>
-    <div class="form-group">
-      <label>E-mail do Administrador</label>
-      <input type="email" id="admin_email" value="admin@bemindmarketing.com.br" placeholder="admin@seudominio.com.br">
-    </div>
-    <button class="btn btn-secondary" id="btn-test" onclick="testDB()">
-      <div class="spinner"></div>
-      <span class="btn-label">&#128268; Testar Conexão</span>
-    </button>
-    <div class="alert" id="alert-2"></div>
-    <button class="btn btn-success" id="btn-install" onclick="installDB()" disabled>
-      <div class="spinner"></div>
-      <span class="btn-label">&#9889; Instalar Banco de Dados</span>
-    </button>
-    <div class="alert" id="alert-3"></div>
+    <div class="alert" id="alertDB"></div>
   </div>
 
-  <!-- STEP 3: Done -->
-  <div class="panel" id="panel-3">
+  <!-- STEP 3 -->
+  <div class="card" id="card3">
     <div class="success-box">
-      <span class="success-icon">&#127881;</span>
-      <h2>Sistema Instalado com Sucesso!</h2>
-      <p class="desc" style="margin-top:8px;">
-        O VisãoOS está pronto. Use as credenciais abaixo para acessar o painel.
-      </p>
-      <div class="cred-box">
-        <div class="cred-row">
-          <span class="cred-key">URL</span>
-          <span class="cred-val" id="cred-url">—</span>
-        </div>
-        <div class="cred-row">
-          <span class="cred-key">Login</span>
-          <span class="cred-val" id="cred-email">—</span>
-        </div>
-        <div class="cred-row">
-          <span class="cred-key">Senha</span>
-          <span class="cred-val">admin123</span>
-        </div>
+      <span class="success-icon">🎉</span>
+      <h3>Instalação Concluída!</h3>
+      <p>O VisãoOS foi instalado com sucesso no servidor.</p>
+    </div>
+
+    <div class="cred-box">
+      <h4>Credenciais de Acesso</h4>
+      <div class="cred-row">
+        <span>URL do sistema</span>
+        <span id="credURL">—</span>
       </div>
-      <a class="btn btn-primary" id="link-site" href="#" target="_blank" style="text-decoration:none;">
-        &#127758; Acessar o Sistema
-      </a>
-      <div class="warning-box">
-        <strong>&#9888; Atenção:</strong> Apague o arquivo <code>install.php</code> do servidor
-        imediatamente após concluir a instalação para evitar riscos de segurança.
+      <div class="cred-row">
+        <span>E-mail</span>
+        <span id="credEmail">—</span>
       </div>
+      <div class="cred-row">
+        <span>Senha padrão</span>
+        <span>admin123</span>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      ⚠️ <strong>Importante:</strong> Altere sua senha após o primeiro login e <strong>apague</strong>
+      o arquivo <code>install.php</code> do servidor imediatamente!
+    </div>
+
+    <div style="text-align:center;">
+      <a id="linkSite" href="#" class="btn-open" target="_blank">🌐 Abrir o Sistema</a>
     </div>
   </div>
 
@@ -533,110 +638,118 @@ if ($action === 'install') {
 
 <script>
 const KEY = 'bemind2025';
+const base = location.pathname.replace(/\/[^/]*$/, '') + '/install.php?key=' + KEY;
 
-function getUrl(action) {
-  return `install.php?key=${KEY}&action=${action}`;
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    const card = document.getElementById('card' + i);
+    const sc   = document.getElementById('sc' + i);
+    const sl   = document.getElementById('sl' + i);
+    card.classList.toggle('active', i === n);
+    sc.classList.remove('active','done');
+    sl.classList.remove('active','done');
+    if (i < n)       { sc.classList.add('done'); sl.classList.add('done'); sc.textContent = '✓'; }
+    else if (i === n){ sc.classList.add('active'); sl.classList.add('active'); sc.textContent = i; }
+    else             { sc.textContent = i; }
+  });
+  [1,2].forEach(i => {
+    document.getElementById('conn' + i).classList.toggle('done', i < n);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function showAlert(id, type, msg) {
+function showAlert(id, type, html) {
   const el = document.getElementById(id);
-  el.className = `alert alert-${type} show`;
-  const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
-  el.innerHTML = `<span class="alert-icon">${icon}</span><span>${msg}</span>`;
+  el.className = 'alert show alert-' + type;
+  el.innerHTML = html;
 }
 
-function setLoading(btn, loading) {
-  if (loading) btn.classList.add('loading');
-  else btn.classList.remove('loading');
-  btn.disabled = loading;
-}
+async function doWriteFiles() {
+  const btn = document.getElementById('btnWrite');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Instalando arquivos...';
+  showAlert('alertWrite','info','⏳ Gravando arquivos no servidor, aguarde...');
 
-function goToStep(n) {
-  document.querySelectorAll('.panel').forEach((p, i) => {
-    p.classList.toggle('active', i + 1 === n);
-  });
-  document.querySelectorAll('.step-item').forEach((s, i) => {
-    s.classList.remove('active', 'done');
-    if (i + 1 < n) s.classList.add('done');
-    else if (i + 1 === n) s.classList.add('active');
-  });
-}
-
-async function writeFiles() {
-  const btn = document.getElementById('btn-write');
-  setLoading(btn, true);
   try {
-    const res = await fetch(getUrl('write_files'));
+    const res = await fetch(base + '&action=write_files', { method: 'POST' });
     const data = await res.json();
-    if (data.ok) {
-      showAlert('alert-1', 'success',
-        `${data.written} arquivo(s) gravado(s) com sucesso! Avançando para o passo 2…`);
-      setTimeout(() => goToStep(2), 1800);
-    } else {
-      let msg = `${data.written} arquivo(s) gravado(s).`;
-      if (data.failed && data.failed.length) msg += ` Falhas: ${data.failed.join(', ')}`;
-      showAlert('alert-1', 'error', msg);
+
+    // Update file list items
+    const allItems = document.querySelectorAll('.file-item');
+    allItems.forEach(el => el.classList.add('ok'));
+
+    if (data.failed && data.failed.length > 0) {
+      data.failed.forEach(f => {
+        const id = 'fi_' + f.replace(/[^a-z0-9]/gi, '_');
+        const el = document.getElementById(id);
+        if (el) { el.classList.remove('ok'); el.classList.add('fail'); }
+      });
     }
-  } catch (e) {
-    showAlert('alert-1', 'error', 'Erro de comunicação: ' + e.message);
-  } finally {
-    setLoading(btn, false);
+
+    if (data.ok) {
+      showAlert('alertWrite','success',
+        '✅ <strong>' + data.written + ' arquivos instalados</strong> com sucesso! Avançando para o Passo 2...');
+      btn.innerHTML = '✅ Arquivos Instalados!';
+      setTimeout(() => setStep(2), 1800);
+    } else {
+      showAlert('alertWrite','error',
+        '❌ Falha em alguns arquivos: <ul>' + data.failed.map(f=>'<li>'+f+'</li>').join('') + '</ul>');
+      btn.disabled = false;
+      btn.innerHTML = '📦 Tentar Novamente';
+    }
+  } catch(e) {
+    showAlert('alertWrite','error','❌ Erro de rede: ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '📦 Tentar Novamente';
   }
 }
 
-async function testDB() {
-  const btn = document.getElementById('btn-test');
-  setLoading(btn, true);
+async function doTestDB() {
+  showAlert('alertDB','info','🔌 Testando conexão com MySQL...');
   const body = new FormData();
-  body.append('db_host', document.getElementById('db_host').value);
-  body.append('db_name', document.getElementById('db_name').value);
-  body.append('db_user', document.getElementById('db_user').value);
-  body.append('db_pass', document.getElementById('db_pass').value);
+  ['db_host','db_name','db_user','db_pass'].forEach(k => body.append(k, document.getElementById(k).value));
+
   try {
-    const res = await fetch(getUrl('test_db'), { method: 'POST', body });
+    const res = await fetch(base + '&action=test_db', { method: 'POST', body });
     const data = await res.json();
-    if (data.ok) {
-      showAlert('alert-2', 'success', data.msg);
-      document.getElementById('btn-install').disabled = false;
-    } else {
-      showAlert('alert-2', 'error', data.msg);
-    }
-  } catch (e) {
-    showAlert('alert-2', 'error', 'Erro de comunicação: ' + e.message);
-  } finally {
-    setLoading(btn, false);
+    if (data.ok) showAlert('alertDB','success','✅ ' + data.msg);
+    else         showAlert('alertDB','error',  '❌ ' + data.msg);
+  } catch(e) {
+    showAlert('alertDB','error','❌ Erro de rede: ' + e.message);
   }
 }
 
-async function installDB() {
-  const btn = document.getElementById('btn-install');
-  setLoading(btn, true);
+async function doInstall() {
+  const btn = document.getElementById('btnInstall');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Instalando...';
+  showAlert('alertDB','info','⚙️ Criando banco de dados e configurando o sistema...');
+
   const body = new FormData();
-  const domain = document.getElementById('domain').value;
-  body.append('db_host',     document.getElementById('db_host').value);
-  body.append('db_name',     document.getElementById('db_name').value);
-  body.append('db_user',     document.getElementById('db_user').value);
-  body.append('db_pass',     document.getElementById('db_pass').value);
-  body.append('domain',      domain);
-  body.append('admin_email', document.getElementById('admin_email').value);
+  ['db_host','db_name','db_user','db_pass','domain','admin_email'].forEach(k => body.append(k, document.getElementById(k).value));
+
   try {
-    const res = await fetch(getUrl('install'), { method: 'POST', body });
+    const res = await fetch(base + '&action=install', { method: 'POST', body });
     const data = await res.json();
+
     if (data.ok) {
-      showAlert('alert-3', 'success', data.msg);
-      // Populate step 3
-      const siteUrl = 'https://' + domain;
-      document.getElementById('cred-url').textContent = siteUrl;
-      document.getElementById('cred-email').textContent = document.getElementById('admin_email').value;
-      document.getElementById('link-site').href = siteUrl;
-      setTimeout(() => goToStep(3), 1800);
+      const domain = document.getElementById('domain').value.trim();
+      const email  = document.getElementById('admin_email').value.trim();
+      document.getElementById('credURL').textContent   = 'https://' + domain;
+      document.getElementById('credEmail').textContent = email;
+      document.getElementById('linkSite').href         = 'https://' + domain;
+      showAlert('alertDB','success','✅ ' + data.msg);
+      btn.innerHTML = '✅ Instalado!';
+      setTimeout(() => setStep(3), 1500);
     } else {
-      showAlert('alert-3', 'error', data.msg);
+      showAlert('alertDB','error','❌ ' + data.msg);
+      btn.disabled = false;
+      btn.innerHTML = '🚀 Instalar Banco';
     }
-  } catch (e) {
-    showAlert('alert-3', 'error', 'Erro de comunicação: ' + e.message);
-  } finally {
-    setLoading(btn, false);
+  } catch(e) {
+    showAlert('alertDB','error','❌ Erro de rede: ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '🚀 Instalar Banco';
   }
 }
 </script>
