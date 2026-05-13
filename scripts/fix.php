@@ -21,47 +21,78 @@ if ($action !== 'view') header('Content-Type: text/html; charset=utf-8');
 if ($action === 'install_files') {
     header('Content-Type: application/json');
 
+    // Não encoda a / da branch — GitHub aceita o slash literal no path
     $branch  = 'claude/analyze-system-improvements-8RLOE';
-    $zipUrl  = 'https://github.com/mauriliobetonico-sys/bemind/archive/refs/heads/' . rawurlencode($branch) . '.zip';
+    $zipUrl  = 'https://github.com/mauriliobetonico-sys/bemind/archive/refs/heads/' . $branch . '.zip';
     $tmpZip  = sys_get_temp_dir() . '/visaoos_deploy_' . time() . '.zip';
     $tmpDir  = sys_get_temp_dir() . '/visaoos_extract_' . time();
     $webRoot = __DIR__;
 
-    // Baixa o ZIP
-    $ctx = stream_context_create(['http' => ['timeout' => 60, 'follow_location' => true,
-        'header' => "User-Agent: VisaOOS-Installer/1.0\r\n"]]);
-    $data = @file_get_contents($zipUrl, false, $ctx);
+    // Baixa via cURL (mais confiável que file_get_contents em hospedagens)
+    $data = false;
+    $dlError = '';
+    if (extension_loaded('curl')) {
+        $ch = curl_init($zipUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 5,
+            CURLOPT_TIMEOUT        => 120,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_USERAGENT      => 'VisaoOS-Installer/1.0',
+        ]);
+        $data = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if (!$data || $httpCode !== 200) {
+            $dlError = "cURL HTTP $httpCode: " . curl_error($ch);
+            $data = false;
+        }
+        curl_close($ch);
+    }
+    // Fallback: file_get_contents
     if (!$data) {
-        echo json_encode(['ok' => false, 'msg' => 'Falha ao baixar ZIP do GitHub. Verifique conexão do servidor.']);
+        $ctx = stream_context_create(['http' => [
+            'timeout'         => 60,
+            'follow_location' => true,
+            'header'          => "User-Agent: VisaoOS-Installer/1.0\r\n",
+        ]]);
+        $data = @file_get_contents($zipUrl, false, $ctx);
+        if (!$data) $dlError .= ' | file_get_contents também falhou';
+    }
+
+    if (!$data) {
+        echo json_encode(['ok' => false, 'msg' => "Falha ao baixar ZIP do GitHub. $dlError"]);
         exit;
     }
     file_put_contents($tmpZip, $data);
 
     // Extrai
-    $zip = new ZipArchive();
-    if ($zip->open($tmpZip) !== true) {
-        echo json_encode(['ok' => false, 'msg' => 'Falha ao extrair ZIP.']);
+    if (!class_exists('ZipArchive')) {
+        echo json_encode(['ok' => false, 'msg' => 'Extensão ZipArchive não disponível no PHP.']);
         exit;
     }
+    $zip = new ZipArchive();
+    if ($zip->open($tmpZip) !== true) {
+        echo json_encode(['ok' => false, 'msg' => 'Falha ao extrair ZIP (arquivo corrompido?).']);
+        exit;
+    }
+    mkdir($tmpDir, 0755, true);
     $zip->extractTo($tmpDir);
     $zip->close();
     unlink($tmpZip);
 
-    // Encontra a pasta extraída (bemind-<branch-slug>/)
-    $dirs = glob($tmpDir . '/bemind-*', GLOB_ONLYDIR);
+    // Encontra a pasta extraída — GitHub gera nome como bemind-<branch-slug>/
+    $dirs = glob($tmpDir . '/*', GLOB_ONLYDIR);
     if (empty($dirs)) {
-        // tenta outro padrão
-        $dirs = glob($tmpDir . '/*', GLOB_ONLYDIR);
-    }
-    if (empty($dirs)) {
-        echo json_encode(['ok' => false, 'msg' => 'Estrutura do ZIP inesperada.']);
+        echo json_encode(['ok' => false, 'msg' => 'ZIP vazio ou estrutura inesperada em: ' . $tmpDir]);
         exit;
     }
     $repoDir = $dirs[0];
     $srcDir  = $repoDir . '/visaoos';
 
     if (!is_dir($srcDir)) {
-        echo json_encode(['ok' => false, 'msg' => "Pasta visaoos/ não encontrada em: $repoDir"]);
+        $found = implode(', ', glob($repoDir . '/*', GLOB_ONLYDIR) ?: []);
+        echo json_encode(['ok' => false, 'msg' => "Pasta visaoos/ não encontrada. Subpastas: $found"]);
         exit;
     }
 
