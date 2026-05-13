@@ -3,6 +3,15 @@
 // VISÃOOS API — Roteador Principal v2.0
 // ══════════════════════════════════════════════════════════════════════════
 
+// Se chamado diretamente na raiz (sem rota de API), serve o frontend
+$rawUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$isApiCall = preg_match('#^(/api/|/rastreio/)#', $rawUri)
+          || (isset($_GET['resource']) && $_GET['resource'] !== '');
+if (!$isApiCall && preg_match('#^/?$#', ltrim($rawUri, '/'))) {
+    $html = __DIR__ . '/index.html';
+    if (file_exists($html)) { readfile($html); exit; }
+}
+
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/config/notifications.php';
