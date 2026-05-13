@@ -1,6 +1,9 @@
 Options -Indexes
 Options -MultiViews
 
+# Prioriza index.html sobre index.php para o frontend SPA
+DirectoryIndex index.html index.php
+
 # Segurança — bloqueia arquivos sensíveis
 <FilesMatch "\.(env|sql|log|sh|md|json)$">
     Order Allow,Deny
