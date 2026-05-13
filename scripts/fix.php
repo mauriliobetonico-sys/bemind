@@ -17,121 +17,81 @@ if (!isset($_GET['key']) || $_GET['key'] !== 'bemind2025') {
 $action = $_GET['action'] ?? 'view';
 if ($action !== 'view') header('Content-Type: text/html; charset=utf-8');
 
-// ── Ação: baixa e instala arquivos do GitHub ──────────────────────────────
+// ── Ação: baixa e instala arquivos do GitHub (um por um, via raw content) ──
 if ($action === 'install_files') {
     header('Content-Type: application/json');
+    set_time_limit(120);
 
-    // Não encoda a / da branch — GitHub aceita o slash literal no path
-    $branch  = 'claude/analyze-system-improvements-8RLOE';
-    $zipUrl  = 'https://github.com/mauriliobetonico-sys/bemind/archive/refs/heads/' . $branch . '.zip';
-    $tmpZip  = sys_get_temp_dir() . '/visaoos_deploy_' . time() . '.zip';
-    $tmpDir  = sys_get_temp_dir() . '/visaoos_extract_' . time();
     $webRoot = __DIR__;
+    $base    = 'https://raw.githubusercontent.com/mauriliobetonico-sys/bemind/claude/analyze-system-improvements-8RLOE/visaoos/';
 
-    // Baixa via cURL (mais confiável que file_get_contents em hospedagens)
-    $data = false;
-    $dlError = '';
-    if (extension_loaded('curl')) {
-        $ch = curl_init($zipUrl);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS      => 5,
-            CURLOPT_TIMEOUT        => 120,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_USERAGENT      => 'VisaoOS-Installer/1.0',
-        ]);
-        $data = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        if (!$data || $httpCode !== 200) {
-            $dlError = "cURL HTTP $httpCode: " . curl_error($ch);
-            $data = false;
+    $files = [
+        'index.php',
+        '.htaccess',
+        'config/database.php',
+        'config/auth.php',
+        'config/notifications.php',
+        'config/storage.php',
+        'routes/auth.php',
+        'routes/os.php',
+        'routes/clients.php',
+        'routes/materials.php',
+        'routes/services.php',
+        'routes/quotes.php',
+        'routes/finance.php',
+        'routes/users.php',
+        'routes/tracking.php',
+        'routes/webhook.php',
+    ];
+
+    function dlFile(string $url): string|false {
+        if (extension_loaded('curl')) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_USERAGENT      => 'VisaoOS-Installer/1.0',
+            ]);
+            $data = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($data !== false && $code === 200) return $data;
         }
-        curl_close($ch);
-    }
-    // Fallback: file_get_contents
-    if (!$data) {
-        $ctx = stream_context_create(['http' => [
-            'timeout'         => 60,
-            'follow_location' => true,
-            'header'          => "User-Agent: VisaoOS-Installer/1.0\r\n",
-        ]]);
-        $data = @file_get_contents($zipUrl, false, $ctx);
-        if (!$data) $dlError .= ' | file_get_contents também falhou';
+        $ctx = stream_context_create(['http' => ['timeout' => 15,
+            'header' => "User-Agent: VisaoOS-Installer/1.0\r\n"]]);
+        return @file_get_contents($url, false, $ctx);
     }
 
-    if (!$data) {
-        echo json_encode(['ok' => false, 'msg' => "Falha ao baixar ZIP do GitHub. $dlError"]);
-        exit;
-    }
-    file_put_contents($tmpZip, $data);
+    $ok = []; $fail = [];
+    foreach ($files as $f) {
+        $dir = $webRoot . '/' . dirname($f);
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
 
-    // Extrai
-    if (!class_exists('ZipArchive')) {
-        echo json_encode(['ok' => false, 'msg' => 'Extensão ZipArchive não disponível no PHP.']);
-        exit;
-    }
-    $zip = new ZipArchive();
-    if ($zip->open($tmpZip) !== true) {
-        echo json_encode(['ok' => false, 'msg' => 'Falha ao extrair ZIP (arquivo corrompido?).']);
-        exit;
-    }
-    mkdir($tmpDir, 0755, true);
-    $zip->extractTo($tmpDir);
-    $zip->close();
-    unlink($tmpZip);
-
-    // Encontra a pasta extraída — GitHub gera nome como bemind-<branch-slug>/
-    $dirs = glob($tmpDir . '/*', GLOB_ONLYDIR);
-    if (empty($dirs)) {
-        echo json_encode(['ok' => false, 'msg' => 'ZIP vazio ou estrutura inesperada em: ' . $tmpDir]);
-        exit;
-    }
-    $repoDir = $dirs[0];
-    $srcDir  = $repoDir . '/visaoos';
-
-    if (!is_dir($srcDir)) {
-        $found = implode(', ', glob($repoDir . '/*', GLOB_ONLYDIR) ?: []);
-        echo json_encode(['ok' => false, 'msg' => "Pasta visaoos/ não encontrada. Subpastas: $found"]);
-        exit;
-    }
-
-    // Copia recursivamente
-    function rcopy(string $src, string $dst): void {
-        if (!is_dir($dst)) mkdir($dst, 0755, true);
-        foreach (new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($src, FilesystemIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST
-        ) as $item) {
-            $target = $dst . '/' . substr($item->getPathname(), strlen($src) + 1);
-            if ($item->isDir()) {
-                if (!is_dir($target)) mkdir($target, 0755, true);
-            } else {
-                copy($item->getPathname(), $target);
-            }
+        $data = dlFile($base . $f);
+        if ($data !== false && strlen($data) > 0) {
+            file_put_contents($webRoot . '/' . $f, $data);
+            $ok[] = $f;
+        } else {
+            $fail[] = $f;
         }
     }
 
-    rcopy($srcDir, $webRoot);
-
-    // Cria pastas necessárias
     foreach (['uploads', 'logs'] as $d) {
         $p = $webRoot . '/' . $d;
         if (!is_dir($p)) mkdir($p, 0775, true);
     }
 
-    // Limpa temp
-    rcopy('/dev/null', '/dev/null'); // dummy — limpeza manual abaixo
-    $it = new RecursiveDirectoryIterator($tmpDir, FilesystemIterator::SKIP_DOTS);
-    $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
-    foreach ($files as $file) {
-        $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname());
-    }
-    rmdir($tmpDir);
-
-    $copied = file_exists($webRoot . '/config/database.php');
-    echo json_encode(['ok' => $copied,
-        'msg' => $copied ? 'Arquivos instalados com sucesso!' : 'Cópia falhou — verifique permissões.']);
+    $success = file_exists($webRoot . '/config/database.php');
+    echo json_encode([
+        'ok'   => $success,
+        'msg'  => $success
+            ? 'Arquivos instalados! OK: ' . count($ok) . ', falha: ' . count($fail)
+            : 'Falha ao instalar. Erros: ' . implode(', ', $fail),
+        'ok_files'   => $ok,
+        'fail_files' => $fail,
+    ]);
     exit;
 }
 
