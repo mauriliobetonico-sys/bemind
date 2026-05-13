@@ -3,15 +3,24 @@
 // VISÃOOS — Configuração do Banco de Dados e Constantes
 // ══════════════════════════════════════════════════════════════════════════
 
-// Carrega .env se existir (para desenvolvimento local)
-$_envFile = __DIR__ . '/../../.env';
-if (file_exists($_envFile)) {
-    foreach (file($_envFile) as $line) {
-        $line = trim($line);
-        if ($line && !str_starts_with($line, '#') && str_contains($line, '=')) {
-            [$k, $v] = explode('=', $line, 2);
-            $_ENV[trim($k)] = trim($v);
+// Carrega .env — procura na raiz do site e nos diretórios pai
+foreach ([
+    __DIR__ . '/../.env',   // web root (config/../.env)
+    __DIR__ . '/../../.env', // um nível acima do web root
+    dirname($_SERVER['DOCUMENT_ROOT'] ?? '') . '/.env',
+] as $_envFile) {
+    if (file_exists($_envFile)) {
+        foreach (file($_envFile) as $line) {
+            $line = trim($line);
+            if ($line && !str_starts_with($line, '#') && str_contains($line, '=')) {
+                [$k, $v] = explode('=', $line, 2);
+                if (!array_key_exists(trim($k), $_ENV)) {
+                    $_ENV[trim($k)] = trim($v);
+                    putenv(trim($k) . '=' . trim($v));
+                }
+            }
         }
+        break;
     }
 }
 
@@ -315,8 +324,9 @@ function installDB(): void {
     $count = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
     if ($count == 0) {
         $hash = password_hash('admin123', PASSWORD_BCRYPT, ['cost'=>12]);
+        $adminEmail = getenv('ADMIN_EMAIL') ?: 'admin@bemindmarketing.com.br';
         $db->prepare("INSERT INTO users (name,email,password_hash,role) VALUES (?,?,?,?)")
-           ->execute(['Administrador','admin@visaoos.com.br',$hash,'admin']);
+           ->execute(['Administrador', $adminEmail, $hash, 'admin']);
 
         $mats = [
             ['Lona Frontlit 440g',       'm²', 35.00, 22.00],
