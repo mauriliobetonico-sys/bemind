@@ -15,6 +15,96 @@ if (!isset($_GET['key']) || $_GET['key'] !== 'bemind2025') {
 }
 
 $action = $_GET['action'] ?? 'view';
+if ($action !== 'view') header('Content-Type: text/html; charset=utf-8');
+
+// ── Ação: baixa e instala arquivos do GitHub ──────────────────────────────
+if ($action === 'install_files') {
+    header('Content-Type: application/json');
+
+    $branch  = 'claude/analyze-system-improvements-8RLOE';
+    $zipUrl  = 'https://github.com/mauriliobetonico-sys/bemind/archive/refs/heads/' . rawurlencode($branch) . '.zip';
+    $tmpZip  = sys_get_temp_dir() . '/visaoos_deploy_' . time() . '.zip';
+    $tmpDir  = sys_get_temp_dir() . '/visaoos_extract_' . time();
+    $webRoot = __DIR__;
+
+    // Baixa o ZIP
+    $ctx = stream_context_create(['http' => ['timeout' => 60, 'follow_location' => true,
+        'header' => "User-Agent: VisaOOS-Installer/1.0\r\n"]]);
+    $data = @file_get_contents($zipUrl, false, $ctx);
+    if (!$data) {
+        echo json_encode(['ok' => false, 'msg' => 'Falha ao baixar ZIP do GitHub. Verifique conexão do servidor.']);
+        exit;
+    }
+    file_put_contents($tmpZip, $data);
+
+    // Extrai
+    $zip = new ZipArchive();
+    if ($zip->open($tmpZip) !== true) {
+        echo json_encode(['ok' => false, 'msg' => 'Falha ao extrair ZIP.']);
+        exit;
+    }
+    $zip->extractTo($tmpDir);
+    $zip->close();
+    unlink($tmpZip);
+
+    // Encontra a pasta extraída (bemind-<branch-slug>/)
+    $dirs = glob($tmpDir . '/bemind-*', GLOB_ONLYDIR);
+    if (empty($dirs)) {
+        // tenta outro padrão
+        $dirs = glob($tmpDir . '/*', GLOB_ONLYDIR);
+    }
+    if (empty($dirs)) {
+        echo json_encode(['ok' => false, 'msg' => 'Estrutura do ZIP inesperada.']);
+        exit;
+    }
+    $repoDir = $dirs[0];
+    $srcDir  = $repoDir . '/visaoos';
+
+    if (!is_dir($srcDir)) {
+        echo json_encode(['ok' => false, 'msg' => "Pasta visaoos/ não encontrada em: $repoDir"]);
+        exit;
+    }
+
+    // Copia recursivamente
+    function rcopy(string $src, string $dst): void {
+        if (!is_dir($dst)) mkdir($dst, 0755, true);
+        foreach (new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($src, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        ) as $item) {
+            $target = $dst . '/' . substr($item->getPathname(), strlen($src) + 1);
+            if ($item->isDir()) {
+                if (!is_dir($target)) mkdir($target, 0755, true);
+            } else {
+                copy($item->getPathname(), $target);
+            }
+        }
+    }
+
+    rcopy($srcDir, $webRoot);
+
+    // Cria pastas necessárias
+    foreach (['uploads', 'logs'] as $d) {
+        $p = $webRoot . '/' . $d;
+        if (!is_dir($p)) mkdir($p, 0775, true);
+    }
+
+    // Limpa temp
+    rcopy('/dev/null', '/dev/null'); // dummy — limpeza manual abaixo
+    $it = new RecursiveDirectoryIterator($tmpDir, FilesystemIterator::SKIP_DOTS);
+    $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
+    foreach ($files as $file) {
+        $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname());
+    }
+    rmdir($tmpDir);
+
+    $copied = file_exists($webRoot . '/config/database.php');
+    echo json_encode(['ok' => $copied,
+        'msg' => $copied ? 'Arquivos instalados com sucesso!' : 'Cópia falhou — verifique permissões.']);
+    exit;
+}
+
+$action = $_GET['action'] ?? 'view';
 header('Content-Type: text/html; charset=utf-8');
 
 // ── Ação: escreve .env ────────────────────────────────────────────────────
@@ -228,6 +318,13 @@ pre{background:#f8f9fa;border-radius:8px;padding:12px;font-size:12px;overflow-x:
 </div>
 
 <div class="card">
+  <h2>0. Instalar Arquivos do Sistema</h2>
+  <p style="font-size:13px;color:#555">Baixa os arquivos PHP do VisãoOS direto do GitHub e instala na raiz do site. Necessário quando <code>has_config: false</code>.</p>
+  <button class="warn" onclick="installFiles()">⬇ Baixar e Instalar Arquivos do GitHub</button>
+  <div id="files-msg"></div>
+</div>
+
+<div class="card">
   <h2>1. Configurar Banco de Dados</h2>
   <label>Host MySQL</label>
   <input id="db_host" value="localhost">
@@ -306,6 +403,19 @@ async function installDb() {
     const d = await r.json();
     box.innerHTML = `<div class="msg ${d.ok?'ok':'err'}">${d.ok?'✅ '+d.msg:'❌ '+d.msg}</div>`;
     if (d.ok) diag();
+  } catch(e) {
+    box.innerHTML = `<div class="msg err">❌ ${e.message}</div>`;
+  }
+}
+
+async function installFiles() {
+  const box = document.getElementById('files-msg');
+  box.innerHTML = '<div class="msg info">Baixando arquivos do GitHub (pode levar 30-60 segundos)...</div>';
+  try {
+    const r = await fetch(`${base}fix.php?key=${key}&action=install_files`, {signal: AbortSignal.timeout(120000)});
+    const d = await r.json();
+    box.innerHTML = `<div class="msg ${d.ok?'ok':'err'}">${d.ok?'✅ '+d.msg:'❌ '+d.msg}</div>`;
+    if (d.ok) setTimeout(diag, 1000);
   } catch(e) {
     box.innerHTML = `<div class="msg err">❌ ${e.message}</div>`;
   }
