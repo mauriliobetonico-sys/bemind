@@ -25,19 +25,35 @@ error_reporting(E_ALL);
 function rnd(int $b = 16): string { return bin2hex(random_bytes($b)); }
 
 function tryMysql(string $host, string $user, string $pass, string $db): array {
-    try {
-        $pdo = new PDO(
-            "mysql:host=$host;charset=utf8mb4",
-            $user, $pass,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 5]
-        );
-        $pdo->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-        // testa se consegue usar o banco
-        $pdo->exec("USE `$db`");
-        return ['ok' => true, 'pdo' => $pdo];
-    } catch (PDOException $e) {
-        return ['ok' => false, 'msg' => $e->getMessage()];
+    // Tenta múltiplas formas de conexão para compatibilidade com Cloudez/Nginx
+    $attempts = [];
+    if ($host === 'localhost') {
+        $attempts = [
+            "mysql:host=localhost;dbname=$db;charset=utf8mb4",
+            "mysql:host=127.0.0.1;port=3306;dbname=$db;charset=utf8mb4",
+            "mysql:unix_socket=/var/run/mysqld/mysqld.sock;dbname=$db;charset=utf8mb4",
+            "mysql:unix_socket=/tmp/mysql.sock;dbname=$db;charset=utf8mb4",
+        ];
+    } else {
+        $attempts = ["mysql:host=$host;dbname=$db;charset=utf8mb4"];
     }
+
+    $lastErr = '';
+    foreach ($attempts as $dsn) {
+        try {
+            $pdo = new PDO($dsn, $user, $pass, [
+                PDO::ATTR_ERRMODE   => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_TIMEOUT   => 5,
+            ]);
+            // Tenta criar o banco se não existir (pode falhar sem permissão — tudo bem)
+            try { $pdo->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"); } catch (Exception $e) {}
+            $pdo->exec("USE `$db`");
+            return ['ok' => true, 'pdo' => $pdo, 'dsn' => $dsn];
+        } catch (PDOException $e) {
+            $lastErr = $e->getMessage();
+        }
+    }
+    return ['ok' => false, 'msg' => $lastErr];
 }
 
 function downloadRepo(string $tmpDir): array {
@@ -135,10 +151,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $action = $_POST['action'] ?? '';
 
+    // Diagnóstico do ambiente
+    if ($action === 'diag') {
+        $sockets = [];
+        foreach (['/var/run/mysqld/mysqld.sock','/tmp/mysql.sock','/run/mysqld/mysqld.sock'] as $s) {
+            if (file_exists($s)) $sockets[] = $s;
+        }
+        echo json_encode([
+            'php'        => PHP_VERSION,
+            'dir'        => __DIR__,
+            'pdo_mysql'  => extension_loaded('pdo_mysql'),
+            'curl'       => function_exists('curl_init'),
+            'zip'        => class_exists('ZipArchive'),
+            'tmp'        => sys_get_temp_dir(),
+            'tmp_write'  => is_writable(sys_get_temp_dir()),
+            'sockets'    => $sockets,
+            'server_ip'  => gethostbyname(gethostname()),
+        ]);
+        exit;
+    }
+
     // Testa conexão MySQL
     if ($action === 'test_mysql') {
         $r = tryMysql($_POST['db_host'] ?? '', $_POST['db_user'] ?? '', $_POST['db_pass'] ?? '', $_POST['db_name'] ?? 'visaoos');
-        echo json_encode(['ok' => $r['ok'], 'msg' => $r['msg'] ?? 'Conectado com sucesso!']);
+        echo json_encode(['ok' => $r['ok'], 'msg' => $r['msg'] ?? 'Conectado!', 'dsn' => $r['dsn'] ?? '']);
         exit;
     }
 
