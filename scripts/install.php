@@ -129,6 +129,100 @@ if ($action === 'install') {
     }
     exit;
 }
+
+// ── Lista usuários / diagnóstico de login ────────────────────────────────
+if ($action === 'check_users') {
+    header('Content-Type: application/json');
+    $webRoot = __DIR__;
+    if (!file_exists($webRoot . '/config/database.php')) {
+        echo json_encode(['ok' => false, 'msg' => 'config/database.php não encontrado.']);
+        exit;
+    }
+    $env = $webRoot . '/.env';
+    if (file_exists($env)) {
+        foreach (file($env) as $line) {
+            $line = trim($line);
+            if ($line && str_contains($line, '=') && !str_starts_with($line, '#')) {
+                [$k,$v] = explode('=', $line, 2);
+                putenv(trim($k).'='.trim($v));
+            }
+        }
+    }
+    try {
+        require_once $webRoot . '/config/database.php';
+        $users = getDB()->query("SELECT id,name,email,role,active FROM users ORDER BY id")->fetchAll();
+        echo json_encode(['ok' => true, 'users' => $users]);
+    } catch (Throwable $e) {
+        echo json_encode(['ok' => false, 'msg' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// ── Redefine admin (força email + senha) ─────────────────────────────────
+if ($action === 'reset_admin') {
+    header('Content-Type: application/json');
+    $webRoot = __DIR__;
+    $newEmail = trim($_POST['email'] ?? 'admin@bemindmarketing.com.br');
+    $newPass  = trim($_POST['password'] ?? 'admin123');
+
+    if (!file_exists($webRoot . '/config/database.php')) {
+        echo json_encode(['ok' => false, 'msg' => 'config/database.php não encontrado. Execute o Passo 1.']);
+        exit;
+    }
+
+    // Carrega .env
+    $env = $webRoot . '/.env';
+    if (file_exists($env)) {
+        foreach (file($env) as $line) {
+            $line = trim($line);
+            if ($line && str_contains($line, '=') && !str_starts_with($line, '#')) {
+                [$k,$v] = explode('=', $line, 2);
+                putenv(trim($k).'='.trim($v));
+            }
+        }
+    } else {
+        // Usa credenciais do POST se não houver .env
+        $host = trim($_POST['db_host'] ?? 'localhost');
+        $name = trim($_POST['db_name'] ?? 'visaoos');
+        $user = trim($_POST['db_user'] ?? '');
+        $pass = trim($_POST['db_pass'] ?? '');
+        putenv("DB_HOST=$host"); putenv("DB_NAME=$name");
+        putenv("DB_USER=$user"); putenv("DB_PASS=$pass");
+    }
+
+    try {
+        require_once $webRoot . '/config/database.php';
+        $db   = getDB();
+        $hash = password_hash($newPass, PASSWORD_BCRYPT, ['cost' => 12]);
+
+        // Verifica se email já existe
+        $existing = $db->prepare("SELECT id FROM users WHERE email=?");
+        $existing->execute([$newEmail]);
+        if ($existing->fetch()) {
+            // Atualiza senha e garante que está ativo
+            $db->prepare("UPDATE users SET password_hash=?,active=1,login_attempts=0,locked_until=NULL WHERE email=?")
+               ->execute([$hash, $newEmail]);
+            echo json_encode(['ok' => true, 'msg' => "Senha do $newEmail redefinida para: $newPass"]);
+        } else {
+            // Pega o primeiro admin e atualiza email + senha
+            $first = $db->query("SELECT id FROM users WHERE role='admin' LIMIT 1")->fetch();
+            if ($first) {
+                $db->prepare("UPDATE users SET email=?,password_hash=?,active=1,login_attempts=0,locked_until=NULL WHERE id=?")
+                   ->execute([$newEmail, $hash, $first['id']]);
+                echo json_encode(['ok' => true, 'msg' => "Admin atualizado: $newEmail / $newPass"]);
+            } else {
+                // Cria do zero
+                $db->prepare("INSERT INTO users (name,email,password_hash,role,active) VALUES (?,?,?,'admin',1)")
+                   ->execute(['Administrador', $newEmail, $hash]);
+                echo json_encode(['ok' => true, 'msg' => "Admin criado: $newEmail / $newPass"]);
+            }
+        }
+    } catch (Throwable $e) {
+        echo json_encode(['ok' => false, 'msg' => $e->getMessage()]);
+    }
+    exit;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -224,6 +318,25 @@ a.site-btn{display:block;text-align:center;background:#2f9e44;color:#fff;padding
       </div>
     </div>
   </div>
+
+  <!-- Reset admin card -->
+  <div class="card" style="border:1.5px solid #ffd43b;background:#fffdf0;margin-top:0">
+    <h2 style="color:#6b4c00;font-size:14px;margin-bottom:10px">&#9888;&#65039; Problema no login? Redefina o admin</h2>
+    <label style="font-size:12px;font-weight:600;color:#555">E-mail admin</label>
+    <input id="reset-email" value="admin@bemindmarketing.com.br">
+    <label style="font-size:12px;font-weight:600;color:#555;margin-top:8px">Nova senha</label>
+    <input id="reset-pass" value="admin123">
+    <label style="font-size:12px;font-weight:600;color:#555;margin-top:8px">Host MySQL</label>
+    <input id="r-host" value="localhost">
+    <label style="font-size:12px;font-weight:600;color:#555;margin-top:8px">Banco</label>
+    <input id="r-name" value="visaoos">
+    <label style="font-size:12px;font-weight:600;color:#555;margin-top:8px">Usuario MySQL</label>
+    <input id="r-user" value="visaoos26">
+    <label style="font-size:12px;font-weight:600;color:#555;margin-top:8px">Senha MySQL</label>
+    <input id="r-pass" type="password" value="Visaoos2025">
+    <button class="btn btn-green" onclick="resetAdmin()" style="margin-top:12px">Redefinir Admin</button>
+    <div class="msg" id="msg-reset"></div>
+  </div>
 </div>
 <script>
 const key = '<?= htmlspecialchars($_GET['key']) ?>';
@@ -306,6 +419,29 @@ async function installDb() {
     showMsg('msg2','err','❌ ' + e.message);
     btn.disabled=false; btn.textContent='Instalar Banco';
   }
+}
+
+async function resetAdmin() {
+  const btn = event.target;
+  btn.disabled=true; btn.textContent='Redefinindo...';
+  const fd = new FormData();
+  fd.append('email',    document.getElementById('reset-email').value);
+  fd.append('password', document.getElementById('reset-pass').value);
+  fd.append('db_host',  document.getElementById('r-host').value);
+  fd.append('db_name',  document.getElementById('r-name').value);
+  fd.append('db_user',  document.getElementById('r-user').value);
+  fd.append('db_pass',  document.getElementById('r-pass').value);
+  try {
+    const r = await fetch(`${base}install.php?key=${key}&action=reset_admin`,{method:'POST',body:fd});
+    const d = await r.json();
+    const el = document.getElementById('msg-reset');
+    el.className='msg show '+(d.ok?'ok':'err');
+    el.textContent=(d.ok?'✅ ':'❌ ')+d.msg;
+  } catch(e) {
+    const el = document.getElementById('msg-reset');
+    el.className='msg show err'; el.textContent='❌ '+e.message;
+  }
+  btn.disabled=false; btn.textContent='Redefinir Admin';
 }
 </script>
 </body>
