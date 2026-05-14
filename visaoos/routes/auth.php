@@ -25,7 +25,7 @@ if ($method === 'POST' && $id === 'login') {
             $db->prepare('UPDATE users SET login_attempts=?, locked_until=? WHERE id=?')
                ->execute([$attempts, $lock, $user['id']]);
         }
-        json_out(['error' => 'E-mail ou senha incorretos.'], 401);
+        json_out(['error' => 'E-mail ou senha incorretos.'], 400);
     }
 
     $db->prepare('UPDATE users SET login_attempts=0, locked_until=NULL, last_login=NOW() WHERE id=?')

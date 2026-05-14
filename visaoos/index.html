@@ -1155,7 +1155,7 @@ async function api(method, path, body = null) {
     throw new Error('Erro de conexão com o servidor.');
   }
 
-  if (res.status === 401) {
+  if (res.status === 401 && state.token) {
     logout();
     throw new Error('Sessão expirada. Faça login novamente.');
   }
