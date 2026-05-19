@@ -301,6 +301,41 @@ function installDB(): void {
         FOREIGN KEY (attendant_id)  REFERENCES users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+    CREATE TABLE IF NOT EXISTS suppliers (
+        id              INT AUTO_INCREMENT PRIMARY KEY,
+        name            VARCHAR(150) NOT NULL,
+        contact_name    VARCHAR(120),
+        cnpj            VARCHAR(20),
+        email           VARCHAR(120),
+        phone           VARCHAR(20),
+        whatsapp        VARCHAR(20),
+        address_street  VARCHAR(200),
+        address_city    VARCHAR(80),
+        address_state   VARCHAR(2),
+        material_types  TEXT,
+        notes           TEXT,
+        active          TINYINT(1) NOT NULL DEFAULT 1,
+        created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS receipts (
+        id              INT AUTO_INCREMENT PRIMARY KEY,
+        receipt_number  VARCHAR(20) NOT NULL UNIQUE,
+        os_id           INT,
+        client_id       INT NOT NULL,
+        amount          DECIMAL(10,2) NOT NULL,
+        description     TEXT NOT NULL,
+        payment_method  VARCHAR(40),
+        notes           TEXT,
+        issued_by       INT,
+        issued_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (os_id)       REFERENCES service_orders(id) ON DELETE SET NULL,
+        FOREIGN KEY (client_id)   REFERENCES clients(id),
+        FOREIGN KEY (issued_by)   REFERENCES users(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
     CREATE TABLE IF NOT EXISTS activity_logs (
         id          INT AUTO_INCREMENT PRIMARY KEY,
         user_id     INT,
@@ -319,6 +354,11 @@ function installDB(): void {
         INDEX idx_window (window_start)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
+
+    // Add commission_pct to clients if not exists
+    try {
+        $db->exec("ALTER TABLE clients ADD COLUMN IF NOT EXISTS commission_pct DECIMAL(5,2) NOT NULL DEFAULT 0");
+    } catch(Throwable $e) { /* column already exists */ }
 
     // Cria admin padrão se não existir
     $count = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
