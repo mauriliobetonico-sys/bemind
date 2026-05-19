@@ -142,10 +142,59 @@ input:focus,select:focus,textarea:focus{border-color:#3b5bdb!important;box-shado
 // ═══════════════════════════════════════════════════
 // CORE — State, API, Auth, Router
 // ═══════════════════════════════════════════════════
+
+// FIX P1+P2: Token tem única fonte de verdade em Auth.
+// App não mistura mais autenticação, charts e debounce no mesmo bag.
+const Auth = {
+  user: null,
+  getToken() { return this._token || localStorage.getItem('visaoos_token'); },
+  setToken(t) { this._token = t; localStorage.setItem('visaoos_token', t); },
+  clearToken() { this._token = null; localStorage.removeItem('visaoos_token'); localStorage.removeItem('visaoos_refresh'); },
+  _token: null
+};
+
+// FIX P2: Charts e debounce separados do estado de autenticação.
+const UI = { charts: {}, debounceTimers: {} };
+
+// FIX P8: Paginação e filtros de OS agrupados em namespace próprio.
+// FIX P4: Estado de filtros vive em JS — o DOM só exibe/captura input,
+//         não é mais o repositório primário.
+const Filters = {
+  os:   { search: '', status: '', payment: '', page: 1 },
+  quotes:   { search: '', status: '' },
+  receipts: { search: '' },
+  clients:  { search: '' },
+  suppliers:{ search: '' },
+  resellers:{ search: '' },
+  materials:{ search: '' },
+  services: { search: '' },
+};
+
+// FIX P5: Cache de dados de referência com TTL de 5 minutos.
+// Clientes, usuários, materiais e serviços raramente mudam — não
+// precisam ser buscados a cada abertura de modal.
+const Cache = {
+  _store: {},
+  TTL: 5 * 60 * 1000,
+  async get(key, fetcher) {
+    const entry = this._store[key];
+    if (entry && (Date.now() - entry.ts) < this.TTL) return entry.data;
+    const data = await fetcher();
+    if (data && !data.error) this._store[key] = { data, ts: Date.now() };
+    return data || [];
+  },
+  // Chamado após criar/editar registros para forçar re-fetch na próxima vez.
+  invalidate(...keys) { keys.forEach(k => delete this._store[k]); }
+};
+
+// Retrocompat: módulos legados que ainda referenciam App.user / App.token
 const App = {
-  user: null, token: null,
-  charts: {},
-  debounceTimers: {}
+  get user() { return Auth.user; },
+  set user(v) { Auth.user = v; },
+  get token() { return Auth.getToken(); },
+  set token(v) { Auth.setToken(v); },
+  get charts() { return UI.charts; },
+  get debounceTimers() { return UI.debounceTimers; },
 };
 
 const NAV_ITEMS = [
@@ -163,7 +212,8 @@ const NAV_ITEMS = [
 ];
 
 async function api(method, path, data=null) {
-  const tok = App.token || localStorage.getItem('visaoos_token');
+  // FIX P1: Token sempre lido de Auth (fonte única), nunca diretamente do localStorage.
+  const tok = Auth.getToken();
   const opts = { method, headers:{ 'Authorization':`Bearer ${tok}` } };
   if (data) { opts.headers['Content-Type']='application/json'; opts.body=JSON.stringify(data); }
   try {
@@ -184,9 +234,9 @@ async function login(email, pass) {
 }
 
 function handleLogout() {
-  localStorage.removeItem('visaoos_token');
-  localStorage.removeItem('visaoos_refresh');
-  App.token = null; App.user = null;
+  Auth.clearToken(); // FIX P1: uma única chamada limpa ambos os lugares.
+  Auth.user = null;
+  Cache.invalidate('clients','users','materials','services'); // limpa cache ao sair
   document.getElementById('app-screen').classList.add('hidden');
   document.getElementById('auth-screen').classList.remove('hidden');
 }
@@ -281,8 +331,8 @@ function quoteBadge(s) {
 }
 
 function debounce(key, fn, ms=320) {
-  clearTimeout(App.debounceTimers[key]);
-  App.debounceTimers[key] = setTimeout(fn, ms);
+  clearTimeout(UI.debounceTimers[key]);
+  UI.debounceTimers[key] = setTimeout(fn, ms);
 }
 
 function tableWrap(id, cols, emptyMsg='Nenhum registro encontrado.') {
@@ -376,8 +426,8 @@ document.getElementById('login-form').addEventListener('submit', async e => {
   btn.textContent = 'Entrando...'; btn.disabled = true;
   const r = await login(document.getElementById('login-email').value, document.getElementById('login-password').value);
   if (r && r.token) {
-    App.token = r.token; App.user = r.user;
-    localStorage.setItem('visaoos_token', r.token);
+    Auth.setToken(r.token); // FIX P1: ponto único de escrita do token
+    Auth.user = r.user;
     if (r.refresh_token) localStorage.setItem('visaoos_refresh', r.refresh_token);
     startApp();
   } else {
@@ -409,7 +459,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const r = await fetch('/api/auth/me', { headers:{'Authorization':`Bearer ${tok}`} });
   if (r.ok) {
     const data = await r.json();
-    App.token = tok; App.user = data.user || data;
+    Auth.setToken(tok); Auth.user = data.user || data;
     startApp();
   }
 });
@@ -474,16 +524,12 @@ function loadDashboard() {
     api('GET','/os?limit=10')
   ]).then(([summary, monthly, osData]) => {
     if (summary && !summary.error) {
-      document.getElementById('m-revenue').textContent   = fmt.currency(summary.month_revenue);
-      document.getElementById('m-pending').textContent   = fmt.currency(summary.total_pending);
-      document.getElementById('m-overdue').textContent   = summary.overdue_count;
-
-      const active = api('GET','/os?status=aguardando&limit=1').then(d=>{
-        api('GET','/os?status=producao&limit=1').then(d2=>{
-          // count label only — use overdue_count for active estimate
-          document.getElementById('m-active').textContent = '—';
-        });
-      });
+      document.getElementById('m-revenue').textContent = fmt.currency(summary.month_revenue);
+      document.getElementById('m-pending').textContent = fmt.currency(summary.total_pending);
+      document.getElementById('m-overdue').textContent = summary.overdue_count;
+      // FIX P7: removidas 2 chamadas API aninhadas que terminavam escrevendo '—'.
+      // paid_count do summary já reflete OS concluídas; pending_count cobre as ativas.
+      document.getElementById('m-active').textContent  = summary.pending_count ?? '—';
 
       document.getElementById('dash-summary').innerHTML = `
         <div class="flex justify-between items-center py-2 border-b border-gray-50">
@@ -534,7 +580,14 @@ function loadDashboard() {
 // ═══════════════════════════════════════════════════
 // ORDENS DE SERVIÇO
 // ═══════════════════════════════════════════════════
-let osPage = 1, osTotal = 0;
+// FIX P8: osPage e osTotal eram globais soltos. osTotal nunca era lido
+// (calculado localmente em fetchOS). Agora o estado de paginação vive
+// em Filters.os, junto com os filtros que sempre mudavam juntos.
+// FIX P3: estado de formulário de OS isolado — nunca vai para o objeto global App.
+const OSForm = {
+  items: [],    // antes: OSForm.items (estado acidental no objeto global)
+  reset() { this.items = []; },
+};
 
 function loadOS() {
   const el = document.getElementById('page-os');
@@ -548,16 +601,16 @@ function loadOS() {
       </div>
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-4">
         <div class="flex flex-wrap items-center gap-3 p-4">
-          <input type="text" id="os-search" placeholder="🔍 Buscar OS, cliente..." oninput="debounce('os',()=>{osPage=1;fetchOS()},350)"
+          <input type="text" id="os-search" placeholder="🔍 Buscar OS, cliente..." oninput="debounce('os',()=>{Filters.os.page=1;fetchOS()},350)"
             class="flex-1 min-w-[180px] border border-gray-200 rounded-lg px-3.5 py-2 text-sm">
-          <select id="os-status-filter" onchange="osPage=1;fetchOS()" class="border border-gray-200 rounded-lg px-3.5 py-2 text-sm">
+          <select id="os-status-filter" onchange="Filters.os.page=1;fetchOS()" class="border border-gray-200 rounded-lg px-3.5 py-2 text-sm">
             <option value="">Todos os status</option>
             <option value="aguardando">Aguardando</option>
             <option value="producao">Em Produção</option>
             <option value="finalizado">Finalizado</option>
             <option value="entregue">Entregue</option>
           </select>
-          <select id="os-pay-filter" onchange="osPage=1;fetchOS()" class="border border-gray-200 rounded-lg px-3.5 py-2 text-sm">
+          <select id="os-pay-filter" onchange="Filters.os.page=1;fetchOS()" class="border border-gray-200 rounded-lg px-3.5 py-2 text-sm">
             <option value="">Pagamento</option>
             <option value="pendente">Pendente</option>
             <option value="parcial">Parcial</option>
@@ -573,13 +626,14 @@ function loadOS() {
 
 async function fetchOS() {
   document.getElementById('os-list').innerHTML = loadingRow(8);
-  const q = document.getElementById('os-search')?.value||'';
-  const s = document.getElementById('os-status-filter')?.value||'';
-  const p = document.getElementById('os-pay-filter')?.value||'';
-  let url = `/os?limit=20&page=${osPage}`;
-  if (q) url += `&search=${encodeURIComponent(q)}`;
-  if (s) url += `&status=${s}`;
-  if (p) url += `&payment_status=${p}`;
+  // FIX P4: sincronizar DOM → Filters antes de montar URL, evita divergência
+  Filters.os.search  = document.getElementById('os-search')?.value||'';
+  Filters.os.status  = document.getElementById('os-status-filter')?.value||'';
+  Filters.os.payment = document.getElementById('os-pay-filter')?.value||'';
+  let url = `/os?limit=20&page=${Filters.os.page}`;
+  if (Filters.os.search)  url += `&search=${encodeURIComponent(Filters.os.search)}`;
+  if (Filters.os.status)  url += `&status=${Filters.os.status}`;
+  if (Filters.os.payment) url += `&payment_status=${Filters.os.payment}`;
   const r = await api('GET', url);
   if (!r) return;
   const rows = r.data || r;
@@ -598,7 +652,7 @@ async function fetchOS() {
       <td class="px-4 py-3">
         <div class="flex items-center gap-1">
           <button onclick="viewOS(${o.id})" title="Ver" class="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-800">👁️</button>
-          <button onclick="window.open('/api/os/${o.id}/pdf?token=${App.token}','_blank')" title="PDF" class="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-800">🖨️</button>
+          <button onclick="window.open('/api/os/${o.id}/pdf?token='+Auth.getToken(),'_blank')" title="PDF" class="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-800">🖨️</button>
           <button onclick="openStatusModal(${o.id},'${o.status}')" title="Status" class="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-800">🔄</button>
         </div>
       </td>
@@ -606,16 +660,19 @@ async function fetchOS() {
   // pagination
   if (r.pages > 1) {
     let pg = '';
-    for (let i=1;i<=r.pages;i++) pg += `<button onclick="osPage=${i};fetchOS()" class="px-3 py-1 rounded text-sm font-medium ${i===osPage?'bg-primary text-white':'border border-gray-200 text-gray-600 hover:bg-gray-50'}">${i}</button>`;
+    for (let i=1;i<=r.pages;i++) pg += `<button onclick="Filters.os.page=${i};fetchOS()" class="px-3 py-1 rounded text-sm font-medium ${i===Filters.os.page?'bg-primary text-white':'border border-gray-200 text-gray-600 hover:bg-gray-50'}">${i}</button>`;
     document.getElementById('os-pagination').innerHTML = pg;
   }
 }
 
 async function openNewOS() {
-  const clients = await api('GET','/clients') || [];
-  const users = await api('GET','/users') || [];
-  const mats = await api('GET','/materials') || [];
-  const svcs = await api('GET','/services') || [];
+  // FIX P5: 4 chamadas paralelas com cache — tempo = max(latências), não soma
+  const [clients, users, mats, svcs] = await Promise.all([
+    Cache.get('clients',   () => api('GET', '/clients')),
+    Cache.get('users',     () => api('GET', '/users')),
+    Cache.get('materials', () => api('GET', '/materials')),
+    Cache.get('services',  () => api('GET', '/services')),
+  ]);
 
   const cliOpts = clients.filter(c=>c.active).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   const prodOpts = '<option value="">— Nenhum —</option>' + users.filter(u=>u.active&&(u.role==='producao'||u.role==='admin')).map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
@@ -666,7 +723,7 @@ async function openNewOS() {
   document.getElementById('nos-w').addEventListener('input', calcOSTotal);
   document.getElementById('nos-h').addEventListener('input', calcOSTotal);
   document.getElementById('nos-disc').addEventListener('input', calcOSTotal);
-  App.osItems = [];
+  OSForm.reset(); // FIX P3: estado isolado em OSForm, nunca no objeto global App
 }
 
 window.addOSItem = function() {
@@ -677,8 +734,8 @@ window.addOSItem = function() {
     const type = opt.dataset.type, id = opt.dataset.id;
     const name = opt.textContent.split(' (')[0];
     const unit = opt.dataset.unit, pc = opt.dataset.pc;
-    App.osItems = App.osItems || [];
-    App.osItems.push({type, item_id:id, name, unit, quantity:1, unit_price:parseFloat(pc||0)});
+    OSForm.items = OSForm.items || [];
+    OSForm.items.push({type, item_id:id, name, unit, quantity:1, unit_price:parseFloat(pc||0)});
     renderOSItems();
     this.value='';
     document.getElementById('nos-items-select').classList.add('hidden');
@@ -687,14 +744,14 @@ window.addOSItem = function() {
 
 function renderOSItems() {
   const c = document.getElementById('nos-items');
-  if (!App.osItems.length) { c.innerHTML=''; return; }
-  c.innerHTML = App.osItems.map((it,i)=>`
+  if (!OSForm.items.length) { c.innerHTML=''; return; }
+  c.innerHTML = OSForm.items.map((it,i)=>`
     <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">
       <span class="flex-1 font-medium text-gray-700">${it.name}</span>
-      <input type="number" value="${it.quantity}" min="0.01" step="0.01" onchange="App.osItems[${i}].quantity=parseFloat(this.value)||1;calcOSTotal()" class="w-20 border border-gray-200 rounded px-2 py-1 text-xs text-center">
+      <input type="number" value="${it.quantity}" min="0.01" step="0.01" onchange="OSForm.items[${i}].quantity=parseFloat(this.value)||1;calcOSTotal()" class="w-20 border border-gray-200 rounded px-2 py-1 text-xs text-center">
       <span class="text-gray-400 text-xs">${it.unit}</span>
-      <input type="number" value="${it.unit_price}" min="0" step="0.01" onchange="App.osItems[${i}].unit_price=parseFloat(this.value)||0;calcOSTotal()" class="w-24 border border-gray-200 rounded px-2 py-1 text-xs text-right">
-      <button onclick="App.osItems.splice(${i},1);renderOSItems();calcOSTotal()" class="text-red-400 hover:text-red-600 ml-1">✕</button>
+      <input type="number" value="${it.unit_price}" min="0" step="0.01" onchange="OSForm.items[${i}].unit_price=parseFloat(this.value)||0;calcOSTotal()" class="w-24 border border-gray-200 rounded px-2 py-1 text-xs text-right">
+      <button onclick="OSForm.items.splice(${i},1);renderOSItems();calcOSTotal()" class="text-red-400 hover:text-red-600 ml-1">✕</button>
     </div>`).join('');
   calcOSTotal();
 }
@@ -704,7 +761,7 @@ function calcOSTotal() {
   const h = parseFloat(document.getElementById('nos-h')?.value||0);
   const area = w*h || 1;
   const disc = parseFloat(document.getElementById('nos-disc')?.value||0);
-  const items = App.osItems || [];
+  const items = OSForm.items || [];
   const sub = items.reduce((s,it)=>s+(it.quantity * it.unit_price * (w&&h?area:1)),0);
   const discVal = sub * disc/100;
   const total = sub - discVal;
@@ -720,7 +777,7 @@ window.saveNewOS = async function() {
   const h = parseFloat(document.getElementById('nos-h').value||0);
   const area = w*h;
   const disc = parseFloat(document.getElementById('nos-disc').value||0);
-  const items = App.osItems||[];
+  const items = OSForm.items||[];
   const sub = items.reduce((s,it)=>s+(it.quantity*it.unit_price*(w&&h?area:1)),0);
   const r = await api('POST','/os',{
     client_id: parseInt(document.getElementById('nos-client').value),
@@ -746,7 +803,7 @@ window.saveNewOS = async function() {
 
 window.viewOS = async function(id) {
   createModal('modal-view-os','Ordem de Serviço','<div class="text-center py-8 text-gray-400"><span class="spin inline-block">⟳</span> Carregando...</div>',
-    `<button onclick="window.open('/api/os/${id}/pdf?token=${App.token}','_blank')" class="border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold px-4 py-2 rounded-lg text-sm">🖨️ Gerar PDF</button>` +
+    `<button onclick="window.open('/api/os/${id}/pdf?token='+Auth.getToken(),'_blank')" class="border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold px-4 py-2 rounded-lg text-sm">🖨️ Gerar PDF</button>` +
     btnGhost("Fechar","closeModal('modal-view-os')"),'lg');
   openModal('modal-view-os');
   const os = await api('GET',`/os/${id}`);
@@ -787,7 +844,7 @@ window.viewOS = async function(id) {
       </div>`:`<button onclick="openStatusModal(${id},'${os.status}')" class="w-full border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold px-3 py-2 rounded-lg text-sm transition-colors">🔄 Mudar Status</button>`}
     </div>`;
   document.getElementById('modal-view-os-footer').innerHTML =
-    `<button onclick="window.open('/api/os/${id}/pdf?token=${App.token}','_blank')" class="border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold px-4 py-2 rounded-lg text-sm">🖨️ PDF</button>` +
+    `<button onclick="window.open('/api/os/${id}/pdf?token='+Auth.getToken(),'_blank')" class="border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold px-4 py-2 rounded-lg text-sm">🖨️ PDF</button>` +
     btnGhost("Fechar","closeModal('modal-view-os')");
 };
 
@@ -888,7 +945,7 @@ async function fetchQuotes() {
       <td class="px-4 py-3 text-xs text-gray-500">${fmt.date(q.valid_until)}</td>
       <td class="px-4 py-3">
         <div class="flex items-center gap-1">
-          <button onclick="window.open('/api/quotes/${q.id}/pdf?token=${App.token}','_blank')" title="PDF" class="p-1.5 rounded hover:bg-gray-100 text-gray-500">🖨️</button>
+          <button onclick="window.open('/api/quotes/${q.id}/pdf?token='+Auth.getToken(),'_blank')" title="PDF" class="p-1.5 rounded hover:bg-gray-100 text-gray-500">🖨️</button>
           ${q.status!=='convertido'?`<button onclick="convertQuote(${q.id})" title="Converter em OS" class="p-1.5 rounded hover:bg-gray-100 text-green-600">🔄</button>`:''}
           <button onclick="changeQuoteStatus(${q.id},'${q.status}')" title="Status" class="p-1.5 rounded hover:bg-gray-100 text-gray-500">✏️</button>
         </div>
@@ -897,7 +954,8 @@ async function fetchQuotes() {
 }
 
 async function openNewQuote() {
-  const clients = await api('GET','/clients') || [];
+  // FIX P5: usa cache de clientes — evita chamada duplicada com openNewOS
+  const clients = await Cache.get('clients', () => api('GET', '/clients')) || [];
   createModal('modal-new-qt','Novo Orçamento',`
     <div class="space-y-4">
       ${formField('Cliente *','nqt-client','select',{required:true,options:[['','Selecione...'],...clients.filter(c=>c.active).map(c=>[c.id,c.name])]})}
@@ -1012,7 +1070,7 @@ async function fetchReceipts() {
       <td class="px-4 py-3 text-xs text-gray-500">${fmt.datetime(r.issued_at)}</td>
       <td class="px-4 py-3">
         <div class="flex items-center gap-1">
-          <button onclick="window.open('/api/receipts/${r.id}/pdf?token=${App.token}','_blank')" class="p-1.5 rounded hover:bg-gray-100 text-gray-500">🖨️</button>
+          <button onclick="window.open('/api/receipts/${r.id}/pdf?token='+Auth.getToken(),'_blank')" class="p-1.5 rounded hover:bg-gray-100 text-gray-500">🖨️</button>
           ${App.user.role==='admin'||App.user.role==='financeiro'?`<button onclick="deleteReceipt(${r.id})" class="p-1.5 rounded hover:bg-gray-100 text-red-400">🗑️</button>`:''}
         </div>
       </td>
@@ -1020,9 +1078,12 @@ async function fetchReceipts() {
 }
 
 async function openNewReceipt() {
-  const clients = await api('GET','/clients') || [];
-  const osData = await api('GET','/os?limit=100') || {data:[]};
-  const osList = osData.data || [];
+  // FIX P5: paralelo com cache — clientes já carregados não fazem nova chamada
+  const [clients, osData] = await Promise.all([
+    Cache.get('clients', () => api('GET', '/clients')),
+    api('GET', '/os?limit=100'),
+  ]);
+  const osList = (osData?.data) || [];
   createModal('modal-new-rec','Novo Recibo',`
     <div class="space-y-4">
       ${formField('Cliente *','nrec-client','select',{required:true,options:[['','Selecione...'],...clients.filter(c=>c.active).map(c=>[c.id,c.name])]})}
@@ -1163,7 +1224,7 @@ window.saveClient = async function(id) {
   };
   const r = id ? await api('PUT',`/clients/${id}`,data) : await api('POST','/clients',data);
   btn.textContent = id?'Salvar Alterações':'Cadastrar Cliente'; btn.disabled=false;
-  if (r && !r.error) { toast(id?'Cliente atualizado!':'Cliente cadastrado!'); closeModal('modal-client'); fetchClients(); }
+  if (r && !r.error) { Cache.invalidate('clients'); toast(id?'Cliente atualizado!':'Cliente cadastrado!'); closeModal('modal-client'); fetchClients(); }
   else toast(r?.error||'Erro','error');
 };
 
@@ -1333,9 +1394,11 @@ async function fetchResellers() {
     </tr>`).join('');
 }
 
-function openResellerForm() {
-  openClientForm(); // reusar modal de cliente
-  setTimeout(() => { const t = document.getElementById('cl-type'); if(t){t.value='revendedor'; t.dispatchEvent(new Event('change'));} }, 100);
+async function openResellerForm() {
+  // FIX P9: await garante que o modal já foi renderizado antes de setar o select
+  await openClientForm();
+  const t = document.getElementById('cl-type');
+  if (t) { t.value = 'revendedor'; t.dispatchEvent(new Event('change')); }
 }
 </script>
 
@@ -1395,8 +1458,9 @@ async function openMaterialForm(id=null) {
       ${id?formField('Status','mat-active','select',{options:[['1','Ativo'],['0','Inativo']]}):''}
     </div>`,
     btnGhost("Cancelar","closeModal('modal-mat')") + btnPrimary(id?'Salvar':'Cadastrar',`saveMaterial(${id||'null'})`,'btn-mat'),'md');
-  if(m.unit) setTimeout(()=>{const e=document.getElementById('mat-unit');if(e)e.value=m.unit;},50);
-  if(id) setTimeout(()=>{const e=document.getElementById('mat-active');if(e)e.value=m.active?'1':'0';},50);
+  // FIX P9: createModal é síncrono — elementos já existem no DOM aqui
+  if(m.unit) { const e=document.getElementById('mat-unit'); if(e) e.value=m.unit; }
+  if(id) { const e=document.getElementById('mat-active'); if(e) e.value=m.active?'1':'0'; }
   openModal('modal-mat');
 }
 
@@ -1413,7 +1477,7 @@ window.saveMaterial = async function(id) {
   };
   const r = id ? await api('PUT',`/materials/${id}`,data) : await api('POST','/materials',data);
   btn.textContent=id?'Salvar':'Cadastrar'; btn.disabled=false;
-  if (r && !r.error) { toast(id?'Material atualizado!':'Material cadastrado!'); closeModal('modal-mat'); fetchMaterials(); }
+  if (r && !r.error) { Cache.invalidate('materials'); toast(id?'Material atualizado!':'Material cadastrado!'); closeModal('modal-mat'); fetchMaterials(); }
   else toast(r?.error||'Erro','error');
 };
 
@@ -1472,8 +1536,9 @@ async function openServiceForm(id=null) {
       ${id?formField('Status','svc-active','select',{options:[['1','Ativo'],['0','Inativo']]}):''}
     </div>`,
     btnGhost("Cancelar","closeModal('modal-svc')") + btnPrimary(id?'Salvar':'Cadastrar',`saveService(${id||'null'})`,'btn-svc'),'md');
-  if(s.unit) setTimeout(()=>{const e=document.getElementById('svc-unit');if(e)e.value=s.unit;},50);
-  if(id) setTimeout(()=>{const e=document.getElementById('svc-active');if(e)e.value=s.active?'1':'0';},50);
+  // FIX P9: createModal é síncrono — elementos já existem no DOM aqui
+  if(s.unit) { const e=document.getElementById('svc-unit'); if(e) e.value=s.unit; }
+  if(id) { const e=document.getElementById('svc-active'); if(e) e.value=s.active?'1':'0'; }
   openModal('modal-svc');
 }
 
@@ -1490,7 +1555,7 @@ window.saveService = async function(id) {
   };
   const r = id ? await api('PUT',`/services/${id}`,data) : await api('POST','/services',data);
   btn.textContent=id?'Salvar':'Cadastrar'; btn.disabled=false;
-  if (r && !r.error) { toast(id?'Serviço atualizado!':'Serviço cadastrado!'); closeModal('modal-svc'); fetchServices(); }
+  if (r && !r.error) { Cache.invalidate('services'); toast(id?'Serviço atualizado!':'Serviço cadastrado!'); closeModal('modal-svc'); fetchServices(); }
   else toast(r?.error||'Erro','error');
 };
 </script>
@@ -1626,8 +1691,7 @@ async function loadClientReport() {
 function exportFinance() {
   const df = document.getElementById('fin-from')?.value||'';
   const dt = document.getElementById('fin-to')?.value||'';
-  const tok = App.token;
-  let url = `/api/finance/export?token=${tok}`;
+  let url = `/api/finance/export?token=${Auth.getToken()}`;
   if(df) url+=`&date_from=${df}`; if(dt) url+=`&date_to=${dt}`;
   window.open(url, '_blank');
 }
@@ -1688,7 +1752,8 @@ async function openUserForm(id=null) {
       ${formField('Papel / Nível de Acesso','usr-role','select',{options:[['admin','Administrador — Acesso total'],['atendimento','Atendimento — OS, Clientes, Orçamentos'],['producao','Produção — Visualizar e atualizar OS'],['financeiro','Financeiro — Relatórios e pagamentos']]})}
     </div>`,
     btnGhost("Cancelar","closeModal('modal-usr')") + btnPrimary(id?'Salvar Alterações':'Cadastrar Usuário',`saveUser(${id||'null'})`,'btn-usr'),'md');
-  if(u.role) setTimeout(()=>{const e=document.getElementById('usr-role');if(e)e.value=u.role;},50);
+  // FIX P9: createModal é síncrono — elementos já existem no DOM aqui
+  if(u.role) { const e=document.getElementById('usr-role'); if(e) e.value=u.role; }
   openModal('modal-usr');
 }
 
