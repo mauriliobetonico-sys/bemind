@@ -87,6 +87,76 @@ if ($method === 'POST' && $id && $sub === 'convert') {
     json_out(['message'=>'Orçamento convertido em OS.', 'os_id'=>$osId, 'os_number'=>$osNum, 'tracking_url'=>APP_URL.'/rastreio/'.$token], 201);
 }
 
+// GET /api/quotes/:id/pdf
+if ($method === 'GET' && $id && $sub === 'pdf') {
+    $stmt = $db->prepare("SELECT q.*,c.name AS client_name,c.cpf_cnpj,c.phone_main,c.email AS client_email,ua.name AS att_name FROM quotes q JOIN clients c ON q.client_id=c.id LEFT JOIN users ua ON q.attendant_id=ua.id WHERE q.id=?");
+    $stmt->execute([$id]); $q = $stmt->fetch();
+    if (!$q) json_out(['error'=>'Orçamento não encontrado.'], 404);
+
+    header('Content-Type: text/html; charset=utf-8');
+    $now       = date('d/m/Y H:i');
+    $valid     = $q['valid_until'] ? date('d/m/Y', strtotime($q['valid_until'])) : '—';
+    $totalFmt  = 'R$ ' . number_format($q['total'], 2, ',', '.');
+    $statusMap = ['pendente'=>'Pendente','aprovado'=>'Aprovado','recusado'=>'Recusado','convertido'=>'Convertido em OS'];
+    $sLabel    = $statusMap[$q['status']] ?? $q['status'];
+    $disc      = $q['discount_pct'] > 0 ? "Desconto: {$q['discount_pct']}% (R$ " . number_format($q['discount_val'],2,',','.') . ")" : '—';
+    echo <<<HTML
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Orçamento {$q['quote_number']}</title>
+<style>
+  @media print{.no-print{display:none}body{margin:0}}
+  body{font-family:Arial,sans-serif;font-size:12px;color:#1e2240;max-width:800px;margin:20px auto;padding:0 20px}
+  .header{background:#3b5bdb;color:#fff;padding:16px 22px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+  .brand{font-size:20px;font-weight:800}.sub{font-size:11px;opacity:.75;margin-top:2px}
+  .orc-num{font-size:26px;font-weight:800;text-align:right}.orc-num small{font-size:11px;font-weight:400;opacity:.8}
+  .box{background:#f5f6fa;border-radius:8px;padding:14px 18px;margin-bottom:14px}
+  .box h3{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:#8892b0;margin:0 0 10px}
+  .row{display:flex;justify-content:space-between;margin-bottom:5px}
+  .lb{color:#5a607a;font-size:11px}.vl{font-weight:600;font-size:12px}
+  .total-box{background:#f0f4ff;border:2px solid #3b5bdb;border-radius:10px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin:16px 0}
+  .total-box .lbl{font-size:11px;color:#3b5bdb;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .total-box .val{font-size:28px;font-weight:800;color:#3b5bdb}
+  .validity{background:#fff8e1;border:1px solid #fcd34d;border-radius:8px;padding:10px 16px;text-align:center;font-size:11px;color:#92400e;margin-bottom:14px}
+  .btn{background:#3b5bdb;color:#fff;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;margin-right:8px}
+  .footer{text-align:center;font-size:9px;color:#9299b5;margin-top:20px;border-top:1px solid #e2e5ef;padding-top:10px}
+</style></head><body>
+<div class="no-print" style="margin-bottom:14px">
+  <button class="btn" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  <button class="btn" style="background:#f5f6fa;color:#1e2240;border:1px solid #ccc" onclick="window.close()">Fechar</button>
+</div>
+<div class="header">
+  <div><div class="brand">VisãoOS</div><div class="sub">Comunicação Visual — Orçamento</div></div>
+  <div><div class="orc-num">{$q['quote_number']}<br><small>Status: {$sLabel}</small></div></div>
+</div>
+<div class="validity">⏳ Validade deste orçamento: até <strong>{$valid}</strong> | Emitido em: {$now}</div>
+<div class="box"><h3>Dados do Cliente</h3>
+  <div class="row"><span class="lb">Nome</span><span class="vl">{$q['client_name']}</span></div>
+  <div class="row"><span class="lb">CPF/CNPJ</span><span class="vl">{$q['cpf_cnpj']}</span></div>
+  <div class="row"><span class="lb">Telefone</span><span class="vl">{$q['phone_main']}</span></div>
+  <div class="row"><span class="lb">E-mail</span><span class="vl">{$q['client_email']}</span></div>
+</div>
+<div class="box"><h3>Serviço / Proposta</h3>
+  <div class="row"><span class="lb">Descrição</span><span class="vl">{$q['description']}</span></div>
+  <div class="row"><span class="lb">Dimensões</span><span class="vl">{$q['width_m']}m × {$q['height_m']}m = {$q['area_m2']}m²</span></div>
+  <div class="row"><span class="lb">Quantidade</span><span class="vl">{$q['quantity']} peça(s)</span></div>
+  <div class="row"><span class="lb">Subtotal</span><span class="vl">R$ {$q['subtotal']}</span></div>
+  <div class="row"><span class="lb">Desconto</span><span class="vl">{$disc}</span></div>
+  <div class="row"><span class="lb">Observações</span><span class="vl">{$q['notes']}</span></div>
+</div>
+<div class="total-box">
+  <div class="lbl">Total do Orçamento</div>
+  <div class="val">{$totalFmt}</div>
+</div>
+<div class="box"><h3>Atendimento</h3>
+  <div class="row"><span class="lb">Atendente</span><span class="vl">{$q['att_name']}</span></div>
+  <div class="row"><span class="lb">Gerado em</span><span class="vl">{$now}</span></div>
+</div>
+<div class="footer">VisãoOS — Sistema de Gestão para Comunicação Visual | {$now}</div>
+</body></html>
+HTML;
+    exit;
+}
+
 json_out(['error'=>'Rota de orçamentos não encontrada.'], 404);
 
 function nextOsNumber(PDO $db): string {

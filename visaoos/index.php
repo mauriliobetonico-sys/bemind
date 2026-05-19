@@ -79,6 +79,8 @@ try {
         $resource === 'track'                              => require __DIR__ . '/routes/tracking.php',
         $resource === 'rastreio'                           => require __DIR__ . '/routes/tracking.php',
         $resource === 'webhook'                            => require __DIR__ . '/routes/webhook.php',
+        $resource === 'suppliers'                          => require __DIR__ . '/routes/suppliers.php',
+        $resource === 'receipts'                           => require __DIR__ . '/routes/receipts.php',
         default                                            => notFound()
     };
 } catch (Throwable $e) {
