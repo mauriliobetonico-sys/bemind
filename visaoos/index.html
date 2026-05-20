@@ -585,7 +585,7 @@ function loadDashboard() {
 // em Filters.os, junto com os filtros que sempre mudavam juntos.
 // FIX P3: estado de formulário de OS isolado — nunca vai para o objeto global App.
 const OSForm = {
-  items: [],    // antes: OSForm.items (estado acidental no objeto global)
+  items: [],    // antes: App.osItems (estado acidental no objeto global)
   reset() { this.items = []; },
 };
 
