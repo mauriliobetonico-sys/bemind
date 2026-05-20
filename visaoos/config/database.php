@@ -355,10 +355,56 @@ function installDB(): void {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
-    // Add commission_pct to clients if not exists
-    try {
-        $db->exec("ALTER TABLE clients ADD COLUMN IF NOT EXISTS commission_pct DECIMAL(5,2) NOT NULL DEFAULT 0");
-    } catch(Throwable $e) { /* column already exists */ }
+    // ── Migrações: adiciona colunas que podem não existir no DB antigo ───────
+    // Cada ALTER é isolado num try/catch — falha silenciosa se já existir.
+    $alters = [
+        // clients
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS cpf_cnpj       VARCHAR(20)  NULL",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS type            VARCHAR(20)  NOT NULL DEFAULT 'cliente'",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS phone_main      VARCHAR(20)  NULL",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS phone_whatsapp  VARCHAR(20)  NULL",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS address_street  VARCHAR(200) NULL",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS address_city    VARCHAR(80)  NULL",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS address_state   VARCHAR(2)   NULL",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS address_zip     VARCHAR(10)  NULL",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS notes           TEXT         NULL",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS active          TINYINT(1)   NOT NULL DEFAULT 1",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS updated_at      DATETIME     NULL",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS commission_pct  DECIMAL(5,2) NOT NULL DEFAULT 0",
+        // service_orders
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS attendant_id    INT            NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS client_type     VARCHAR(20)    NOT NULL DEFAULT 'cliente'",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS production_id   INT            NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS notes           TEXT           NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS technical_notes TEXT           NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS width_m         DECIMAL(8,2)   NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS height_m        DECIMAL(8,2)   NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS area_m2         DECIMAL(10,4)  NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS quantity        DECIMAL(10,3)  NOT NULL DEFAULT 1",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS subtotal        DECIMAL(10,2)  NOT NULL DEFAULT 0",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS discount_pct    DECIMAL(5,2)   NOT NULL DEFAULT 0",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS discount_val    DECIMAL(10,2)  NOT NULL DEFAULT 0",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS payment_status  VARCHAR(20)    NOT NULL DEFAULT 'pendente'",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS payment_method  VARCHAR(40)    NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS payment_date    DATE           NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS due_date        DATE           NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS delivery_date   DATETIME       NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS tracking_token  VARCHAR(64)    NULL",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS n8n_notified    TINYINT(1)     NOT NULL DEFAULT 0",
+        // materials
+        "ALTER TABLE materials ADD COLUMN IF NOT EXISTS price_reseller DECIMAL(10,2) NOT NULL DEFAULT 0",
+        "ALTER TABLE materials ADD COLUMN IF NOT EXISTS stock_qty      DECIMAL(10,3) DEFAULT 0",
+        "ALTER TABLE materials ADD COLUMN IF NOT EXISTS active         TINYINT(1)    NOT NULL DEFAULT 1",
+        // services
+        "ALTER TABLE services ADD COLUMN IF NOT EXISTS price_reseller  DECIMAL(10,2) NOT NULL DEFAULT 0",
+        "ALTER TABLE services ADD COLUMN IF NOT EXISTS estimated_days  INT           NOT NULL DEFAULT 1",
+        "ALTER TABLE services ADD COLUMN IF NOT EXISTS active          TINYINT(1)    NOT NULL DEFAULT 1",
+        // users
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS active TINYINT(1) NOT NULL DEFAULT 1",
+    ];
+    foreach ($alters as $sql) {
+        try { $db->exec($sql); } catch (Throwable $e) { /* coluna já existe ou MySQL não suporta IF NOT EXISTS */ }
+    }
 
     // Cria admin padrão se não existir
     $count = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();

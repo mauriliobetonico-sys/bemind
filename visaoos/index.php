@@ -68,6 +68,7 @@ if (!$resource && isset($_GET['resource'])) {
 try {
     match(true) {
         $resource === 'health'                              => health(),
+        $resource === 'debug'                               => debugInfo(),
         $resource === 'auth'                               => require __DIR__ . '/routes/auth.php',
         $resource === 'os'                                 => require __DIR__ . '/routes/os.php',
         $resource === 'clients'                            => require __DIR__ . '/routes/clients.php',
@@ -85,8 +86,11 @@ try {
     };
 } catch (Throwable $e) {
     http_response_code(500);
-    error_log('VisãoOS API Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-    echo json_encode(['error' => 'Erro interno do servidor.']);
+    $msg = $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine();
+    error_log('VisãoOS API Error: ' . $msg);
+    // Em debug local, expõe a mensagem; em produção, exibe genérico
+    $debug = (getenv('APP_DEBUG') === 'true');
+    echo json_encode(['error' => $debug ? $msg : 'Erro interno do servidor.', 'code' => 'INTERNAL_ERROR']);
 }
 
 function health(): void {
@@ -101,6 +105,35 @@ function health(): void {
         'version' => APP_VERSION,
         'time'    => date('c'),
     ]);
+}
+function debugInfo(): void {
+    // Só admin autenticado pode acessar
+    $user = requireAuth();
+    if ($user['role'] !== 'admin') { http_response_code(403); echo json_encode(['error'=>'Acesso negado.']); return; }
+
+    $db     = getDB();
+    $tables = ['clients','users','service_orders','os_items','materials','services','quotes','receipts','suppliers','payments','refresh_tokens'];
+    $info   = [];
+    foreach ($tables as $t) {
+        try {
+            $cols = $db->query("SHOW COLUMNS FROM `$t`")->fetchAll(PDO::FETCH_COLUMN);
+            $count = $db->query("SELECT COUNT(*) FROM `$t`")->fetchColumn();
+            $info[$t] = ['columns' => $cols, 'rows' => (int)$count];
+        } catch (Throwable $e) {
+            $info[$t] = ['error' => $e->getMessage()];
+        }
+    }
+    echo json_encode([
+        'php'     => PHP_VERSION,
+        'mysql'   => $db->query('SELECT VERSION()')->fetchColumn(),
+        'tables'  => $info,
+        'env'     => [
+            'DB_HOST' => DB_HOST,
+            'DB_NAME' => DB_NAME,
+            'DB_USER' => DB_USER,
+        ],
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    exit;
 }
 function notFound(): void {
     http_response_code(404);
