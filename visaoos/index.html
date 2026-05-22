@@ -226,11 +226,30 @@ async function api(method, path, data=null) {
 }
 
 async function login(email, pass) {
-  const r = await fetch('/api/auth/login', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({email, password:pass})
-  });
-  return r.json();
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000); // timeout 15s
+    const r = await fetch('/api/auth/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, password:pass}),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('json')) {
+      // Servidor retornou HTML/texto — problema de configuração
+      const text = await r.text();
+      const hint = r.status === 404 ? 'Endpoint não encontrado — verifique o .htaccess e mod_rewrite.'
+                 : r.status === 500 ? 'Erro interno no servidor — verifique o .env e o banco de dados.'
+                 : `HTTP ${r.status}`;
+      return { error: `Falha na comunicação com o servidor: ${hint}` };
+    }
+    return r.json();
+  } catch(e) {
+    if (e.name === 'AbortError') return { error: 'Tempo limite excedido. Verifique se o servidor está acessível.' };
+    return { error: 'Erro de conexão: ' + e.message };
+  }
 }
 
 function handleLogout() {
@@ -423,17 +442,24 @@ function btnGhost(label, onclick) {
 document.getElementById('login-form').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('auth-error');
+  errEl.classList.add('hidden');
   btn.textContent = 'Entrando...'; btn.disabled = true;
-  const r = await login(document.getElementById('login-email').value, document.getElementById('login-password').value);
-  if (r && r.token) {
-    Auth.setToken(r.token); // FIX P1: ponto único de escrita do token
-    Auth.user = r.user;
-    if (r.refresh_token) localStorage.setItem('visaoos_refresh', r.refresh_token);
-    startApp();
-  } else {
-    const err = document.getElementById('auth-error');
-    err.textContent = r?.error || 'Credenciais inválidas.';
-    err.classList.remove('hidden');
+  try {
+    const r = await login(document.getElementById('login-email').value, document.getElementById('login-password').value);
+    if (r && r.token) {
+      Auth.setToken(r.token);
+      Auth.user = r.user;
+      if (r.refresh_token) localStorage.setItem('visaoos_refresh', r.refresh_token);
+      startApp();
+    } else {
+      errEl.textContent = r?.error || 'Credenciais inválidas.';
+      errEl.classList.remove('hidden');
+      btn.textContent = 'Entrar'; btn.disabled = false;
+    }
+  } catch(err) {
+    errEl.textContent = 'Erro inesperado: ' + err.message;
+    errEl.classList.remove('hidden');
     btn.textContent = 'Entrar'; btn.disabled = false;
   }
 });
@@ -456,11 +482,20 @@ function startApp() {
 window.addEventListener('DOMContentLoaded', async () => {
   const tok = localStorage.getItem('visaoos_token');
   if (!tok) return;
-  const r = await fetch('/api/auth/me', { headers:{'Authorization':`Bearer ${tok}`} });
-  if (r.ok) {
-    const data = await r.json();
-    Auth.setToken(tok); Auth.user = data.user || data;
-    startApp();
+  try {
+    const r = await fetch('/api/auth/me', {
+      headers:{'Authorization':`Bearer ${tok}`},
+      signal: AbortSignal.timeout(10000),
+    });
+    if (r.ok) {
+      const ct = r.headers.get('content-type') || '';
+      if (!ct.includes('json')) return; // servidor retornou HTML, ignora
+      const data = await r.json();
+      Auth.setToken(tok); Auth.user = data.user || data;
+      startApp();
+    }
+  } catch(_) {
+    // token inválido ou servidor offline — permanece na tela de login
   }
 });
 </script>
