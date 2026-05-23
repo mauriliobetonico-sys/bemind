@@ -1,8 +1,8 @@
 Options -Indexes
 Options -MultiViews
 
-# Prioriza index.html sobre index.php para o frontend SPA
-DirectoryIndex index.html index.php
+# index.php processa tudo — API e frontend
+DirectoryIndex index.php
 
 # Segurança — bloqueia arquivos sensíveis
 <FilesMatch "\.(env|sql|log|sh|md|json)$">
@@ -27,34 +27,28 @@ DirectoryIndex index.html index.php
 # Cache de assets estáticos
 <IfModule mod_expires.c>
     ExpiresActive On
-    ExpiresByType text/css              "access plus 1 month"
+    ExpiresByType text/css               "access plus 1 month"
     ExpiresByType application/javascript "access plus 1 month"
-    ExpiresByType image/png             "access plus 1 month"
-    ExpiresByType image/jpeg            "access plus 1 month"
-    ExpiresByType image/webp            "access plus 1 month"
-    ExpiresByType image/svg+xml         "access plus 1 month"
+    ExpiresByType image/png              "access plus 1 month"
+    ExpiresByType image/jpeg             "access plus 1 month"
+    ExpiresByType image/webp             "access plus 1 month"
+    ExpiresByType image/svg+xml          "access plus 1 month"
 </IfModule>
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
-    # Permite acesso a arquivos e diretórios reais (uploads, etc.)
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
-
-    # API — envia para index.php na raiz
-    RewriteRule ^api/(.*)$ index.php [QSA,L]
-
-    # Rastreio público
-    RewriteRule ^rastreio/([a-zA-Z0-9]{64})$ index.php [QSA,L]
-
-    # WebSocket upgrade check (não redirecionar WS)
+    # WebSocket — não redirecionar
     RewriteCond %{HTTP:Upgrade} websocket [NC]
     RewriteCond %{HTTP:Connection} upgrade [NC]
     RewriteRule .* - [L]
 
-    # SPA — qualquer outra rota serve o index.html
-    RewriteRule ^ index.html [L]
+    # Arquivos e diretórios reais (uploads, etc.) — servir diretamente
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Tudo o mais (API + SPA) vai para index.php
+    RewriteRule ^ index.php [QSA,L]
 </IfModule>

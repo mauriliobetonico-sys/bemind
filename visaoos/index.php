@@ -1,15 +1,32 @@
 <?php
 // ══════════════════════════════════════════════════════════════════════════
-// VISÃOOS API — Roteador Principal v2.0
+// VISÃOOS — Roteador Principal v2.1
 // ══════════════════════════════════════════════════════════════════════════
 
-// Se chamado diretamente na raiz (sem rota de API), serve o frontend
 $rawUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-$isApiCall = preg_match('#^(/api/|/rastreio/)#', $rawUri)
+
+// Remove prefixo de subdiretório (ex: /bemind/api/os → /api/os)
+$scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+if ($scriptDir && $scriptDir !== '/') {
+    $rawUri = preg_replace('#^' . preg_quote($scriptDir, '#') . '#', '', $rawUri) ?: '/';
+}
+
+// Detecta se é chamada de API
+$isApiCall = preg_match('#^/api(/|$)#', $rawUri)
+          || preg_match('#^/rastreio/#', $rawUri)
           || (isset($_GET['resource']) && $_GET['resource'] !== '');
-if (!$isApiCall && preg_match('#^/?$#', ltrim($rawUri, '/'))) {
+
+// Qualquer rota que NÃO seja API serve o frontend (SPA)
+if (!$isApiCall) {
     $html = __DIR__ . '/index.html';
-    if (file_exists($html)) { readfile($html); exit; }
+    if (file_exists($html)) {
+        header('Content-Type: text/html; charset=utf-8');
+        readfile($html);
+    } else {
+        http_response_code(404);
+        echo 'index.html não encontrado. Verifique o deploy.';
+    }
+    exit;
 }
 
 require_once __DIR__ . '/config/database.php';
@@ -33,13 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 checkRateLimit($ip, 200, 60);
 
-// Parse da URI — detecta subfolder automaticamente e remove prefixos
-$uri       = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
-if ($scriptDir && $scriptDir !== '/') {
-    $uri = preg_replace('#^' . preg_quote($scriptDir, '#') . '#', '', $uri);
-}
-$uri    = preg_replace('#^/api#', '', $uri);
+// Parse da URI — reusa $rawUri já normalizado (sem prefixo de subpasta)
+$uri    = preg_replace('#^/api#', '', $rawUri);
 $method = $_SERVER['REQUEST_METHOD'];
 $parts  = array_values(array_filter(explode('/', trim($uri, '/'))));
 
