@@ -104,7 +104,7 @@ function checkRateLimit(string $ip, int $maxRequests = 200, int $windowSeconds =
             http_response_code(429);
             die(json_encode(['error' => 'Muitas requisições. Aguarde 1 minuto.']));
         }
-    } catch (Throwable) {
+    } catch (Throwable $e) {
         // Se o banco falhar no rate limit, deixa passar (não bloqueia o sistema)
     }
 }

@@ -39,12 +39,12 @@ if ($gateway === 'mercadopago' || !$gateway) {
         $payment = fetchMercadoPagoPayment($resourceId);
         if ($payment) {
             processGatewayPayment(
-                reference:   $payment['external_reference'] ?? '',
-                gatewayId:   $resourceId,
-                status:      $payment['status'] ?? '',
-                amount:      (float)($payment['transaction_amount'] ?? 0),
-                method:      'Mercado Pago',
-                db:          $db
+                $payment['external_reference'] ?? '',
+                $resourceId,
+                $payment['status'] ?? '',
+                (float)($payment['transaction_amount'] ?? 0),
+                'Mercado Pago',
+                $db
             );
         }
     }
@@ -60,12 +60,12 @@ if ($gateway === 'picpay') {
 
     if ($status === 'completed' || $status === 'chargeback') {
         processGatewayPayment(
-            reference:  $referenceId,
-            gatewayId:  $body['authorizationId'] ?? '',
-            status:     $status === 'completed' ? 'approved' : 'refunded',
-            amount:     $amount,
-            method:     'PicPay',
-            db:         $db
+            $referenceId,
+            $body['authorizationId'] ?? '',
+            $status === 'completed' ? 'approved' : 'refunded',
+            $amount,
+            'PicPay',
+            $db
         );
     }
 

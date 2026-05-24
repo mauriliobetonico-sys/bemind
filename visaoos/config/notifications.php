@@ -157,7 +157,7 @@ function sendMail(string $to, string $subject, string $htmlBody): bool {
 
         // usa mail() nativo como fallback simples
         return mail($to, $subject, $body, $headers);
-    } catch (Throwable) {
+    } catch (Throwable $e) {
         return false;
     }
 }
