@@ -12,7 +12,7 @@ foreach ([
     if (file_exists($_envFile)) {
         foreach (file($_envFile) as $line) {
             $line = trim($line);
-            if ($line && !str_starts_with($line, '#') && str_contains($line, '=')) {
+            if ($line && $line[0] !== '#' && strpos($line, '=') !== false) {
                 [$k, $v] = explode('=', $line, 2);
                 if (!array_key_exists(trim($k), $_ENV)) {
                     $_ENV[trim($k)] = trim($v);

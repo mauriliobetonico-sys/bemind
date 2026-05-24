@@ -9,7 +9,8 @@ $stmt->execute([$token]);
 $os = $stmt->fetch();
 
 // Retorna JSON se solicitado
-if ($sub === 'json' || str_contains($_SERVER['HTTP_ACCEPT']??'','application/json')) {
+$httpAccept = isset($_SERVER['HTTP_ACCEPT']) ? $_SERVER['HTTP_ACCEPT'] : '';
+if ($sub === 'json' || strpos($httpAccept, 'application/json') !== false) {
     if (!$os) json_out(['error'=>'Pedido não encontrado.'],404);
     $h = $db->prepare("SELECT to_status,notes,created_at FROM os_status_history WHERE os_id=(SELECT id FROM service_orders WHERE tracking_token=?) ORDER BY created_at ASC");
     $h->execute([$token]);

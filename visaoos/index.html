@@ -483,10 +483,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   const tok = localStorage.getItem('visaoos_token');
   if (!tok) return;
   try {
+    const meCtrl = new AbortController();
+    const meTimer = setTimeout(() => meCtrl.abort(), 10000);
     const r = await fetch('/api/auth/me', {
       headers:{'Authorization':`Bearer ${tok}`},
-      signal: AbortSignal.timeout(10000),
+      signal: meCtrl.signal,
     });
+    clearTimeout(meTimer);
     if (r.ok) {
       const ct = r.headers.get('content-type') || '';
       if (!ct.includes('json')) return; // servidor retornou HTML, ignora
