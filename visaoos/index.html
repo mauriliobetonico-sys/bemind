@@ -140,6 +140,29 @@ input:focus,select:focus,textarea:focus{border-color:#3b5bdb!important;box-shado
 
 <script>
 // ═══════════════════════════════════════════════════
+// FETCH INTERCEPTOR — Funciona sem mod_rewrite/Nginx
+// Converte /api/X/Y/Z → index.php?resource=X&id=Y&sub=Z
+// ═══════════════════════════════════════════════════
+(function() {
+  var _origFetch = window.fetch.bind(window);
+  window.fetch = function(input, init) {
+    if (typeof input === 'string' && input.indexOf('/api/') === 0) {
+      var qIdx   = input.indexOf('?');
+      var path   = qIdx >= 0 ? input.slice(0, qIdx) : input;
+      var qs     = qIdx >= 0 ? input.slice(qIdx + 1) : '';
+      var parts  = path.replace(/^\/api\/?/, '').split('/').filter(Boolean);
+      var params = new URLSearchParams(qs);
+      if (parts[0]) params.set('resource', parts[0]);
+      if (parts[1]) params.set('id',       parts[1]);
+      if (parts[2]) params.set('sub',      parts[2]);
+      if (parts[3]) params.set('sub2',     parts[3]);
+      input = 'index.php?' + params.toString();
+    }
+    return _origFetch(input, init);
+  };
+})();
+
+// ═══════════════════════════════════════════════════
 // CORE — State, API, Auth, Router
 // ═══════════════════════════════════════════════════
 

@@ -80,8 +80,12 @@ $sub      = isset($parts[2]) ? $parts[2] : null;
 
 if (!$resource && isset($_GET['resource'])) {
     $resource = $_GET['resource'];
-    $id       = isset($_GET['id']) ? $_GET['id'] : null;
+    $id       = isset($_GET['id'])  ? $_GET['id']  : null;
+    $sub      = isset($_GET['sub']) ? $_GET['sub'] : null;
 }
+// Lê sub via GET quando hosting não tem mod_rewrite (fetch interceptor usa query string)
+if ($sub === null && isset($_GET['sub']))  $sub = $_GET['sub'];
+if (isset($_GET['sub2'])) $parts[3] = $_GET['sub2'];
 
 try {
     if      ($resource === 'health')    { health(); }
