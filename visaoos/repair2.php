@@ -1,23 +1,32 @@
 <?php
 // ══════════════════════════════════════════════════════════════════════════
-// VISÃOOS — Roteador Principal v2.2 (compatível PHP 7.4+)
+// VISÃOOS — Reparo 2: corrige precedência de roteamento (apagar após uso)
+// ══════════════════════════════════════════════════════════════════════════
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+header('Content-Type: text/plain; charset=utf-8');
+
+$dir = __DIR__;
+echo "=== REPARO 2 — ROTEAMENTO ===\n\n";
+
+$indexPhp = <<<'PHPEOT'
+<?php
+// ══════════════════════════════════════════════════════════════════════════
+// VISÃOOS — Roteador Principal v2.4 (compatível PHP 7.4+)
 // ══════════════════════════════════════════════════════════════════════════
 
 $rawUri = parse_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/', PHP_URL_PATH);
 
-// Remove prefixo de subdiretório (ex: /bemind/api/os → /api/os)
 $scriptDir = rtrim(dirname(isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : ''), '/');
 if ($scriptDir && $scriptDir !== '/') {
     $replaced = preg_replace('#^' . preg_quote($scriptDir, '#') . '#', '', $rawUri);
     $rawUri   = ($replaced !== null && $replaced !== '') ? $replaced : '/';
 }
 
-// Detecta se é chamada de API
 $isApiCall = (bool)preg_match('#^/api(/|$)#', $rawUri)
           || (bool)preg_match('#^/rastreio/#', $rawUri)
           || (isset($_GET['resource']) && $_GET['resource'] !== '');
 
-// Qualquer rota que NÃO seja API serve o frontend (SPA)
 if (!$isApiCall) {
     $html = __DIR__ . '/index.html';
     if (file_exists($html)) {
@@ -35,7 +44,6 @@ require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/config/notifications.php';
 require_once __DIR__ . '/config/storage.php';
 
-// Headers CORS e JSON
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: ' . APP_URL);
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -47,16 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200); exit;
 }
 
-// Rate limiting
 $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
 checkRateLimit($ip, 200, 60);
 
-// Parse da URI
 $uri    = preg_replace('#^/api#', '', $rawUri);
 $method = $_SERVER['REQUEST_METHOD'];
 $parts  = array_values(array_filter(explode('/', trim($uri, '/'))));
 
-// Body JSON
 $body = array();
 $raw  = file_get_contents('php://input');
 if ($raw) {
@@ -64,7 +69,6 @@ if ($raw) {
     $body = is_array($decoded) ? $decoded : array();
 }
 
-// Input helper — compatível PHP 7.4
 function inp($key, $default = null) {
     global $body;
     if (isset($body[$key]) && $body[$key] !== null) return $body[$key];
@@ -73,7 +77,7 @@ function inp($key, $default = null) {
     return $default;
 }
 
-// Roteamento — query string tem precedência (fetch interceptor / hosting sem mod_rewrite)
+// Roteamento — query string tem precedência (fetch interceptor / sem mod_rewrite)
 if (isset($_GET['resource']) && $_GET['resource'] !== '') {
     $resource = $_GET['resource'];
     $id       = isset($_GET['id'])   ? $_GET['id']   : null;
@@ -161,3 +165,25 @@ function json_out($data, $code = 200) {
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
+PHPEOT;
+
+$bytes = file_put_contents("$dir/index.php", $indexPhp);
+echo "index.php reescrito: " . ($bytes !== false ? "$bytes bytes OK" : "FALHOU (sem permissao de escrita?)") . "\n\n";
+
+// Garante interceptor no index.html
+$ih = "$dir/index.html";
+if (file_exists($ih)) {
+    $html = file_get_contents($ih);
+    if (strpos($html, 'window.fetch = function') === false && strpos($html, 'FETCH INTERCEPTOR') === false) {
+        $interceptor = "<script>\n(function(){var _f=window.fetch.bind(window);window.fetch=function(input,init){if(typeof input==='string'&&input.indexOf('/api/')===0){var qi=input.indexOf('?');var path=qi>=0?input.slice(0,qi):input;var qs=qi>=0?input.slice(qi+1):'';var parts=path.replace(/^\\/api\\/?/,'').split('/').filter(Boolean);var p=new URLSearchParams(qs);if(parts[0])p.set('resource',parts[0]);if(parts[1])p.set('id',parts[1]);if(parts[2])p.set('sub',parts[2]);if(parts[3])p.set('sub2',parts[3]);input='index.php?'+p.toString();}return _f(input,init);};})();\n</script>";
+        $html2 = preg_replace('/<head([^>]*)>/i', '<head$1>' . "\n" . $interceptor, $html, 1);
+        if ($html2 && $html2 !== $html) { file_put_contents($ih, $html2); echo "index.html: interceptor injetado\n"; }
+        else echo "index.html: nao foi possivel injetar interceptor\n";
+    } else {
+        echo "index.html: interceptor ja presente, OK\n";
+    }
+}
+
+echo "\n>>> Agora teste: /index.php?resource=health\n";
+echo ">>> Deve retornar status ok. Depois faca login normalmente.\n";
+echo ">>> Apague diag.php, repair.php e repair2.php do servidor depois.\n";
