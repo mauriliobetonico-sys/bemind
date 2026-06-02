@@ -36,7 +36,6 @@ if ($method === 'GET' && !$id) {
             WHERE $w ORDER BY so.created_at DESC LIMIT $limit OFFSET $offset";
 
     $count_sql = "SELECT COUNT(*) FROM service_orders so JOIN clients c ON so.client_id=c.id WHERE $w";
-    $total_rows = (int)$db->prepare($count_sql)->execute($params) ? $db->prepare($count_sql) : null;
 
     $stmt = $db->prepare($sql);
     $stmt->execute($params);

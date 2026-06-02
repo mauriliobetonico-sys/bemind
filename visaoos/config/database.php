@@ -3,13 +3,28 @@
 // VISÃOOS — Configuração do Banco de Dados e Constantes
 // ══════════════════════════════════════════════════════════════════════════
 
-// Carrega .env — procura na raiz do site e nos diretórios pai
-foreach ([
-    __DIR__ . '/../.env',   // web root (config/../.env)
-    __DIR__ . '/../../.env', // um nível acima do web root
-    dirname($_SERVER['DOCUMENT_ROOT'] ?? '') . '/.env',
-] as $_envFile) {
-    if (file_exists($_envFile)) {
+// Exibição de erros controlada por ambiente (APP_DEBUG=true → mostra; senão, oculta)
+// Em produção, erros vão para o log, nunca para a tela (evita vazar dados sensíveis).
+if (getenv('APP_DEBUG') === 'true') {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+} else {
+    error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
+}
+
+// Carrega .env — procura na raiz do site (compatível com open_basedir).
+// Mantém só caminhos DENTRO do diretório da aplicação para não disparar
+// warnings de open_basedir em hospedagens restritas (ex.: LiteSpeed/Cloudways).
+$_envCandidates = array(
+    __DIR__ . '/../.env',                                   // raiz do site (config/../.env)
+);
+if (!empty($_SERVER['DOCUMENT_ROOT'])) {
+    $_envCandidates[] = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/.env';
+}
+foreach ($_envCandidates as $_envFile) {
+    if (@file_exists($_envFile) && @is_readable($_envFile)) {
         foreach (file($_envFile) as $line) {
             $line = trim($line);
             if ($line && $line[0] !== '#' && strpos($line, '=') !== false) {
