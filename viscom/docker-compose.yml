@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-viscom}
+      POSTGRES_USER: ${POSTGRES_USER:-viscom}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-viscom_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-viscom}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - viscom_net
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-viscom}:${POSTGRES_PASSWORD:-viscom_secret}@db:5432/${POSTGRES_DB:-viscom}
+      SECRET_KEY: ${SECRET_KEY:-change_me_in_production_use_openssl_rand_hex_32}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      COMPANY_NAME: ${COMPANY_NAME:-VisCom Comunicação Visual}
+      COMPANY_CNPJ: ${COMPANY_CNPJ:-00.000.000/0001-00}
+      COMPANY_ADDRESS: ${COMPANY_ADDRESS:-Rua Exemplo, 100 - Centro - São Paulo/SP}
+      COMPANY_PHONE: ${COMPANY_PHONE:-(11) 99999-9999}
+      COMPANY_EMAIL: ${COMPANY_EMAIL:-contato@viscom.com.br}
+      LOGO_PATH: ${LOGO_PATH:-/app/static/logo.png}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80}
+    volumes:
+      - ./backend/static:/app/static
+      - ./backend/media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - viscom_net
+    expose:
+      - "8000"
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    restart: unless-stopped
+    networks:
+      - viscom_net
+    expose:
+      - "80"
+
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - web
+    networks:
+      - viscom_net
+
+volumes:
+  postgres_data:
+
+networks:
+  viscom_net:
+    driver: bridge
