@@ -18,7 +18,7 @@ interface Props {
   isReseller: boolean
 }
 
-export default function ClientForm({ isReseller }: Props) {
+export function ClientForm({ isReseller }: Props) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const isEditing = !!id

@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { Product } from '@/types'
 
-export default function ProductList() {
+export function ProductList() {
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [dialogOpen, setDialogOpen] = useState(false)

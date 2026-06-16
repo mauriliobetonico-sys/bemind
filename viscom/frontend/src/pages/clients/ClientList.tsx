@@ -17,7 +17,7 @@ interface Props {
   isReseller: boolean
 }
 
-export default function ClientList({ isReseller }: Props) {
+export function ClientList({ isReseller }: Props) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
