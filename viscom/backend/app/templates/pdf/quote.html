@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block doc_header %}
+<div class="doc-title">ORÇAMENTO</div>
+<div class="doc-number">Nº {{ '%05d' % quote.number }}</div>
+<div style="font-size:9pt;color:#555;text-align:right">Data: {{ quote.created_at.strftime('%d/%m/%Y') }}</div>
+{% if quote.valid_until %}
+<div style="font-size:9pt;color:#555;text-align:right">Validade: {{ quote.valid_until.strftime('%d/%m/%Y') }}</div>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="section">
+  <div class="section-title">Cliente</div>
+  <div class="info-grid">
+    <div class="info-item"><span class="info-label">Nome:</span> {{ quote.client.name }}</div>
+    <div class="info-item"><span class="info-label">CPF/CNPJ:</span> {{ quote.client.cpf_cnpj }}</div>
+    <div class="info-item"><span class="info-label">Telefone:</span> {{ quote.client.phone }}</div>
+    <div class="info-item"><span class="info-label">E-mail:</span> {{ quote.client.email or '-' }}</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Itens do Orçamento</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Produto/Serviço</th>
+        <th class="text-center">Largura (m)</th>
+        <th class="text-center">Altura (m)</th>
+        <th class="text-center">Área (m²)</th>
+        <th class="text-center">Qtd</th>
+        <th class="text-right">Preço Unit.</th>
+        <th class="text-center">Desc.%</th>
+        <th class="text-right">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td>{{ it.product }}</td>
+        <td class="text-center">{{ '%.2f'|format(it.width_m) if it.width_m else '-' }}</td>
+        <td class="text-center">{{ '%.2f'|format(it.height_m) if it.height_m else '-' }}</td>
+        <td class="text-center">{{ '%.4f'|format(it.area_m2) if it.area_m2 else '-' }}</td>
+        <td class="text-center">{{ it.quantity }}</td>
+        <td class="text-right">R$ {{ '%.2f'|format(it.unit_price)|replace('.', ',') }}</td>
+        <td class="text-center">{{ it.discount_pct }}%</td>
+        <td class="text-right">R$ {{ '%.2f'|format(it.subtotal)|replace('.', ',') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:right">
+  <table style="width:300px;margin-left:auto">
+    <tr><td>Subtotal dos itens:</td><td class="text-right">R$ {{ '%.2f'|format(subtotal)|replace('.', ',') }}</td></tr>
+    {% if quote.discount_general > 0 %}
+    <tr><td>Desconto geral ({{ quote.discount_general }}%):</td><td class="text-right" style="color:#dc2626">- R$ {{ '%.2f'|format(subtotal * quote.discount_general / 100)|replace('.', ',') }}</td></tr>
+    {% endif %}
+  </table>
+  <div class="total-box">TOTAL: R$ {{ '%.2f'|format(total)|replace('.', ',') }}</div>
+</div>
+
+{% if quote.notes %}
+<div class="section">
+  <div class="section-title">Observações</div>
+  <div class="notes">{{ quote.notes }}</div>
+</div>
+{% endif %}
+
+<div class="section" style="margin-top:30px;font-size:9pt;color:#555">
+  Este orçamento é válido até {{ quote.valid_until.strftime('%d/%m/%Y') if quote.valid_until else 'data não especificada' }}.
+  Preços sujeitos a alteração após vencimento.
+</div>
+{% endblock %}

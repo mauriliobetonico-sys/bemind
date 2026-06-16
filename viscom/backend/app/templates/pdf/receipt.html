@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block doc_header %}
+<div class="doc-title">RECIBO</div>
+<div class="doc-number">Nº {{ '%05d' % receipt.number }}</div>
+<div style="font-size:9pt;color:#555;text-align:right">Data: {{ receipt.receipt_date.strftime('%d/%m/%Y') }}</div>
+{% endblock %}
+{% block content %}
+<div style="margin:30px 0;font-size:28pt;text-align:center;font-weight:bold;color:#1e40af;border:2px solid #1e40af;padding:12px;border-radius:6px">
+  R$ {{ '%.2f'|format(receipt.amount)|replace('.', ',') }}
+</div>
+
+<div style="font-size:11pt;line-height:2;margin:20px 0">
+  Recebi(emos) de <strong>{{ receipt.payer_name }}</strong>,
+  a importância de <em>{{ receipt.amount_words }}</em>,
+  referente a <strong>{{ receipt.reference }}</strong>,
+  pago por meio de <strong>{{ receipt.payment_method }}</strong>.
+</div>
+
+<div class="info-grid" style="margin-top:20px">
+  <div class="info-item"><span class="info-label">Cliente:</span> {{ receipt.client.name }}</div>
+  <div class="info-item"><span class="info-label">CPF/CNPJ:</span> {{ receipt.client.cpf_cnpj }}</div>
+  {% if receipt.os %}
+  <div class="info-item"><span class="info-label">OS Nº:</span> {{ '%05d' % receipt.os.number }}</div>
+  {% endif %}
+  <div class="info-item"><span class="info-label">Forma de Pagamento:</span> {{ receipt.payment_method }}</div>
+</div>
+
+<div class="signature-area" style="margin-top:60px">
+  <div>
+    <div class="signature-line">Assinatura do Pagador<br>{{ receipt.payer_name }}</div>
+  </div>
+  <div>
+    <div class="signature-line">{{ company.name }}<br>CNPJ: {{ company.cnpj }}</div>
+  </div>
+</div>
+
+<div style="margin-top:30px;padding-top:20px;border-top:2px dashed #ccc;font-size:8pt;color:#999;text-align:center">
+  Recibo Nº {{ '%05d' % receipt.number }} — {{ company.name }} — {{ receipt.receipt_date.strftime('%d/%m/%Y') }}
+</div>
+{% endblock %}

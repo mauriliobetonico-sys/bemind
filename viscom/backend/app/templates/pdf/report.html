@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block doc_header %}
+<div class="doc-title">RELATÓRIO</div>
+<div class="doc-number">{{ title }}</div>
+{% endblock %}
+{% block content %}
+<div class="section">
+  <table>
+    <thead>
+      <tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </tbody>
+    {% if totals %}
+    <tfoot>
+      <tr style="background:#1e40af;color:white;font-weight:bold">
+        {% for h in headers %}
+        <td>{{ totals.get(h.lower().replace(' ','_'), '') }}</td>
+        {% endfor %}
+      </tr>
+    </tfoot>
+    {% endif %}
+  </table>
+</div>
+{% endblock %}
