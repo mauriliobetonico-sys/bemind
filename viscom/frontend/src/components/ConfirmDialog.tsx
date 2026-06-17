@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 
 interface Props {
   open: boolean
-  onOpenChange: (v: boolean) => void
+  onOpenChange?: (v: boolean) => void
+  onCancel?: () => void
   title: string
   description: string
   onConfirm: () => void
@@ -15,17 +16,21 @@ interface Props {
 }
 
 export function ConfirmDialog({
-  open, onOpenChange, title, description, onConfirm, loading, confirmLabel = 'Confirmar', variant = 'destructive',
+  open, onOpenChange, onCancel, title, description, onConfirm, loading, confirmLabel = 'Confirmar', variant = 'destructive',
 }: Props) {
+  const handleClose = (v: boolean) => {
+    if (!v) { onCancel?.(); onOpenChange?.(false) }
+    else onOpenChange?.(true)
+  }
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+          <Button variant="outline" onClick={() => handleClose(false)} disabled={loading}>
             Cancelar
           </Button>
           <Button variant={variant} onClick={onConfirm} disabled={loading}>
