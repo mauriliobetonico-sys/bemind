@@ -57,7 +57,7 @@ def create_service_order(body: ServiceOrderCreate, db: Session = Depends(get_db)
             total += qty * price
 
     os = ServiceOrder(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         number=number,
         quote_id=body.quote_id,
         client_id=body.client_id,
@@ -83,7 +83,7 @@ def create_service_order(body: ServiceOrderCreate, db: Session = Depends(get_db)
         else:
             subtotal = qty * price
         si = ServiceOrderItem(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             os_id=os.id,
             product_id=item.product_id,
             material_type=item.material_type,
@@ -99,7 +99,7 @@ def create_service_order(body: ServiceOrderCreate, db: Session = Depends(get_db)
         db.add(si)
 
     history = StatusHistory(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         os_id=os.id,
         old_status=None,
         new_status="aberta",
@@ -148,7 +148,7 @@ def update_service_order(os_id: uuid.UUID, body: ServiceOrderUpdate, db: Session
             subtotal = (Decimal(str(area)) * qty * price) if area else (qty * price)
             total += subtotal
             si = ServiceOrderItem(
-                id=uuid.uuid4(),
+                id=str(uuid.uuid4()),
                 os_id=os.id,
                 product_id=item["product_id"],
                 material_type=item.get("material_type"),
@@ -179,7 +179,7 @@ def update_status(os_id: uuid.UUID, body: StatusUpdate, db: Session = Depends(ge
     old_status = os.status
     os.status = body.status
     history = StatusHistory(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         os_id=os.id,
         old_status=old_status,
         new_status=body.status,

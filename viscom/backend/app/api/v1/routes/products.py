@@ -28,7 +28,7 @@ def list_products(
 
 @router.post("", response_model=ProductResponse, status_code=201)
 def create_product(body: ProductCreate, db: Session = Depends(get_db), _=Depends(require_admin)):
-    product = Product(**body.model_dump(), id=uuid.uuid4())
+    product = Product(**body.model_dump(), id=str(uuid.uuid4()))
     db.add(product)
     db.commit()
     db.refresh(product)
@@ -79,7 +79,7 @@ def list_configs(
 
 @router.post("/config/list", response_model=ConfigListResponse, status_code=201)
 def create_config(body: ConfigListCreate, db: Session = Depends(get_db), _=Depends(require_admin)):
-    config = ConfigList(**body.model_dump(), id=uuid.uuid4())
+    config = ConfigList(**body.model_dump(), id=str(uuid.uuid4()))
     db.add(config)
     db.commit()
     db.refresh(config)

@@ -33,7 +33,7 @@ def get_company(db: Session = Depends(get_db), _=Depends(get_current_active_user
 def update_company(body: CompanyUpdate, db: Session = Depends(get_db), _=Depends(require_admin)):
     company = db.query(Company).first()
     if not company:
-        company = Company(id=uuid.uuid4())
+        company = Company(id=str(uuid.uuid4()))
         db.add(company)
     for k, v in body.model_dump(exclude_unset=True).items():
         setattr(company, k, v)
@@ -53,7 +53,7 @@ def upload_logo(file: UploadFile = File(...), db: Session = Depends(get_db), _=D
         shutil.copyfileobj(file.file, f)
     company = db.query(Company).first()
     if not company:
-        company = Company(id=uuid.uuid4())
+        company = Company(id=str(uuid.uuid4()))
         db.add(company)
     company.logo_path = filepath
     db.commit()

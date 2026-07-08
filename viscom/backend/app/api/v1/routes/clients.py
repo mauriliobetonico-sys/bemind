@@ -38,7 +38,7 @@ def list_clients(
 
 @router.post("", response_model=ClientResponse, status_code=201)
 def create_client(body: ClientCreate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
-    client = Client(**body.model_dump(), id=uuid.uuid4(), created_by_id=current_user.id)
+    client = Client(**body.model_dump(), id=str(uuid.uuid4()), created_by_id=current_user.id)
     db.add(client)
     db.commit()
     db.refresh(client)

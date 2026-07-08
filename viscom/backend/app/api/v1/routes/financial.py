@@ -42,7 +42,7 @@ def list_receivables(
 
 @router.post("/receivables", response_model=ReceivableResponse, status_code=201)
 def create_receivable(body: ReceivableCreate, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
-    rec = Receivable(**body.model_dump(), id=uuid.uuid4())
+    rec = Receivable(**body.model_dump(), id=str(uuid.uuid4()))
     db.add(rec)
     db.commit()
     db.refresh(rec)
@@ -73,7 +73,7 @@ def register_payment(body: PaymentCreate, db: Session = Depends(get_db), current
         raise HTTPException(status_code=404, detail="Conta a receber não encontrada")
 
     payment = Payment(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         receivable_id=body.receivable_id,
         amount=body.amount,
         payment_date=body.payment_date,
@@ -125,7 +125,7 @@ def list_cash_flow(
 
 @router.post("/cash-flow", response_model=CashFlowResponse, status_code=201)
 def create_cash_flow(body: CashFlowCreate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
-    cf = CashFlow(**body.model_dump(), id=uuid.uuid4(), created_by_id=current_user.id)
+    cf = CashFlow(**body.model_dump(), id=str(uuid.uuid4()), created_by_id=current_user.id)
     db.add(cf)
     db.commit()
     db.refresh(cf)

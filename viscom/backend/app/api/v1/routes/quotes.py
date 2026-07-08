@@ -55,7 +55,7 @@ def list_quotes(
 def create_quote(body: QuoteCreate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     number = _next_quote_number(db)
     quote = Quote(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         number=number,
         client_id=body.client_id,
         created_by_id=current_user.id,
@@ -70,7 +70,7 @@ def create_quote(body: QuoteCreate, db: Session = Depends(get_db), current_user=
         d = item_data.model_dump()
         subtotal = _compute_item_subtotal(d)
         item = QuoteItem(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             quote_id=quote.id,
             product_id=d["product_id"],
             width_m=d.get("width_m"),
@@ -121,7 +121,7 @@ def update_quote(quote_id: uuid.UUID, body: QuoteUpdate, db: Session = Depends(g
             d = item_d if isinstance(item_d, dict) else item_d.model_dump()
             subtotal = _compute_item_subtotal(d)
             item = QuoteItem(
-                id=uuid.uuid4(),
+                id=str(uuid.uuid4()),
                 quote_id=quote.id,
                 product_id=d["product_id"],
                 width_m=d.get("width_m"),
@@ -173,7 +173,7 @@ def convert_to_os(quote_id: uuid.UUID, db: Session = Depends(get_db), current_us
     total_final = total * (1 - discount / 100)
 
     os = ServiceOrder(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         number=os_number,
         quote_id=quote.id,
         client_id=quote.client_id,
@@ -185,7 +185,7 @@ def convert_to_os(quote_id: uuid.UUID, db: Session = Depends(get_db), current_us
 
     for qi in quote.items:
         si = ServiceOrderItem(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             os_id=os.id,
             product_id=qi.product_id,
             width_m=qi.width_m,
@@ -198,7 +198,7 @@ def convert_to_os(quote_id: uuid.UUID, db: Session = Depends(get_db), current_us
         db.add(si)
 
     history = StatusHistory(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         os_id=os.id,
         old_status=None,
         new_status="aberta",

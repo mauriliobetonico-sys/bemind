@@ -20,7 +20,7 @@ def create_user(body: UserCreate, db: Session = Depends(get_db), _=Depends(requi
     if db.query(User).filter(User.email == body.email).first():
         raise HTTPException(status_code=400, detail="Email já cadastrado")
     user = User(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         name=body.name,
         email=body.email,
         hashed_password=get_password_hash(body.password),
