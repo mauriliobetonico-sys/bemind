@@ -25,7 +25,7 @@ export function QuoteList() {
   const { data, isLoading } = useQuery<Quote[]>({
     queryKey: ['quotes', status],
     queryFn: async () => {
-      const res = await api.get('/quotes/', { params: { status: status || undefined, limit: 100 } })
+      const res = await api.get('/quotes', { params: { status: status || undefined, limit: 100 } })
       return res.data
     },
   })

@@ -14,7 +14,7 @@ export function ReceiptList() {
   const navigate = useNavigate()
   const { data, isLoading } = useQuery<Receipt[]>({
     queryKey: ['receipts'],
-    queryFn: async () => (await api.get('/receipts/', { params: { limit: 100 } })).data,
+    queryFn: async () => (await api.get('/receipts', { params: { limit: 100 } })).data,
   })
 
   async function downloadPdf(id: string, number: number) {

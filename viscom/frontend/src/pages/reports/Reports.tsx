@@ -104,8 +104,8 @@ export function Reports() {
             <Table>
               <TableHeader><TableRow><TableHead>Período</TableHead><TableHead>Qtd OS</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader>
               <TableBody>
-                {!periodData.data?.length ? <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Sem dados no período</TableCell></TableRow>
-                  : periodData.data.map((r: any, i: number) => <TableRow key={i}><TableCell>{r.period}</TableCell><TableCell>{r.count}</TableCell><TableCell className="text-right">{formatCurrency(r.total)}</TableCell></TableRow>)}
+                {!periodData.data ? <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Sem dados no período</TableCell></TableRow>
+                  : <TableRow><TableCell>{from} → {to}</TableCell><TableCell>{periodData.data.total_orders}</TableCell><TableCell className="text-right">{formatCurrency(periodData.data.total_value)}</TableCell></TableRow>}
               </TableBody>
             </Table>
           )}

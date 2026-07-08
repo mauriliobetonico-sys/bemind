@@ -25,7 +25,7 @@ export function ServiceOrderList() {
   const { data, isLoading } = useQuery<ServiceOrder[]>({
     queryKey: ['service-orders', status],
     queryFn: async () => {
-      const res = await api.get('/service-orders/', { params: { status: status || undefined, limit: 100 } })
+      const res = await api.get('/service-orders', { params: { status: status || undefined, limit: 100 } })
       return res.data
     },
   })

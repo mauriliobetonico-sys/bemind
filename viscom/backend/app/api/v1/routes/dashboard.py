@@ -67,7 +67,7 @@ def get_dashboard(db: Session = Depends(get_db), current_user=Depends(get_curren
             "client_name": os.client.name if os.client else "",
             "status": os.status,
             "total_value": float(os.total_value),
-            "opened_at": os.opened_at.isoformat(),
+            "opened_at": os.created_at.isoformat(),
         }
         for os in recent_os
     ]

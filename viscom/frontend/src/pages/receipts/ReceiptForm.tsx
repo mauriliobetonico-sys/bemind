@@ -23,8 +23,8 @@ export function ReceiptForm() {
   const prefilledOsId = searchParams.get('os_id')
   const [amountWords, setAmountWords] = useState('')
 
-  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ['clients-all'], queryFn: async () => (await api.get('/clients/', { params: { limit: 500 } })).data })
-  const { data: paymentMethods = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'payment_method'], queryFn: async () => (await api.get('/config/', { params: { category: 'payment_method' } })).data })
+  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ['clients-all'], queryFn: async () => (await api.get('/clients', { params: { limit: 200 } })).data })
+  const { data: paymentMethods = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'payment_method'], queryFn: async () => (await api.get('/config', { params: { category: 'payment_method' } })).data })
   const { data: receipt } = useQuery<Receipt>({ queryKey: ['receipt', id], queryFn: async () => (await api.get(`/receipts/${id}`)).data, enabled: isEditing })
   const { data: osData } = useQuery<ServiceOrder>({ queryKey: ['service-order-prefill', prefilledOsId], queryFn: async () => (await api.get(`/service-orders/${prefilledOsId}`)).data, enabled: !!prefilledOsId && !isEditing })
 
@@ -59,7 +59,7 @@ export function ReceiptForm() {
   }
 
   const mutation = useMutation({
-    mutationFn: (data: ReceiptFormData) => api.post('/receipts/', data),
+    mutationFn: (data: ReceiptFormData) => api.post('/receipts', data),
     onSuccess: (res) => { toast({ title: 'Recibo criado!' }); navigate(`/recibos/${res.data.id}`) },
     onError: () => toast({ title: 'Erro ao criar recibo', variant: 'destructive' }),
   })

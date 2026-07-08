@@ -22,8 +22,8 @@ export function QuoteForm() {
   const qc = useQueryClient()
   const isEditing = !!id
 
-  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ['clients-all'], queryFn: async () => (await api.get('/clients/', { params: { limit: 500 } })).data })
-  const { data: products = [] } = useQuery<Product[]>({ queryKey: ['products-all'], queryFn: async () => (await api.get('/products/', { params: { limit: 500 } })).data })
+  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ['clients-all'], queryFn: async () => (await api.get('/clients', { params: { limit: 200 } })).data })
+  const { data: products = [] } = useQuery<Product[]>({ queryKey: ['products-all'], queryFn: async () => (await api.get('/products', { params: { limit: 200, active_only: false } })).data })
 
   const { data: quote } = useQuery({
     queryKey: ['quote', id],
@@ -91,7 +91,7 @@ export function QuoteForm() {
         })),
       }
       if (isEditing) return api.put(`/quotes/${id}`, payload)
-      return api.post('/quotes/', payload)
+      return api.post('/quotes', payload)
     },
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['quotes'] })

@@ -25,7 +25,7 @@ export function AccountsReceivable() {
   const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10))
   const [payMethod, setPayMethod] = useState('')
 
-  const { data: paymentMethods = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'payment_method'], queryFn: async () => (await api.get('/config/', { params: { category: 'payment_method' } })).data })
+  const { data: paymentMethods = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'payment_method'], queryFn: async () => (await api.get('/config', { params: { category: 'payment_method' } })).data })
 
   const { data, isLoading } = useQuery<Receivable[]>({
     queryKey: ['receivables', statusFilter, dateFrom, dateTo],
@@ -39,7 +39,7 @@ export function AccountsReceivable() {
   const maxPay = payingReceivable ? Number(payingReceivable.total_value) - Number(payingReceivable.paid_amount) : 0
 
   const payMutation = useMutation({
-    mutationFn: () => api.post(`/financial/receivables/${payingId}/payments`, {
+    mutationFn: () => api.post('/financial/payments', { receivable_id: payingId,
       amount: Number(payAmount),
       payment_date: payDate,
       payment_method: payMethod,

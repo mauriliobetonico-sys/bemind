@@ -123,36 +123,6 @@ def billing_vs_received(
     }
 
 
-@router.get("/delinquency")
-def delinquency_report(
-    db: Session = Depends(get_db),
-    _=Depends(get_current_active_user),
-):
-    overdue = db.query(Receivable).filter(
-        Receivable.is_deleted == False,
-        Receivable.due_date < datetime.utcnow(),
-        Receivable.status.in_(["pending", "partial", "overdue"]),
-    ).all()
-    total = sum(Decimal(str(r.total_value)) - Decimal(str(r.paid_amount)) for r in overdue)
-    return {
-        "total_overdue_count": len(overdue),
-        "total_overdue_value": float(total),
-        "receivables": [
-            {
-                "id": str(r.id),
-                "client_id": str(r.client_id),
-                "description": r.description,
-                "total_value": float(r.total_value),
-                "paid_amount": float(r.paid_amount),
-                "balance": float(Decimal(str(r.total_value)) - Decimal(str(r.paid_amount))),
-                "due_date": r.due_date,
-                "days_overdue": (datetime.utcnow() - r.due_date).days,
-            }
-            for r in overdue
-        ],
-    }
-
-
 @router.get("/top-products")
 def top_products(
     date_from: datetime,
@@ -177,7 +147,7 @@ def top_products(
             "product_id": str(row.product_id),
             "product_name": product.name if product else "N/A",
             "total_value": float(row.total or 0),
-            "items_count": row.count,
+            "quantity": row.count,
         })
     return result
 

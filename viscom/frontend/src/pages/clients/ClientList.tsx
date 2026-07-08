@@ -29,7 +29,6 @@ export function ClientList({ isReseller }: Props) {
     clearTimeout((window as any)._clientSearchTimer)
     ;(window as any)._clientSearchTimer = setTimeout(() => {
       setDebouncedSearch(value)
-      setPage(1)
     }, 400)
   }, [])
 

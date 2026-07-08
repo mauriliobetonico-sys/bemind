@@ -15,7 +15,7 @@ export function ClientDebt() {
 
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ['clients-search', search],
-    queryFn: async () => (await api.get('/clients/', { params: { search: search || undefined, limit: 20 } })).data,
+    queryFn: async () => (await api.get('/clients', { params: { search: search || undefined, limit: 20 } })).data,
     enabled: search.length >= 2,
   })
 

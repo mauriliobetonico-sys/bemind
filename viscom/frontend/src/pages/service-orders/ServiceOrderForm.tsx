@@ -27,12 +27,12 @@ export function ServiceOrderForm() {
   const [statusChange, setStatusChange] = useState('')
   const [statusNotes, setStatusNotes] = useState('')
 
-  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ['clients-all'], queryFn: async () => (await api.get('/clients/', { params: { limit: 500 } })).data })
-  const { data: products = [] } = useQuery<Product[]>({ queryKey: ['products-all'], queryFn: async () => (await api.get('/products/', { params: { limit: 500 } })).data })
-  const { data: materialTypes = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'material_type'], queryFn: async () => (await api.get('/config/', { params: { category: 'material_type' } })).data })
-  const { data: installTypes = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'installation_type'], queryFn: async () => (await api.get('/config/', { params: { category: 'installation_type' } })).data })
-  const { data: finishings = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'finishing'], queryFn: async () => (await api.get('/config/', { params: { category: 'finishing' } })).data })
-  const { data: paymentMethods = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'payment_method'], queryFn: async () => (await api.get('/config/', { params: { category: 'payment_method' } })).data })
+  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ['clients-all'], queryFn: async () => (await api.get('/clients', { params: { limit: 200 } })).data })
+  const { data: products = [] } = useQuery<Product[]>({ queryKey: ['products-all'], queryFn: async () => (await api.get('/products', { params: { limit: 200, active_only: false } })).data })
+  const { data: materialTypes = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'material_type'], queryFn: async () => (await api.get('/config', { params: { category: 'material_type' } })).data })
+  const { data: installTypes = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'installation_type'], queryFn: async () => (await api.get('/config', { params: { category: 'installation_type' } })).data })
+  const { data: finishings = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'finishing'], queryFn: async () => (await api.get('/config', { params: { category: 'finishing' } })).data })
+  const { data: paymentMethods = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'payment_method'], queryFn: async () => (await api.get('/config', { params: { category: 'payment_method' } })).data })
 
   const { data: os } = useQuery<ServiceOrder>({
     queryKey: ['service-order', id],
@@ -101,7 +101,7 @@ export function ServiceOrderForm() {
         })),
       }
       if (isEditing) return api.put(`/service-orders/${id}`, payload)
-      return api.post('/service-orders/', payload)
+      return api.post('/service-orders', payload)
     },
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['service-orders'] })
