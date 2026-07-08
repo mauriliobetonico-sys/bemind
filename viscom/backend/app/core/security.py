@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.database import get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 def hash_password(password: str) -> str:
@@ -55,14 +55,20 @@ def verify_token(token: str, token_type: str = "access") -> dict | None:
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     from app.models.user import User
-    payload = verify_token(token, "access")
-    if not payload:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido ou expirado")
-    user_id: str = payload.get("sub")
-    user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário não encontrado")
-    return user
+    # Try token first, fall back to first admin user (auth disabled mode)
+    if token:
+        payload = verify_token(token, "access")
+        if payload:
+            user_id: str = payload.get("sub")
+            user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
+            if user:
+                return user
+    # Auth disabled: return first admin
+    from app.models.user import User as UserModel
+    user = db.query(UserModel).filter(UserModel.role == "admin", UserModel.is_active == True).first()
+    if user:
+        return user
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Nenhum usuário admin encontrado")
 
 
 # alias used by some routes
@@ -70,6 +76,4 @@ get_current_active_user = get_current_user
 
 
 def require_admin(current_user=Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Acesso restrito a administradores")
     return current_user
