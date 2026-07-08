@@ -28,6 +28,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def strip_trailing_slash(request, call_next):
+    if request.url.path.endswith("/") and request.url.path != "/":
+        from starlette.datastructures import URL
+        scope = dict(request.scope)
+        scope["path"] = request.url.path.rstrip("/")
+        from starlette.requests import Request as StarletteRequest
+        request = StarletteRequest(scope, request.receive, request._send)
+    return await call_next(request)
+
 app.include_router(api_router)
 
 

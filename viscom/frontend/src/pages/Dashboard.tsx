@@ -25,7 +25,7 @@ export function Dashboard() {
   const { data, isLoading, error } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
     queryFn: async () => {
-      const res = await api.get('/dashboard/')
+      const res = await api.get('/dashboard')
       return res.data
     },
   })

@@ -82,7 +82,7 @@ export function SettingsPage() {
 
   const { data: companyData, isLoading } = useQuery<Company>({
     queryKey: ['company'],
-    queryFn: async () => (await api.get('/company/')).data,
+    queryFn: async () => (await api.get('/company')).data,
   })
 
   useEffect(() => {

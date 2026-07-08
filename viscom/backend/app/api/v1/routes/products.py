@@ -43,6 +43,7 @@ def get_product(product_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(
     return product
 
 
+@router.patch("/{product_id}", response_model=ProductResponse)
 @router.put("/{product_id}", response_model=ProductResponse)
 def update_product(product_id: uuid.UUID, body: ProductUpdate, db: Session = Depends(get_db), _=Depends(require_admin)):
     product = db.query(Product).filter(Product.id == product_id).first()
