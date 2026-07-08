@@ -28,7 +28,7 @@ export function ProductList() {
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ['products'],
     queryFn: async () => {
-      const res = await api.get('/products')
+      const res = await api.get('/products', { params: { active_only: false } })
       return res.data
     },
   })

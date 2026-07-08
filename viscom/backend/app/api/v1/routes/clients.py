@@ -77,6 +77,7 @@ def get_client(client_id: uuid.UUID, db: Session = Depends(get_db), current_user
     return client
 
 
+@router.patch("/{client_id}", response_model=ClientResponse)
 @router.put("/{client_id}", response_model=ClientResponse)
 def update_client(client_id: uuid.UUID, body: ClientUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     q = db.query(Client).filter(Client.id == client_id, Client.is_deleted == False)

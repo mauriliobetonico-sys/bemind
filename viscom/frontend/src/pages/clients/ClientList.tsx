@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { Client, PaginatedResponse } from '@/types'
+import type { Client } from '@/types'
 
 interface Props {
   isReseller: boolean
@@ -22,7 +22,6 @@ export function ClientList({ isReseller }: Props) {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [page, setPage] = useState(1)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const debounceTimer = useCallback((value: string) => {
@@ -34,11 +33,11 @@ export function ClientList({ isReseller }: Props) {
     }, 400)
   }, [])
 
-  const { data, isLoading } = useQuery<PaginatedResponse<Client>>({
-    queryKey: ['clients', { isReseller, search: debouncedSearch, page }],
+  const { data: clients = [], isLoading } = useQuery<Client[]>({
+    queryKey: ['clients', { isReseller, search: debouncedSearch }],
     queryFn: async () => {
       const res = await api.get('/clients', {
-        params: { is_reseller: isReseller, search: debouncedSearch || undefined, page, page_size: 20 },
+        params: { is_reseller: isReseller, search: debouncedSearch || undefined, limit: 200 },
       })
       return res.data
     },
@@ -83,7 +82,7 @@ export function ClientList({ isReseller }: Props) {
         <PageLoading />
       ) : (
         <>
-          {(data?.items ?? []).length === 0 ? (
+          {clients.length === 0 ? (
             <p className="text-center text-gray-400 py-12">Nenhum registro encontrado</p>
           ) : (
             <div className="rounded-md border">
@@ -99,7 +98,7 @@ export function ClientList({ isReseller }: Props) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data?.items.map((client) => (
+                  {clients.map((client) => (
                     <TableRow key={client.id}>
                       <TableCell className="font-medium">{client.name}</TableCell>
                       <TableCell>{formatCPFCNPJ(client.cpf_cnpj)}</TableCell>
@@ -137,19 +136,6 @@ export function ClientList({ isReseller }: Props) {
             </div>
           )}
 
-          {(data?.pages ?? 1) > 1 && (
-            <div className="flex gap-2 justify-center mt-4">
-              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-                Anterior
-              </Button>
-              <span className="flex items-center text-sm text-gray-600">
-                Página {page} de {data?.pages}
-              </span>
-              <Button variant="outline" size="sm" disabled={page === data?.pages} onClick={() => setPage(p => p + 1)}>
-                Próxima
-              </Button>
-            </div>
-          )}
         </>
       )}
 

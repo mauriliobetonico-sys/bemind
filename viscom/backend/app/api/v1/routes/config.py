@@ -32,6 +32,7 @@ def create_config(body: ConfigListCreate, db: Session = Depends(get_db), _=Depen
     return item
 
 
+@router.patch("/{config_id}", response_model=ConfigListResponse)
 @router.put("/{config_id}", response_model=ConfigListResponse)
 def update_config(config_id: str, body: ConfigListUpdate, db: Session = Depends(get_db), _=Depends(require_admin)):
     item = db.query(ConfigList).filter(ConfigList.id == config_id).first()

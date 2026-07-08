@@ -26,23 +26,23 @@ function ConfigListTab({ category, label }: { category: string; label: string })
 
   const { data = [] } = useQuery<ConfigList[]>({
     queryKey: ['config', category],
-    queryFn: async () => (await api.get('/config/', { params: { category } })).data,
+    queryFn: async () => (await api.get('/config', { params: { category } })).data,
   })
 
   const createMutation = useMutation({
-    mutationFn: () => api.post('/config/', { category, value: newValue }),
+    mutationFn: () => api.post('/config', { category, value: newValue }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['config', category] }); setNewValue(''); toast({ title: 'Item adicionado!' }) },
-    onError: () => toast({ title: 'Erro ao adicionar', variant: 'destructive' }),
+    onError: (e: any) => toast({ title: 'Erro ao adicionar', description: e?.response?.data?.detail ?? String(e), variant: 'destructive' }),
   })
   const updateMutation = useMutation({
     mutationFn: ({ id, value }: { id: string; value: string }) => api.put(`/config/${id}`, { value }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['config', category] }); setEditId(null); toast({ title: 'Item atualizado!' }) },
-    onError: () => toast({ title: 'Erro ao atualizar', variant: 'destructive' }),
+    onError: (e: any) => toast({ title: 'Erro ao atualizar', description: e?.response?.data?.detail ?? String(e), variant: 'destructive' }),
   })
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/config/${id}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['config', category] }); toast({ title: 'Item removido!' }) },
-    onError: () => toast({ title: 'Erro ao remover', variant: 'destructive' }),
+    onError: (e: any) => toast({ title: 'Erro ao remover', description: e?.response?.data?.detail ?? String(e), variant: 'destructive' }),
   })
 
   return (
@@ -90,7 +90,7 @@ export function SettingsPage() {
   }, [companyData])
 
   const saveMutation = useMutation({
-    mutationFn: () => api.put('/company/', company),
+    mutationFn: () => api.put('/company', company),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['company'] }); toast({ title: 'Empresa atualizada!' }) },
     onError: () => toast({ title: 'Erro ao salvar', variant: 'destructive' }),
   })
