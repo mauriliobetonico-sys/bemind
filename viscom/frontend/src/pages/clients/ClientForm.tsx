@@ -81,8 +81,12 @@ export function ClientForm({ isReseller }: Props) {
       toast({ title: `${isReseller ? 'Revendedor' : 'Cliente'} ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso.` })
       navigate(isReseller ? '/revendedores' : '/clientes')
     },
-    onError: () => {
-      toast({ title: 'Erro ao salvar. Verifique os dados.', variant: 'destructive' })
+    onError: (err: any) => {
+      const detail = err?.response?.data?.detail
+      const msg = typeof detail === 'string' ? detail
+        : Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ')
+        : 'Erro ao salvar. Verifique os dados.'
+      toast({ title: msg, variant: 'destructive' })
     },
   })
 
