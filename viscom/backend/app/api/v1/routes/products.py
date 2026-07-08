@@ -14,7 +14,7 @@ from app.schemas.product import (
 router = APIRouter(prefix="/products", tags=["products"])
 
 
-@router.get("/", response_model=List[ProductResponse])
+@router.get("", response_model=List[ProductResponse])
 def list_products(
     active_only: bool = True,
     db: Session = Depends(get_db),
@@ -26,7 +26,7 @@ def list_products(
     return q.all()
 
 
-@router.post("/", response_model=ProductResponse, status_code=201)
+@router.post("", response_model=ProductResponse, status_code=201)
 def create_product(body: ProductCreate, db: Session = Depends(get_db), _=Depends(require_admin)):
     product = Product(**body.model_dump(), id=uuid.uuid4())
     db.add(product)

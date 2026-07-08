@@ -32,10 +32,8 @@ function validateCNPJ(cnpj: string): boolean {
 
 export const cpfCnpjSchema = z.string().refine((val) => {
   const digits = val.replace(/\D/g, '')
-  if (digits.length === 11) return validateCPF(val)
-  if (digits.length === 14) return validateCNPJ(val)
-  return false
-}, 'CPF ou CNPJ inválido')
+  return digits.length === 11 || digits.length === 14
+}, 'CPF deve ter 11 dígitos ou CNPJ 14 dígitos')
 
 export const clientSchema = z.object({
   name: z.string().min(2, 'Nome deve ter ao menos 2 caracteres'),

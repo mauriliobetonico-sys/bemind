@@ -13,6 +13,7 @@ app = FastAPI(
     title="VisCom API",
     description="Sistema de Gestão para Comunicação Visual",
     version="1.0.0",
+    redirect_slashes=False,
 )
 
 app.state.limiter = limiter
@@ -31,11 +32,29 @@ app.include_router(api_router)
 
 @app.on_event("startup")
 def startup_event():
-    from app.core.database import engine
+    from app.core.database import engine, SessionLocal
     from app.models import User, Company, Client, Product, ConfigList, Quote, QuoteItem
     from app.models import ServiceOrder, ServiceOrderItem, StatusHistory, Receivable, Payment, CashFlow, Receipt
     from app.core.database import Base
+    from app.core.security import hash_password
+    import uuid
     Base.metadata.create_all(bind=engine)
+    # Ensure at least one admin user exists
+    db = SessionLocal()
+    try:
+        if not db.query(User).filter(User.role == "admin").first():
+            db.add(User(
+                id=str(uuid.uuid4()),
+                name="Administrador",
+                email="admin@viscom.com",
+                hashed_password=hash_password("admin123"),
+                role="admin",
+            ))
+            db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
 
 
 @app.get("/health")

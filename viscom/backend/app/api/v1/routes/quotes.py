@@ -32,7 +32,7 @@ def _compute_item_subtotal(item_data: dict) -> Decimal:
     return base * (1 - discount_pct / 100)
 
 
-@router.get("/", response_model=List[QuoteResponse])
+@router.get("", response_model=List[QuoteResponse])
 def list_quotes(
     status: Optional[str] = None,
     client_id: Optional[uuid.UUID] = None,
@@ -51,7 +51,7 @@ def list_quotes(
     return q.order_by(Quote.number.desc()).offset(skip).limit(limit).all()
 
 
-@router.post("/", response_model=QuoteResponse, status_code=201)
+@router.post("", response_model=QuoteResponse, status_code=201)
 def create_quote(body: QuoteCreate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     number = _next_quote_number(db)
     quote = Quote(

@@ -60,13 +60,7 @@ class ClientBase(BaseModel):
     @classmethod
     def validate_cpf_cnpj(cls, v: str) -> str:
         digits = "".join(c for c in v if c.isdigit())
-        if len(digits) == 11:
-            if not _validate_cpf(v):
-                raise ValueError("CPF inválido")
-        elif len(digits) == 14:
-            if not _validate_cnpj(v):
-                raise ValueError("CNPJ inválido")
-        else:
+        if len(digits) not in (11, 14):
             raise ValueError("CPF deve ter 11 dígitos e CNPJ 14 dígitos")
         return v
 

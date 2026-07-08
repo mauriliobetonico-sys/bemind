@@ -11,7 +11,7 @@ from app.schemas.product import ConfigListCreate, ConfigListUpdate, ConfigListRe
 router = APIRouter(prefix="/config", tags=["config"])
 
 
-@router.get("/", response_model=List[ConfigListResponse])
+@router.get("", response_model=List[ConfigListResponse])
 def list_config(
     category: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -23,7 +23,7 @@ def list_config(
     return q.order_by(ConfigList.value).all()
 
 
-@router.post("/", response_model=ConfigListResponse, status_code=201)
+@router.post("", response_model=ConfigListResponse, status_code=201)
 def create_config(body: ConfigListCreate, db: Session = Depends(get_db), _=Depends(require_admin)):
     item = ConfigList(id=str(uuid.uuid4()), **body.model_dump())
     db.add(item)

@@ -21,7 +21,7 @@ class CompanyUpdate(BaseModel):
     email: Optional[str] = None
 
 
-@router.get("/")
+@router.get("")
 def get_company(db: Session = Depends(get_db), _=Depends(get_current_active_user)):
     company = db.query(Company).first()
     if not company:
@@ -29,7 +29,7 @@ def get_company(db: Session = Depends(get_db), _=Depends(get_current_active_user
     return company
 
 
-@router.put("/")
+@router.put("")
 def update_company(body: CompanyUpdate, db: Session = Depends(get_db), _=Depends(require_admin)):
     company = db.query(Company).first()
     if not company:

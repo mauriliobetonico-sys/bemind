@@ -20,7 +20,7 @@ def _next_os_number(db: Session) -> int:
     return (result or 0) + 1
 
 
-@router.get("/", response_model=List[ServiceOrderResponse])
+@router.get("", response_model=List[ServiceOrderResponse])
 def list_service_orders(
     status: Optional[str] = None,
     client_id: Optional[uuid.UUID] = None,
@@ -39,7 +39,7 @@ def list_service_orders(
     return q.order_by(ServiceOrder.number.desc()).offset(skip).limit(limit).all()
 
 
-@router.post("/", response_model=ServiceOrderResponse, status_code=201)
+@router.post("", response_model=ServiceOrderResponse, status_code=201)
 def create_service_order(body: ServiceOrderCreate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     number = _next_os_number(db)
     items_data = body.items

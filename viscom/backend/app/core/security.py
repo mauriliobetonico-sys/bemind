@@ -53,9 +53,17 @@ def verify_token(token: str, token_type: str = "access") -> dict | None:
         return None
 
 
+class _MockAdmin:
+    """Fallback user when auth is disabled and no DB user exists."""
+    id = "00000000-0000-0000-0000-000000000001"
+    name = "Administrador"
+    email = "admin@viscom.com"
+    role = "admin"
+    is_active = True
+
+
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     from app.models.user import User
-    # Try token first, fall back to first admin user (auth disabled mode)
     if token:
         payload = verify_token(token, "access")
         if payload:
@@ -63,12 +71,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
             if user:
                 return user
-    # Auth disabled: return first admin
-    from app.models.user import User as UserModel
-    user = db.query(UserModel).filter(UserModel.role == "admin", UserModel.is_active == True).first()
-    if user:
-        return user
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Nenhum usuário admin encontrado")
+    # Auth disabled: return first admin from DB, or mock admin
+    user = db.query(User).filter(User.role == "admin", User.is_active == True).first()
+    return user or _MockAdmin()
 
 
 # alias used by some routes

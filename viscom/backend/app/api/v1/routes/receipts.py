@@ -18,7 +18,7 @@ def _next_receipt_number(db: Session) -> int:
     return (result or 0) + 1
 
 
-@router.get("/", response_model=List[ReceiptResponse])
+@router.get("", response_model=List[ReceiptResponse])
 def list_receipts(
     client_id: uuid.UUID = None,
     skip: int = Query(0, ge=0),
@@ -32,7 +32,7 @@ def list_receipts(
     return q.order_by(Receipt.number.desc()).offset(skip).limit(limit).all()
 
 
-@router.post("/", response_model=ReceiptResponse, status_code=201)
+@router.post("", response_model=ReceiptResponse, status_code=201)
 def create_receipt(body: ReceiptCreate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     number = _next_receipt_number(db)
     amount_words = number_to_words(body.amount)

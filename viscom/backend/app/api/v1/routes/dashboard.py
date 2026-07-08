@@ -13,7 +13,7 @@ from app.models.financial import Receivable
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
-@router.get("/")
+@router.get("")
 def get_dashboard(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)

@@ -12,7 +12,7 @@ from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse
 router = APIRouter(prefix="/clients", tags=["clients"])
 
 
-@router.get("/", response_model=List[ClientResponse])
+@router.get("", response_model=List[ClientResponse])
 def list_clients(
     search: Optional[str] = None,
     is_reseller: Optional[bool] = None,
@@ -36,7 +36,7 @@ def list_clients(
     return q.offset(skip).limit(limit).all()
 
 
-@router.post("/", response_model=ClientResponse, status_code=201)
+@router.post("", response_model=ClientResponse, status_code=201)
 def create_client(body: ClientCreate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     client = Client(**body.model_dump(), id=uuid.uuid4(), created_by_id=current_user.id)
     db.add(client)

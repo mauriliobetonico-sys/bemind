@@ -10,12 +10,12 @@ import uuid
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/", response_model=List[UserResponse])
+@router.get("", response_model=List[UserResponse])
 def list_users(db: Session = Depends(get_db), _=Depends(require_admin)):
     return db.query(User).all()
 
 
-@router.post("/", response_model=UserResponse, status_code=201)
+@router.post("", response_model=UserResponse, status_code=201)
 def create_user(body: UserCreate, db: Session = Depends(get_db), _=Depends(require_admin)):
     if db.query(User).filter(User.email == body.email).first():
         raise HTTPException(status_code=400, detail="Email já cadastrado")
