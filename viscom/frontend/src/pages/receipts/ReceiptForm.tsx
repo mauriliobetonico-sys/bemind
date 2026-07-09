@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { formatCurrency, downloadBlob } from '@/lib/utils'
 import { receiptSchema, type ReceiptFormData } from '@/lib/validators'
@@ -18,6 +18,7 @@ import type { Client, ConfigList, Receipt, ServiceOrder } from '@/types'
 export function ReceiptForm() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const [searchParams] = useSearchParams()
   const isEditing = !!id
   const prefilledOsId = searchParams.get('os_id')
@@ -60,7 +61,7 @@ export function ReceiptForm() {
 
   const mutation = useMutation({
     mutationFn: (data: ReceiptFormData) => api.post('/receipts', data),
-    onSuccess: (res) => { toast({ title: 'Recibo criado!' }); navigate(`/recibos/${res.data.id}`) },
+    onSuccess: (res) => { qc.invalidateQueries({ queryKey: ['receipts'] }); toast({ title: 'Recibo criado!' }); navigate(`/recibos/${res.data.id}`) },
     onError: () => toast({ title: 'Erro ao criar recibo', variant: 'destructive' }),
   })
 

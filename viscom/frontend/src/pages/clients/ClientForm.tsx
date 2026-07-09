@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { maskCPF, maskCNPJ, maskPhone, maskCEP } from '@/lib/utils'
 import { clientSchema, type ClientFormData } from '@/lib/validators'
@@ -21,6 +21,7 @@ interface Props {
 export function ClientForm({ isReseller }: Props) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const isEditing = !!id
   const [cepLoading, setCepLoading] = useState(false)
 
@@ -78,6 +79,7 @@ export function ClientForm({ isReseller }: Props) {
     mutationFn: (data: ClientFormData) =>
       isEditing ? api.patch(`/clients/${id}`, data) : api.post('/clients', data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
       toast({ title: `${isReseller ? 'Revendedor' : 'Cliente'} ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso.` })
       navigate(isReseller ? '/revendedores' : '/clientes')
     },

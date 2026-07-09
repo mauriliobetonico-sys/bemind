@@ -40,6 +40,8 @@ export function ClientList({ isReseller }: Props) {
       })
       return res.data
     },
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const deleteMutation = useMutation({
