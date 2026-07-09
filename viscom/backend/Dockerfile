@@ -4,11 +4,17 @@ FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
+    libpangoft2-1.0-0 \
     libgdk-pixbuf-2.0-0 \
+    libcairo2 \
+    libharfbuzz0b \
+    libfontconfig1 \
     libffi-dev \
     shared-mime-info \
     fonts-liberation \
     fonts-dejavu-core \
+    fontconfig \
+    && fc-cache -fv \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -10,7 +10,7 @@ import { QuoteStatusBadge } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from '@/hooks/use-toast'
-import { Plus, Edit, FileDown, ArrowRight, Trash2 } from 'lucide-react'
+import { Plus, Edit, FileDown, ArrowRight, Trash2, CheckCircle } from 'lucide-react'
 import type { Quote } from '@/types'
 
 const STATUSES = ['', 'aberto', 'aprovado', 'recusado', 'expirado']
@@ -39,17 +39,24 @@ export function QuoteList() {
   const convertMutation = useMutation({
     mutationFn: (id: string) => api.post(`/quotes/${id}/convert-to-os`),
     onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['quotes'] })
       toast({ title: 'OS criada com sucesso!', variant: 'default' })
       navigate(`/ordens-de-servico/${res.data.os_id}`)
     },
-    onError: () => toast({ title: 'Erro ao converter em OS', variant: 'destructive' }),
+    onError: (e: any) => toast({ title: e?.response?.data?.detail ?? 'Erro ao converter em OS', variant: 'destructive' }),
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: (id: string) => api.put(`/quotes/${id}`, { status: 'aprovado' }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['quotes'] }); toast({ title: 'Orçamento aprovado!' }) },
+    onError: () => toast({ title: 'Erro ao aprovar', variant: 'destructive' }),
   })
 
   async function downloadPdf(id: string, number: number) {
     try {
       const res = await api.get(`/pdf/quote/${id}`, { responseType: 'blob' })
       downloadBlob(res.data, `orcamento-${String(number).padStart(5, '0')}.pdf`)
-    } catch {
+    } catch (e: any) {
       toast({ title: 'Erro ao gerar PDF', variant: 'destructive' })
     }
   }
@@ -106,11 +113,14 @@ export function QuoteList() {
                       <Button variant="ghost" size="icon" onClick={() => downloadPdf(q.id, q.number)} title="Gerar PDF">
                         <FileDown className="h-4 w-4" />
                       </Button>
-                      {q.status === 'aprovado' && (
-                        <Button variant="ghost" size="icon" onClick={() => convertMutation.mutate(q.id)} title="Converter em OS" disabled={convertMutation.isPending}>
-                          <ArrowRight className="h-4 w-4 text-green-600" />
+                      {q.status !== 'aprovado' && q.status !== 'recusado' && (
+                        <Button variant="ghost" size="icon" onClick={() => approveMutation.mutate(q.id)} title="Aprovar" disabled={approveMutation.isPending}>
+                          <CheckCircle className="h-4 w-4 text-green-600" />
                         </Button>
                       )}
+                      <Button variant="ghost" size="icon" onClick={() => convertMutation.mutate(q.id)} title="Converter em OS" disabled={convertMutation.isPending}>
+                        <ArrowRight className="h-4 w-4 text-blue-600" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => setDeleteId(q.id)} title="Excluir">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>

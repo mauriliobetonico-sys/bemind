@@ -121,7 +121,7 @@ export function ServiceOrderForm() {
     try {
       const res = await api.get(`/pdf/service-order/${id}`, { responseType: 'blob' })
       downloadBlob(res.data, `os-${id}.pdf`)
-    } catch { toast({ title: 'Erro ao gerar PDF', variant: 'destructive' }) }
+    } catch (e: any) { toast({ title: 'Erro ao gerar PDF', variant: 'destructive' }) }
   }
 
   return (

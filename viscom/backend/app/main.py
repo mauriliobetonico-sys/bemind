@@ -61,11 +61,12 @@ def startup_event():
     try:
         if not db.query(User).filter(User.role == "admin").first():
             db.add(User(
-                id=str(uuid.uuid4()),
+                id="00000000-0000-0000-0000-000000000001",
                 name="Administrador",
                 email="admin@viscom.com",
                 hashed_password=hash_password("admin123"),
                 role="admin",
+                is_active=True,
             ))
             db.commit()
     except Exception:

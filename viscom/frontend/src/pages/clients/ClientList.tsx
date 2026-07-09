@@ -47,12 +47,12 @@ export function ClientList({ isReseller }: Props) {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/clients/${id}`),
     onSuccess: () => {
-      toast({ title: 'Cliente inativado com sucesso.' })
+      toast({ title: 'Cliente excluído com sucesso.' })
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       setDeleteId(null)
     },
     onError: () => {
-      toast({ title: 'Erro ao inativar cliente.', variant: 'destructive' })
+      toast({ title: 'Erro ao excluir cliente.', variant: 'destructive' })
     },
   })
 
@@ -142,9 +142,9 @@ export function ClientList({ isReseller }: Props) {
 
       <ConfirmDialog
         open={!!deleteId}
-        title="Inativar cliente"
-        description="Tem certeza que deseja inativar este cliente? Esta ação pode ser revertida."
-        confirmLabel="Inativar"
+        title="Excluir cliente"
+        description="Tem certeza que deseja excluir este cliente?"
+        confirmLabel="Excluir"
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         onCancel={() => setDeleteId(null)}
         loading={deleteMutation.isPending}

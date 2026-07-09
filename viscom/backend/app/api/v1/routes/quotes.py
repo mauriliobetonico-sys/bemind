@@ -162,8 +162,6 @@ def convert_to_os(quote_id: uuid.UUID, db: Session = Depends(get_db), current_us
     quote = q.first()
     if not quote:
         raise HTTPException(status_code=404, detail="Orçamento não encontrado")
-    if quote.status != "aprovado":
-        raise HTTPException(status_code=400, detail="Apenas orçamentos aprovados podem ser convertidos em OS")
 
     result = db.execute(sa_select(func.max(ServiceOrder.number))).scalar()
     os_number = (result or 0) + 1

@@ -34,7 +34,7 @@ export function ServiceOrderList() {
     try {
       const res = await api.get(`/pdf/service-order/${id}`, { responseType: 'blob' })
       downloadBlob(res.data, `os-${String(number).padStart(5, '0')}.pdf`)
-    } catch { toast({ title: 'Erro ao gerar PDF', variant: 'destructive' }) }
+    } catch (e: any) { toast({ title: 'Erro ao gerar PDF', variant: 'destructive' }) }
   }
 
   if (isLoading) return <PageLoading />
