@@ -2,9 +2,9 @@
 {% block doc_header %}
 <div class="doc-title">ORDEM DE SERVIÇO</div>
 <div class="doc-number">OS Nº {{ '%05d' % os.number }}</div>
-<div style="font-size:9pt;color:#555;text-align:right">Abertura: {{ os.opened_at.strftime('%d/%m/%Y') }}</div>
+<div style="font-size:9pt;color:#555;text-align:right">Abertura: {{ os.opened_at.strftime('%d/%m/%Y') if os.opened_at else os.created_at.strftime('%d/%m/%Y') }}</div>
 {% if os.deadline %}
-<div style="font-size:9pt;color:#c00;text-align:right;font-weight:bold">Prazo: {{ os.deadline.strftime('%d/%m/%Y') }}</div>
+<div style="font-size:9pt;color:#c00;text-align:right;font-weight:bold">Prazo: {{ os.deadline.strftime('%d/%m/%Y') if os.deadline else '' }}</div>
 {% endif %}
 {% endblock %}
 {% block content %}
