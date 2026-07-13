@@ -92,11 +92,25 @@ export function ServiceOrderForm() {
 
   const mutation = useMutation({
     mutationFn: async (data: ServiceOrderFormData) => {
+      const clean = (v: any) => (v === '' || v === null ? undefined : v)
       const payload = {
-        ...data,
+        client_id: data.client_id,
+        quote_id: clean(data.quote_id),
+        deadline: clean(data.deadline),
+        production_notes: clean(data.production_notes),
+        installation_notes: clean(data.installation_notes),
+        payment_method: clean(data.payment_method),
+        payment_conditions: clean(data.payment_conditions),
         items: data.items.map((item, idx) => ({
-          ...item,
+          product_id: item.product_id,
+          material_type: clean(item.material_type),
+          installation_type: clean(item.installation_type),
+          finishing: clean(item.finishing),
+          width_m: item.width_m || undefined,
+          height_m: item.height_m || undefined,
           area_m2: item.width_m && item.height_m ? item.width_m * item.height_m : undefined,
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0,
           subtotal: calcSubtotal(idx),
         })),
       }
@@ -108,7 +122,11 @@ export function ServiceOrderForm() {
       toast({ title: isEditing ? 'OS atualizada!' : 'OS criada!' })
       if (!isEditing) navigate(`/ordens-de-servico/${res.data.id}`)
     },
-    onError: () => toast({ title: 'Erro ao salvar', variant: 'destructive' }),
+    onError: (e: any) => {
+      const detail = e?.response?.data?.detail
+      const msg = typeof detail === 'string' ? detail : detail?.[0]?.msg ?? 'Erro ao salvar'
+      toast({ title: msg, variant: 'destructive' })
+    },
   })
 
   const statusMutation = useMutation({

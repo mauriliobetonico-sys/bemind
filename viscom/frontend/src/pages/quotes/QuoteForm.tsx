@@ -82,11 +82,21 @@ export function QuoteForm() {
 
   const mutation = useMutation({
     mutationFn: async (data: QuoteFormData) => {
+      const clean = (v: any) => (v === '' || v === null ? undefined : v)
       const payload = {
-        ...data,
+        client_id: data.client_id,
+        status: data.status,
+        discount_general: data.discount_general || 0,
+        valid_until: clean(data.valid_until),
+        notes: clean(data.notes),
         items: data.items.map((item, idx) => ({
-          ...item,
+          product_id: item.product_id,
+          width_m: item.width_m || undefined,
+          height_m: item.height_m || undefined,
           area_m2: item.width_m && item.height_m ? item.width_m * item.height_m : undefined,
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0,
+          discount_pct: item.discount_pct || 0,
           subtotal: calcSubtotal(idx),
         })),
       }
@@ -98,7 +108,11 @@ export function QuoteForm() {
       toast({ title: isEditing ? 'Orçamento atualizado!' : 'Orçamento criado!' })
       if (!isEditing) navigate(`/orcamentos/${res.data.id}`)
     },
-    onError: () => toast({ title: 'Erro ao salvar', variant: 'destructive' }),
+    onError: (e: any) => {
+      const detail = e?.response?.data?.detail
+      const msg = typeof detail === 'string' ? detail : detail?.[0]?.msg ?? 'Erro ao salvar'
+      toast({ title: msg, variant: 'destructive' })
+    },
   })
 
   const convertMutation = useMutation({
