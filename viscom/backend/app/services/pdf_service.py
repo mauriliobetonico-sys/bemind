@@ -1,4 +1,5 @@
 import os
+import base64
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML, CSS
@@ -9,17 +10,38 @@ TEMPLATE_DIR = Path(__file__).parent.parent / "templates" / "pdf"
 env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)))
 
 
+def _get_logo_data_uri(logo_path: str) -> str | None:
+    if not logo_path or not os.path.exists(logo_path):
+        return None
+    try:
+        with open(logo_path, "rb") as f:
+            data = base64.b64encode(f.read()).decode()
+        ext = os.path.splitext(logo_path)[1].lower().lstrip(".")
+        mime = {"png": "png", "jpg": "jpeg", "jpeg": "jpeg", "gif": "gif", "webp": "webp", "svg": "svg+xml"}.get(ext, "png")
+        return f"data:image/{mime};base64,{data}"
+    except Exception:
+        return None
+
+
 def _get_company(db: Session) -> dict:
     from app.models.company import Company
     co = db.query(Company).first()
     if co:
-        return {"name": co.name, "cnpj": co.cnpj, "address": co.address, "phone": co.phone, "email": co.email}
+        return {
+            "name": co.name or settings.COMPANY_NAME,
+            "cnpj": co.cnpj or settings.COMPANY_CNPJ,
+            "address": co.address or settings.COMPANY_ADDRESS,
+            "phone": co.phone or settings.COMPANY_PHONE,
+            "email": co.email or settings.COMPANY_EMAIL,
+            "logo": _get_logo_data_uri(co.logo_path),
+        }
     return {
         "name": settings.COMPANY_NAME,
         "cnpj": settings.COMPANY_CNPJ,
         "address": settings.COMPANY_ADDRESS,
         "phone": settings.COMPANY_PHONE,
         "email": settings.COMPANY_EMAIL,
+        "logo": _get_logo_data_uri(getattr(settings, "LOGO_PATH", None)),
     }
 
 
@@ -47,8 +69,9 @@ def generate_quote_pdf(quote_id: str, db: Session) -> bytes:
             "subtotal": it.subtotal,
         })
     from decimal import Decimal
-    sub = sum(i.subtotal for i in quote.items)
-    total = (sub * (1 - quote.discount_general / 100)).quantize(Decimal("0.01"))
+    sub = sum(i.subtotal for i in quote.items) if quote.items else Decimal("0")
+    discount = Decimal(str(quote.discount_general or 0))
+    total = (sub * (1 - discount / 100)).quantize(Decimal("0.01"))
     return _render_pdf("quote.html", {
         "company": _get_company(db),
         "quote": quote,

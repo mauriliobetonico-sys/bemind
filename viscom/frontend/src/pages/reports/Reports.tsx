@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from '@/hooks/use-toast'
-import { FileDown, FileSpreadsheet } from 'lucide-react'
+import { FileDown, FileSpreadsheet, Search } from 'lucide-react'
 
 const now = new Date()
 const DEFAULT_FROM = `${now.getFullYear()}-01-01`
@@ -34,10 +34,10 @@ function ReportToolbar({ onPdf, onExcel }: { onPdf: () => void; onExcel: () => v
 
 function DateFilter({ from, to, setFrom, setTo, onSubmit }: any) {
   return (
-    <div className="flex gap-4 mb-4 items-end">
+    <div className="flex gap-4 mb-4 items-end flex-wrap">
       <div className="space-y-1"><Label className="text-xs">De</Label><Input type="date" className="h-9" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
       <div className="space-y-1"><Label className="text-xs">Até</Label><Input type="date" className="h-9" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-      <Button size="sm" onClick={onSubmit}>Buscar</Button>
+      <Button size="sm" onClick={onSubmit}><Search className="mr-2 h-4 w-4" />Buscar</Button>
     </div>
   )
 }
@@ -56,14 +56,16 @@ export function Reports() {
   const [tab, setTab] = useState<Tab>('periodo')
   const [from, setFrom] = useState(DEFAULT_FROM)
   const [to, setTo] = useState(DEFAULT_TO)
+  const [clientName, setClientName] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
   const params = { date_from: from, date_to: to }
+  const clientParams = { date_from: from, date_to: to, client_name: clientName || undefined }
   const enabled = submitted
 
   const periodData = useReport('sales-by-period', params, enabled && tab === 'periodo')
   const sellerData = useReport('by-seller', params, enabled && tab === 'vendedor')
-  const clientData = useReport('by-client', params, enabled && tab === 'cliente')
+  const clientData = useReport('by-client', clientParams, enabled && tab === 'cliente')
   const materialData = useReport('by-material', params, enabled && tab === 'material')
   const delinqData = useReport('delinquency', {}, enabled && tab === 'inadimplencia')
   const topProdData = useReport('top-products', params, enabled && tab === 'produtos')
@@ -79,6 +81,10 @@ export function Reports() {
     } catch { toast({ title: 'Erro ao gerar arquivo', variant: 'destructive' }) }
   }
 
+  function handleSearch() {
+    setSubmitted(true)
+  }
+
   return (
     <div>
       <PageHeader title="Relatórios" />
@@ -92,9 +98,26 @@ export function Reports() {
       </div>
 
       {tab !== 'inadimplencia' && (
-        <DateFilter from={from} to={to} setFrom={setFrom} setTo={setTo} onSubmit={() => setSubmitted(true)} />
+        <div>
+          <DateFilter from={from} to={to} setFrom={setFrom} setTo={setTo} onSubmit={handleSearch} />
+          {tab === 'cliente' && (
+            <div className="flex gap-2 mb-4 items-end">
+              <div className="space-y-1">
+                <Label className="text-xs">Buscar por nome do cliente</Label>
+                <Input
+                  className="h-9 w-64"
+                  placeholder="Digite o nome do cliente..."
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+              <Button size="sm" variant="outline" onClick={() => { setClientName(''); setSubmitted(false) }}>Limpar</Button>
+            </div>
+          )}
+        </div>
       )}
-      {tab === 'inadimplencia' && <Button size="sm" className="mb-4" onClick={() => setSubmitted(true)}>Carregar</Button>}
+      {tab === 'inadimplencia' && <Button size="sm" className="mb-4" onClick={() => setSubmitted(true)}><Search className="mr-2 h-4 w-4" />Carregar</Button>}
 
       <ReportToolbar onPdf={() => handleDownload('pdf')} onExcel={() => handleDownload('xlsx')} />
 
@@ -104,7 +127,7 @@ export function Reports() {
             <Table>
               <TableHeader><TableRow><TableHead>Período</TableHead><TableHead>Qtd OS</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader>
               <TableBody>
-                {!periodData.data ? <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Sem dados no período</TableCell></TableRow>
+                {!periodData.data ? <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Clique em Buscar para carregar os dados</TableCell></TableRow>
                   : <TableRow><TableCell>{from} → {to}</TableCell><TableCell>{periodData.data.total_orders}</TableCell><TableCell className="text-right">{formatCurrency(periodData.data.total_value)}</TableCell></TableRow>}
               </TableBody>
             </Table>

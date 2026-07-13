@@ -177,6 +177,7 @@ def by_seller_alias(
 def by_client_alias(
     date_from: datetime = None,
     date_to: datetime = None,
+    client_name: Optional[str] = None,
     db: Session = Depends(get_db),
     _=Depends(get_current_active_user),
 ):
@@ -189,6 +190,8 @@ def by_client_alias(
         q = q.filter(ServiceOrder.created_at >= date_from)
     if date_to:
         q = q.filter(ServiceOrder.created_at <= date_to)
+    if client_name:
+        q = q.filter(Client.name.ilike(f"%{client_name}%"))
     rows = q.group_by(Client.id, Client.name).all()
     return [{"client_name": r.name, "total": float(r.total or 0), "count": r.count} for r in rows]
 

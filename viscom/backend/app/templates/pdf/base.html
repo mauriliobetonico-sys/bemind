@@ -15,8 +15,10 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #333; }
   .header { border-bottom: 3px solid #1e40af; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .company-name { font-size: 18pt; font-weight: bold; color: #1e40af; }
-  .company-info { font-size: 9pt; color: #555; line-height: 1.6; }
+  .company-logo { max-height: 70px; max-width: 140px; object-fit: contain; margin-right: 12px; }
+  .company-block { display: flex; align-items: flex-start; gap: 12px; }
+  .company-name { font-size: 16pt; font-weight: bold; color: #1e40af; }
+  .company-info { font-size: 9pt; color: #555; line-height: 1.6; margin-top: 4px; }
   .doc-title { font-size: 14pt; font-weight: bold; color: #1e40af; text-align: right; }
   .doc-number { font-size: 11pt; color: #555; text-align: right; }
   table { width: 100%; border-collapse: collapse; margin: 12px 0; }
@@ -45,12 +47,17 @@
 <body>
 
 <div class="header">
-  <div>
-    <div class="company-name">{{ company.name }}</div>
-    <div class="company-info">
-      CNPJ: {{ company.cnpj }}<br>
-      {{ company.address }}<br>
-      Tel: {{ company.phone }} | {{ company.email }}
+  <div class="company-block">
+    {% if company.logo %}
+    <img class="company-logo" src="{{ company.logo }}" alt="Logo">
+    {% endif %}
+    <div>
+      <div class="company-name">{{ company.name }}</div>
+      <div class="company-info">
+        {% if company.cnpj %}CNPJ: {{ company.cnpj }}<br>{% endif %}
+        {% if company.address %}{{ company.address }}<br>{% endif %}
+        {% if company.phone %}Tel: {{ company.phone }}{% if company.email %} | {% endif %}{% endif %}{% if company.email %}{{ company.email }}{% endif %}
+      </div>
     </div>
   </div>
   <div>

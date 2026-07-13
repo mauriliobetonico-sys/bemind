@@ -157,7 +157,7 @@ def update_service_order(os_id: uuid.UUID, body: ServiceOrderUpdate, db: Session
                 width_m=item.get("width_m"),
                 height_m=item.get("height_m"),
                 area_m2=area,
-                quantity=qty,
+                quantity=int(qty),
                 unit_price=price,
                 subtotal=subtotal,
             )

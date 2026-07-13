@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
-import { Pencil, Trash2, Plus, Save } from 'lucide-react'
+import { Pencil, Trash2, Plus, Save, Upload, ImageIcon } from 'lucide-react'
 import type { Company, ConfigList } from '@/types'
 
 const CATEGORIES = [
@@ -77,23 +77,56 @@ function ConfigListTab({ category, label }: { category: string; label: string })
 
 export function SettingsPage() {
   const qc = useQueryClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [tab, setTab] = useState<'empresa' | typeof CATEGORIES[number]['key']>('empresa')
   const [company, setCompany] = useState({ name: '', cnpj: '', address: '', phone: '', email: '' })
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoKey, setLogoKey] = useState(0)
 
-  const { data: companyData, isLoading } = useQuery<Company>({
+  const { data: companyData, isLoading } = useQuery<Company & { has_logo?: boolean }>({
     queryKey: ['company'],
-    queryFn: async () => (await api.get('/company')).data,
+    queryFn: async () => {
+      try {
+        return (await api.get('/company')).data
+      } catch {
+        return { id: null, name: '', cnpj: '', address: '', phone: '', email: '', has_logo: false }
+      }
+    },
   })
 
   useEffect(() => {
-    if (companyData) setCompany({ name: companyData.name, cnpj: companyData.cnpj, address: companyData.address ?? '', phone: companyData.phone ?? '', email: companyData.email ?? '' })
+    if (companyData) {
+      setCompany({ name: companyData.name || '', cnpj: companyData.cnpj || '', address: companyData.address || '', phone: companyData.phone || '', email: companyData.email || '' })
+      if (companyData.has_logo) setLogoPreview(`/api/v1/company/logo?t=${Date.now()}`)
+    }
   }, [companyData])
 
   const saveMutation = useMutation({
     mutationFn: () => api.put('/company', company),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['company'] }); toast({ title: 'Empresa atualizada!' }) },
-    onError: () => toast({ title: 'Erro ao salvar', variant: 'destructive' }),
+    onError: (e: any) => toast({ title: 'Erro ao salvar', description: e?.response?.data?.detail ?? String(e), variant: 'destructive' }),
   })
+
+  const logoMutation = useMutation({
+    mutationFn: (file: File) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      return api.post('/company/logo', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    },
+    onSuccess: () => {
+      toast({ title: 'Logo atualizado!' })
+      setLogoKey(k => k + 1)
+      setLogoPreview(`/api/v1/company/logo?t=${Date.now()}`)
+      qc.invalidateQueries({ queryKey: ['company'] })
+    },
+    onError: (e: any) => toast({ title: 'Erro ao enviar logo', description: e?.response?.data?.detail ?? String(e), variant: 'destructive' }),
+  })
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    logoMutation.mutate(file)
+  }
 
   if (isLoading) return <PageLoading />
 
@@ -111,19 +144,48 @@ export function SettingsPage() {
       </div>
 
       {tab === 'empresa' && (
-        <Card>
-          <CardHeader><CardTitle>Dados da Empresa</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>Nome / Razão Social</Label><Input value={company.name} onChange={(e) => setCompany({ ...company, name: e.target.value })} /></div>
-            <div className="space-y-2"><Label>CNPJ</Label><Input value={company.cnpj} onChange={(e) => setCompany({ ...company, cnpj: e.target.value })} /></div>
-            <div className="space-y-2 md:col-span-2"><Label>Endereço Completo</Label><Input value={company.address} onChange={(e) => setCompany({ ...company, address: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Telefone</Label><Input value={company.phone} onChange={(e) => setCompany({ ...company, phone: e.target.value })} /></div>
-            <div className="space-y-2"><Label>E-mail</Label><Input type="email" value={company.email} onChange={(e) => setCompany({ ...company, email: e.target.value })} /></div>
-            <div className="md:col-span-2">
-              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}><Save className="mr-2 h-4 w-4" />{saveMutation.isPending ? 'Salvando...' : 'Salvar'}</Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle>Logotipo da Empresa</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-6">
+                <div className="w-40 h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden">
+                  {logoPreview ? (
+                    <img key={logoKey} src={logoPreview} alt="Logo" className="max-w-full max-h-full object-contain" onError={() => setLogoPreview(null)} />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                      <ImageIcon className="h-8 w-8" />
+                      <span className="text-xs">Sem logo</span>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">O logotipo aparecerá em todos os documentos (OS, Orçamento, Recibo).</p>
+                  <p className="text-xs text-muted-foreground">Formatos: PNG, JPG, SVG. Recomendado: fundo transparente.</p>
+                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={logoMutation.isPending}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    {logoMutation.isPending ? 'Enviando...' : 'Enviar Logo'}
+                  </Button>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle>Dados da Empresa</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>Nome / Razão Social</Label><Input value={company.name} onChange={(e) => setCompany({ ...company, name: e.target.value })} /></div>
+              <div className="space-y-2"><Label>CNPJ</Label><Input value={company.cnpj} onChange={(e) => setCompany({ ...company, cnpj: e.target.value })} /></div>
+              <div className="space-y-2 md:col-span-2"><Label>Endereço Completo</Label><Input value={company.address} onChange={(e) => setCompany({ ...company, address: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Telefone</Label><Input value={company.phone} onChange={(e) => setCompany({ ...company, phone: e.target.value })} /></div>
+              <div className="space-y-2"><Label>E-mail</Label><Input type="email" value={company.email} onChange={(e) => setCompany({ ...company, email: e.target.value })} /></div>
+              <div className="md:col-span-2">
+                <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}><Save className="mr-2 h-4 w-4" />{saveMutation.isPending ? 'Salvando...' : 'Salvar'}</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {CATEGORIES.map(({ key, label }) => tab === key && (
