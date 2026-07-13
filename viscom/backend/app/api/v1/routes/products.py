@@ -36,7 +36,7 @@ def create_product(body: ProductCreate, db: Session = Depends(get_db), _=Depends
 
 
 @router.get("/{product_id}", response_model=ProductResponse)
-def get_product(product_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def get_product(product_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Produto não encontrado")
@@ -45,7 +45,7 @@ def get_product(product_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(
 
 @router.patch("/{product_id}", response_model=ProductResponse)
 @router.put("/{product_id}", response_model=ProductResponse)
-def update_product(product_id: uuid.UUID, body: ProductUpdate, db: Session = Depends(get_db), _=Depends(require_admin)):
+def update_product(product_id: str, body: ProductUpdate, db: Session = Depends(get_db), _=Depends(require_admin)):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Produto não encontrado")
@@ -57,7 +57,7 @@ def update_product(product_id: uuid.UUID, body: ProductUpdate, db: Session = Dep
 
 
 @router.delete("/{product_id}", status_code=204)
-def delete_product(product_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(require_admin)):
+def delete_product(product_id: str, db: Session = Depends(get_db), _=Depends(require_admin)):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Produto não encontrado")
@@ -88,7 +88,7 @@ def create_config(body: ConfigListCreate, db: Session = Depends(get_db), _=Depen
 
 
 @router.delete("/config/list/{config_id}", status_code=204)
-def delete_config(config_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(require_admin)):
+def delete_config(config_id: str, db: Session = Depends(get_db), _=Depends(require_admin)):
     config = db.query(ConfigList).filter(ConfigList.id == config_id).first()
     if not config:
         raise HTTPException(status_code=404, detail="Configuração não encontrada")

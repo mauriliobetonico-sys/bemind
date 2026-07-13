@@ -23,7 +23,7 @@ router = APIRouter(prefix="/financial", tags=["financial"])
 @router.get("/receivables", response_model=List[ReceivableResponse])
 def list_receivables(
     status: Optional[str] = None,
-    client_id: Optional[uuid.UUID] = None,
+    client_id: Optional[str] = None,
     overdue_only: bool = False,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
@@ -50,7 +50,7 @@ def create_receivable(body: ReceivableCreate, db: Session = Depends(get_db), _=D
 
 
 @router.get("/receivables/{rec_id}", response_model=ReceivableResponse)
-def get_receivable(rec_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def get_receivable(rec_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
     rec = db.query(Receivable).filter(Receivable.id == rec_id, Receivable.is_deleted == False).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Conta a receber não encontrada")
@@ -58,7 +58,7 @@ def get_receivable(rec_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(g
 
 
 @router.delete("/receivables/{rec_id}", status_code=204)
-def delete_receivable(rec_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(require_admin)):
+def delete_receivable(rec_id: str, db: Session = Depends(get_db), _=Depends(require_admin)):
     rec = db.query(Receivable).filter(Receivable.id == rec_id).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Conta a receber não encontrada")
@@ -99,7 +99,7 @@ def register_payment(body: PaymentCreate, db: Session = Depends(get_db), current
 
 
 @router.get("/payments/{receivable_id}", response_model=List[PaymentResponse])
-def list_payments(receivable_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def list_payments(receivable_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
     return db.query(Payment).filter(Payment.receivable_id == receivable_id).all()
 
 
@@ -133,7 +133,7 @@ def create_cash_flow(body: CashFlowCreate, db: Session = Depends(get_db), curren
 
 
 @router.get("/client-debt/{client_id}", response_model=ClientDebtResponse)
-def get_client_debt(client_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def get_client_debt(client_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
     client = db.query(Client).filter(Client.id == client_id, Client.is_deleted == False).first()
     if not client:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")

@@ -23,7 +23,7 @@ def _next_os_number(db: Session) -> int:
 @router.get("", response_model=List[ServiceOrderResponse])
 def list_service_orders(
     status: Optional[str] = None,
-    client_id: Optional[uuid.UUID] = None,
+    client_id: Optional[str] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -112,7 +112,7 @@ def create_service_order(body: ServiceOrderCreate, db: Session = Depends(get_db)
 
 
 @router.get("/{os_id}", response_model=ServiceOrderResponse)
-def get_service_order(os_id: uuid.UUID, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def get_service_order(os_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     q = db.query(ServiceOrder).filter(ServiceOrder.id == os_id, ServiceOrder.is_deleted == False)
     if current_user.role == "vendedor":
         q = q.filter(ServiceOrder.created_by_id == current_user.id)
@@ -123,7 +123,7 @@ def get_service_order(os_id: uuid.UUID, db: Session = Depends(get_db), current_u
 
 
 @router.put("/{os_id}", response_model=ServiceOrderResponse)
-def update_service_order(os_id: uuid.UUID, body: ServiceOrderUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def update_service_order(os_id: str, body: ServiceOrderUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     q = db.query(ServiceOrder).filter(ServiceOrder.id == os_id, ServiceOrder.is_deleted == False)
     if current_user.role == "vendedor":
         q = q.filter(ServiceOrder.created_by_id == current_user.id)
@@ -169,7 +169,7 @@ def update_service_order(os_id: uuid.UUID, body: ServiceOrderUpdate, db: Session
 
 
 @router.patch("/{os_id}/status", response_model=ServiceOrderResponse)
-def update_status(os_id: uuid.UUID, body: StatusUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def update_status(os_id: str, body: StatusUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     q = db.query(ServiceOrder).filter(ServiceOrder.id == os_id, ServiceOrder.is_deleted == False)
     if current_user.role == "vendedor":
         q = q.filter(ServiceOrder.created_by_id == current_user.id)
@@ -193,7 +193,7 @@ def update_status(os_id: uuid.UUID, body: StatusUpdate, db: Session = Depends(ge
 
 
 @router.delete("/{os_id}", status_code=204)
-def delete_service_order(os_id: uuid.UUID, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def delete_service_order(os_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     q = db.query(ServiceOrder).filter(ServiceOrder.id == os_id, ServiceOrder.is_deleted == False)
     if current_user.role == "vendedor":
         q = q.filter(ServiceOrder.created_by_id == current_user.id)

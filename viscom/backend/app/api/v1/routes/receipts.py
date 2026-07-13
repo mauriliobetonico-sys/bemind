@@ -20,7 +20,7 @@ def _next_receipt_number(db: Session) -> int:
 
 @router.get("", response_model=List[ReceiptResponse])
 def list_receipts(
-    client_id: uuid.UUID = None,
+    client_id: str = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -62,7 +62,7 @@ def get_amount_words(value: float, _=Depends(get_current_active_user)):
 
 
 @router.get("/{receipt_id}", response_model=ReceiptResponse)
-def get_receipt(receipt_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def get_receipt(receipt_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
     receipt = db.query(Receipt).filter(Receipt.id == receipt_id).first()
     if not receipt:
         raise HTTPException(status_code=404, detail="Recibo não encontrado")
@@ -70,7 +70,7 @@ def get_receipt(receipt_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(
 
 
 @router.delete("/{receipt_id}", status_code=204)
-def delete_receipt(receipt_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def delete_receipt(receipt_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
     receipt = db.query(Receipt).filter(Receipt.id == receipt_id).first()
     if not receipt:
         raise HTTPException(status_code=404, detail="Recibo não encontrado")

@@ -33,7 +33,7 @@ def create_user(body: UserCreate, db: Session = Depends(get_db), _=Depends(requi
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-def get_user(user_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(require_admin)):
+def get_user(user_id: str, db: Session = Depends(get_db), _=Depends(require_admin)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
@@ -41,7 +41,7 @@ def get_user(user_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(requir
 
 
 @router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_id: uuid.UUID, body: UserUpdate, db: Session = Depends(get_db), _=Depends(require_admin)):
+def update_user(user_id: str, body: UserUpdate, db: Session = Depends(get_db), _=Depends(require_admin)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
@@ -56,7 +56,7 @@ def update_user(user_id: uuid.UUID, body: UserUpdate, db: Session = Depends(get_
 
 
 @router.delete("/{user_id}", status_code=204)
-def delete_user(user_id: uuid.UUID, db: Session = Depends(get_db), current_user=Depends(require_admin)):
+def delete_user(user_id: str, db: Session = Depends(get_db), current_user=Depends(require_admin)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")

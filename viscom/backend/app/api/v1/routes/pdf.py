@@ -10,7 +10,7 @@ router = APIRouter(prefix="/pdf", tags=["pdf"])
 
 
 @router.get("/quote/{quote_id}")
-def download_quote_pdf(quote_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def download_quote_pdf(quote_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
     content = generate_quote_pdf(str(quote_id), db)
     if not content:
         raise HTTPException(status_code=404, detail="Orçamento não encontrado")
@@ -18,7 +18,7 @@ def download_quote_pdf(quote_id: uuid.UUID, db: Session = Depends(get_db), _=Dep
 
 
 @router.get("/service-order/{os_id}")
-def download_os_pdf(os_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def download_os_pdf(os_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
     content = generate_os_pdf(str(os_id), db)
     if not content:
         raise HTTPException(status_code=404, detail="OS não encontrada")
@@ -26,7 +26,7 @@ def download_os_pdf(os_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(g
 
 
 @router.get("/receipt/{receipt_id}")
-def download_receipt_pdf(receipt_id: uuid.UUID, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def download_receipt_pdf(receipt_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
     content = generate_receipt_pdf(str(receipt_id), db)
     if not content:
         raise HTTPException(status_code=404, detail="Recibo não encontrado")

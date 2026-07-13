@@ -35,7 +35,7 @@ def _compute_item_subtotal(item_data: dict) -> Decimal:
 @router.get("", response_model=List[QuoteResponse])
 def list_quotes(
     status: Optional[str] = None,
-    client_id: Optional[uuid.UUID] = None,
+    client_id: Optional[str] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -89,7 +89,7 @@ def create_quote(body: QuoteCreate, db: Session = Depends(get_db), current_user=
 
 
 @router.get("/{quote_id}", response_model=QuoteResponse)
-def get_quote(quote_id: uuid.UUID, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def get_quote(quote_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     q = db.query(Quote).filter(Quote.id == quote_id, Quote.is_deleted == False)
     if current_user.role == "vendedor":
         q = q.filter(Quote.created_by_id == current_user.id)
@@ -100,7 +100,7 @@ def get_quote(quote_id: uuid.UUID, db: Session = Depends(get_db), current_user=D
 
 
 @router.put("/{quote_id}", response_model=QuoteResponse)
-def update_quote(quote_id: uuid.UUID, body: QuoteUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def update_quote(quote_id: str, body: QuoteUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     q = db.query(Quote).filter(Quote.id == quote_id, Quote.is_deleted == False)
     if current_user.role == "vendedor":
         q = q.filter(Quote.created_by_id == current_user.id)
@@ -140,7 +140,7 @@ def update_quote(quote_id: uuid.UUID, body: QuoteUpdate, db: Session = Depends(g
 
 
 @router.delete("/{quote_id}", status_code=204)
-def delete_quote(quote_id: uuid.UUID, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def delete_quote(quote_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     q = db.query(Quote).filter(Quote.id == quote_id, Quote.is_deleted == False)
     if current_user.role == "vendedor":
         q = q.filter(Quote.created_by_id == current_user.id)
@@ -152,7 +152,7 @@ def delete_quote(quote_id: uuid.UUID, db: Session = Depends(get_db), current_use
 
 
 @router.post("/{quote_id}/convert-to-os")
-def convert_to_os(quote_id: uuid.UUID, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def convert_to_os(quote_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     from app.models.service_order import ServiceOrder, ServiceOrderItem, StatusHistory
     from sqlalchemy import func, select as sa_select
 

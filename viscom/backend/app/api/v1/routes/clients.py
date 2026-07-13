@@ -67,7 +67,7 @@ def lookup_cep(cep: str, _=Depends(get_current_active_user)):
 
 
 @router.get("/{client_id}", response_model=ClientResponse)
-def get_client(client_id: uuid.UUID, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def get_client(client_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     q = db.query(Client).filter(Client.id == client_id, Client.is_deleted == False)
     if current_user.role == "vendedor":
         q = q.filter(Client.created_by_id == current_user.id)
@@ -79,7 +79,7 @@ def get_client(client_id: uuid.UUID, db: Session = Depends(get_db), current_user
 
 @router.patch("/{client_id}", response_model=ClientResponse)
 @router.put("/{client_id}", response_model=ClientResponse)
-def update_client(client_id: uuid.UUID, body: ClientUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def update_client(client_id: str, body: ClientUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     q = db.query(Client).filter(Client.id == client_id, Client.is_deleted == False)
     if current_user.role == "vendedor":
         q = q.filter(Client.created_by_id == current_user.id)
@@ -94,7 +94,7 @@ def update_client(client_id: uuid.UUID, body: ClientUpdate, db: Session = Depend
 
 
 @router.delete("/{client_id}", status_code=204)
-def delete_client(client_id: uuid.UUID, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def delete_client(client_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     q = db.query(Client).filter(Client.id == client_id, Client.is_deleted == False)
     if current_user.role == "vendedor":
         q = q.filter(Client.created_by_id == current_user.id)
