@@ -92,7 +92,7 @@ class ServiceOrderResponse(BaseModel):
     created_by_id: str
     created_by: Optional[UserResponse] = None
     status: str
-    opened_at: datetime
+    opened_at: Optional[datetime] = None
     deadline: Optional[date]
     production_notes: Optional[str]
     installation_notes: Optional[str]
@@ -103,4 +103,4 @@ class ServiceOrderResponse(BaseModel):
     status_history: List[StatusHistoryResponse] = []
     is_deleted: bool
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None

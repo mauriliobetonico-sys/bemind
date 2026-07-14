@@ -110,7 +110,9 @@ export function QuoteForm() {
     },
     onError: (e: any) => {
       const detail = e?.response?.data?.detail
-      const msg = typeof detail === 'string' ? detail : detail?.[0]?.msg ?? 'Erro ao salvar'
+      const msg = typeof detail === 'string' ? detail
+        : Array.isArray(detail) ? detail.map((d: any) => d.msg ?? d.message ?? JSON.stringify(d)).join(', ')
+        : e?.message ?? 'Erro ao salvar'
       toast({ title: msg, variant: 'destructive' })
     },
   })

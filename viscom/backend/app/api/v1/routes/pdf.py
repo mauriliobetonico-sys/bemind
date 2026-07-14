@@ -106,7 +106,7 @@ BASE_CSS = """
 
 
 @router.get("/html/quote/{quote_id}", response_class=HTMLResponse)
-def quote_html(quote_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def quote_html(quote_id: str, db: Session = Depends(get_db)):
     from app.models.quote import Quote
     from decimal import Decimal
     quote = db.query(Quote).filter(Quote.id == quote_id, Quote.is_deleted == False).first()
@@ -151,7 +151,7 @@ def quote_html(quote_id: str, db: Session = Depends(get_db), _=Depends(get_curre
 
 
 @router.get("/html/service-order/{os_id}", response_class=HTMLResponse)
-def os_html(os_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def os_html(os_id: str, db: Session = Depends(get_db)):
     from app.models.service_order import ServiceOrder
     os_obj = db.query(ServiceOrder).filter(ServiceOrder.id == os_id, ServiceOrder.is_deleted == False).first()
     if not os_obj:
@@ -200,7 +200,7 @@ def os_html(os_id: str, db: Session = Depends(get_db), _=Depends(get_current_act
 
 
 @router.get("/html/receipt/{receipt_id}", response_class=HTMLResponse)
-def receipt_html(receipt_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
+def receipt_html(receipt_id: str, db: Session = Depends(get_db)):
     from app.models.receipt import Receipt
     receipt = db.query(Receipt).filter(Receipt.id == receipt_id).first()
     if not receipt:

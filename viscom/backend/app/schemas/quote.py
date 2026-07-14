@@ -75,7 +75,7 @@ class QuoteResponse(BaseModel):
     items: List[QuoteItemResponse] = []
     is_deleted: bool
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     @property
     def total(self) -> Decimal:
