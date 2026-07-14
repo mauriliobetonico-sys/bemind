@@ -135,11 +135,8 @@ export function ServiceOrderForm() {
     onError: () => toast({ title: 'Erro ao atualizar status', variant: 'destructive' }),
   })
 
-  async function downloadPdf() {
-    try {
-      const res = await api.get(`/pdf/service-order/${id}`, { responseType: 'blob' })
-      downloadBlob(res.data, `os-${id}.pdf`)
-    } catch (e: any) { toast({ title: 'Erro ao gerar PDF', variant: 'destructive' }) }
+  function openPdf() {
+    window.open(`/api/v1/pdf/html/service-order/${id}`, '_blank')
   }
 
   return (

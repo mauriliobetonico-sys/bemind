@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
-import { formatCurrency, formatDate, downloadBlob } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { PageHeader } from '@/components/PageHeader'
 import { PageLoading } from '@/components/LoadingSpinner'
 import { OSStatusBadge } from '@/components/StatusBadge'
@@ -30,17 +30,8 @@ export function ServiceOrderList() {
     },
   })
 
-  async function downloadPdf(id: string, number: number) {
-    try {
-      const res = await api.get(`/pdf/service-order/${id}`, { responseType: 'blob' })
-      downloadBlob(res.data, `os-${String(number).padStart(5, '0')}.pdf`)
-    } catch (e: any) {
-      let msg = 'Erro ao gerar PDF'
-      if (e?.response?.data) {
-        try { const t = await e.response.data.text(); const j = JSON.parse(t); msg = j.detail || msg } catch {}
-      }
-      toast({ title: msg, variant: 'destructive' })
-    }
+  function openPdf(id: string) {
+    window.open(`/api/v1/pdf/html/service-order/${id}`, '_blank')
   }
 
   if (isLoading) return <PageLoading />
@@ -90,7 +81,7 @@ export function ServiceOrderList() {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="icon" onClick={() => navigate(`/ordens-de-servico/${os.id}`)} title="Editar"><Edit className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => downloadPdf(os.id, os.number)} title="PDF"><FileDown className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => openPdf(os.id)} title="PDF"><FileDown className="h-4 w-4" /></Button>
                   </div>
                 </TableCell>
               </TableRow>

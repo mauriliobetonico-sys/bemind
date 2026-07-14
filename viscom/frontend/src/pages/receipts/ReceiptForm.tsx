@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
-import { formatCurrency, downloadBlob } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { receiptSchema, type ReceiptFormData } from '@/lib/validators'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -65,17 +65,14 @@ export function ReceiptForm() {
     onError: () => toast({ title: 'Erro ao criar recibo', variant: 'destructive' }),
   })
 
-  async function downloadPdf() {
-    try {
-      const res = await api.get(`/pdf/receipt/${id}`, { responseType: 'blob' })
-      downloadBlob(res.data, `recibo-${id}.pdf`)
-    } catch { toast({ title: 'Erro ao gerar PDF', variant: 'destructive' }) }
+  function openPdf() {
+    window.open(`/api/v1/pdf/html/receipt/${id}`, '_blank')
   }
 
   return (
     <div>
       <PageHeader title={isEditing ? `Recibo #${String(receipt?.number ?? '').padStart(5, '0')}` : 'Novo Recibo'}>
-        {isEditing && <Button variant="outline" onClick={downloadPdf}><FileDown className="mr-2 h-4 w-4" />PDF</Button>}
+        {isEditing && <Button variant="outline" onClick={openPdf}><FileDown className="mr-2 h-4 w-4" />PDF</Button>}
         {!isEditing && (
           <Button onClick={form.handleSubmit((d) => mutation.mutate(d))} disabled={mutation.isPending}>
             <Save className="mr-2 h-4 w-4" />{mutation.isPending ? 'Salvando...' : 'Salvar'}

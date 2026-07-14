@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
-import { formatCurrency, formatDate, downloadBlob } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { PageHeader } from '@/components/PageHeader'
 import { PageLoading } from '@/components/LoadingSpinner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -52,13 +52,8 @@ export function QuoteList() {
     onError: () => toast({ title: 'Erro ao aprovar', variant: 'destructive' }),
   })
 
-  async function downloadPdf(id: string, number: number) {
-    try {
-      const res = await api.get(`/pdf/quote/${id}`, { responseType: 'blob' })
-      downloadBlob(res.data, `orcamento-${String(number).padStart(5, '0')}.pdf`)
-    } catch (e: any) {
-      toast({ title: 'Erro ao gerar PDF', variant: 'destructive' })
-    }
+  function openPdf(id: string) {
+    window.open(`/api/v1/pdf/html/quote/${id}`, '_blank')
   }
 
   if (isLoading) return <PageLoading />
@@ -110,7 +105,7 @@ export function QuoteList() {
                       <Button variant="ghost" size="icon" onClick={() => navigate(`/orcamentos/${q.id}`)} title="Editar">
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => downloadPdf(q.id, q.number)} title="Gerar PDF">
+                      <Button variant="ghost" size="icon" onClick={() => openPdf(q.id)} title="Gerar PDF">
                         <FileDown className="h-4 w-4" />
                       </Button>
                       {q.status !== 'aprovado' && q.status !== 'recusado' && (

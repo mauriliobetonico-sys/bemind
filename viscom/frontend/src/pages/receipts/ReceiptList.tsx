@@ -1,12 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
-import { formatCurrency, formatDate, downloadBlob } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { PageHeader } from '@/components/PageHeader'
 import { PageLoading } from '@/components/LoadingSpinner'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { toast } from '@/hooks/use-toast'
 import { Plus, FileDown, Eye } from 'lucide-react'
 import type { Receipt } from '@/types'
 
@@ -17,11 +16,8 @@ export function ReceiptList() {
     queryFn: async () => (await api.get('/receipts', { params: { limit: 100 } })).data,
   })
 
-  async function downloadPdf(id: string, number: number) {
-    try {
-      const res = await api.get(`/pdf/receipt/${id}`, { responseType: 'blob' })
-      downloadBlob(res.data, `recibo-${String(number).padStart(5, '0')}.pdf`)
-    } catch (e: any) { toast({ title: 'Erro ao gerar PDF', variant: 'destructive' }) }
+  function openPdf(id: string) {
+    window.open(`/api/v1/pdf/html/receipt/${id}`, '_blank')
   }
 
   if (isLoading) return <PageLoading />
@@ -59,7 +55,7 @@ export function ReceiptList() {
                 <TableCell>{r.payment_method}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => navigate(`/recibos/${r.id}`)} title="Ver"><Eye className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => downloadPdf(r.id, r.number)} title="PDF"><FileDown className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => openPdf(r.id)} title="PDF"><FileDown className="h-4 w-4" /></Button>
                 </TableCell>
               </TableRow>
             ))}

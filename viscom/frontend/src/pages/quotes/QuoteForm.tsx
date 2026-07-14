@@ -121,18 +121,15 @@ export function QuoteForm() {
     onError: () => toast({ title: 'Erro ao converter', variant: 'destructive' }),
   })
 
-  async function downloadPdf() {
-    try {
-      const res = await api.get(`/pdf/quote/${id}`, { responseType: 'blob' })
-      downloadBlob(res.data, `orcamento-${id}.pdf`)
-    } catch (e: any) { toast({ title: 'Erro ao gerar PDF', variant: 'destructive' }) }
+  function openPdf() {
+    window.open(`/api/v1/pdf/html/quote/${id}`, '_blank')
   }
 
   return (
     <div>
       <PageHeader title={isEditing ? 'Editar Orçamento' : 'Novo Orçamento'}>
         <div className="flex gap-2">
-          {isEditing && <Button variant="outline" onClick={downloadPdf}><FileDown className="mr-2 h-4 w-4" />PDF</Button>}
+          {isEditing && <Button variant="outline" onClick={openPdf}><FileDown className="mr-2 h-4 w-4" />PDF</Button>}
           {isEditing && (
             <Button variant="outline" onClick={() => convertMutation.mutate()} disabled={convertMutation.isPending}>
               <ArrowRight className="mr-2 h-4 w-4" />Converter em OS
