@@ -59,11 +59,29 @@ def startup_event():
 
     # Safe column migrations — add missing columns without dropping data
     _migrations = [
+        # company columns
         "ALTER TABLE company ADD COLUMN IF NOT EXISTS logo_path VARCHAR(500)",
         "ALTER TABLE company ADD COLUMN IF NOT EXISTS address VARCHAR(500)",
         "ALTER TABLE company ADD COLUMN IF NOT EXISTS phone VARCHAR(30)",
         "ALTER TABLE company ADD COLUMN IF NOT EXISTS email VARCHAR(200)",
+        # clients columns
         "ALTER TABLE clients ADD COLUMN IF NOT EXISTS created_by_id VARCHAR(36)",
+        # quotes columns
+        "ALTER TABLE quotes ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()",
+        # service_orders columns
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS opened_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS payment_conditions VARCHAR(200)",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS installation_notes TEXT",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS production_notes TEXT",
+        # service_order_items columns
+        "ALTER TABLE service_order_items ADD COLUMN IF NOT EXISTS material_type VARCHAR(100)",
+        "ALTER TABLE service_order_items ADD COLUMN IF NOT EXISTS installation_type VARCHAR(100)",
+        "ALTER TABLE service_order_items ADD COLUMN IF NOT EXISTS finishing VARCHAR(100)",
+        "ALTER TABLE service_order_items ADD COLUMN IF NOT EXISTS area_m2 NUMERIC(10,4)",
+        # receivables columns
+        "ALTER TABLE receivables ADD COLUMN IF NOT EXISTS interest_rate NUMERIC(5,2) DEFAULT 0",
+        "ALTER TABLE receivables ADD COLUMN IF NOT EXISTS fine_rate NUMERIC(5,2) DEFAULT 0",
     ]
     with engine.begin() as conn:
         for sql in _migrations:
