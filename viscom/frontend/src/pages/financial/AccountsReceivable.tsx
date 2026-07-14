@@ -121,7 +121,7 @@ export function AccountsReceivable() {
                 <TableCell><ReceivableStatusBadge status={r.status} /></TableCell>
                 <TableCell className="text-right">
                   {r.status !== 'paid' && (
-                    <Button size="sm" variant="outline" onClick={() => { setPayingId(r.id); setPayAmount(String(maxPay)) }}>
+                    <Button size="sm" variant="outline" onClick={() => { setPayingId(r.id); setPayAmount(String(Number(r.total_value) - Number(r.paid_amount))) }}>
                       <DollarSign className="mr-1 h-3 w-3" />Pagar
                     </Button>
                   )}

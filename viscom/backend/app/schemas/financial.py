@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 
 class PaymentCreate(BaseModel):
+    receivable_id: str
     amount: Decimal
     payment_date: date
     payment_method: str
@@ -34,11 +35,18 @@ class ReceivableCreate(BaseModel):
     fine_rate: Decimal = Decimal("0")
 
 
+class ClientBasic(BaseModel):
+    model_config = {"from_attributes": True}
+    id: str
+    name: str
+
+
 class ReceivableResponse(BaseModel):
     model_config = {"from_attributes": True}
     id: str
     os_id: Optional[str]
     client_id: str
+    client: Optional[ClientBasic] = None
     description: str
     total_value: Decimal
     due_date: date

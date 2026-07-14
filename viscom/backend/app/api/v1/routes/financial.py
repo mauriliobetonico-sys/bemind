@@ -151,8 +151,8 @@ def get_client_debt(client_id: str, db: Session = Depends(get_db), _=Depends(get
         client_id=client_id,
         client_name=client.name,
         total_debt=total_debt,
-        overdue_debt=overdue,
-        receivables=receivables,
+        overdue_amount=overdue,
+        receivable_count=len(receivables),
     )
 
 

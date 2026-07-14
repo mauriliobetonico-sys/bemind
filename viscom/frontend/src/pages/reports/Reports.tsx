@@ -222,7 +222,7 @@ export function Reports() {
               <TableHeader><TableRow><TableHead>Produto</TableHead><TableHead>Qtd Vendida</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader>
               <TableBody>
                 {!topProdData.data?.length ? <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Sem dados</TableCell></TableRow>
-                  : topProdData.data.map((r: any, i: number) => <TableRow key={i}><TableCell>{r.product_name}</TableCell><TableCell>{r.quantity}</TableCell><TableCell className="text-right">{formatCurrency(r.total)}</TableCell></TableRow>)}
+                  : topProdData.data.map((r: any, i: number) => <TableRow key={i}><TableCell>{r.product_name}</TableCell><TableCell>{r.quantity}</TableCell><TableCell className="text-right">{formatCurrency(r.total_value)}</TableCell></TableRow>)}
               </TableBody>
             </Table>
           )}
