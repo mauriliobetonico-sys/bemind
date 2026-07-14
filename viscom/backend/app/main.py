@@ -90,6 +90,47 @@ def startup_event():
     finally:
         db.close()
 
+    # Seed default config values if table is empty
+    db = SessionLocal()
+    try:
+        from app.models.product import ConfigList
+        import uuid as _uuid
+        if not db.query(ConfigList).first():
+            defaults = [
+                ("material_type", "Lona"),
+                ("material_type", "Adesivo Vinil"),
+                ("material_type", "Adesivo Perfurado"),
+                ("material_type", "Papel Fotográfico"),
+                ("material_type", "Canvas"),
+                ("material_type", "Backlight"),
+                ("material_type", "Frontlight"),
+                ("material_type", "Banner"),
+                ("installation_type", "Com instalação"),
+                ("installation_type", "Sem instalação"),
+                ("installation_type", "Instalação externa"),
+                ("installation_type", "Instalação interna"),
+                ("finishing", "Ilhós"),
+                ("finishing", "Moldura"),
+                ("finishing", "Bastidor"),
+                ("finishing", "Dobra e cola"),
+                ("finishing", "Laminação fosca"),
+                ("finishing", "Laminação brilho"),
+                ("finishing", "Sem acabamento"),
+                ("payment_method", "Dinheiro"),
+                ("payment_method", "PIX"),
+                ("payment_method", "Cartão de Crédito"),
+                ("payment_method", "Cartão de Débito"),
+                ("payment_method", "Boleto"),
+                ("payment_method", "Transferência Bancária"),
+            ]
+            for cat, val in defaults:
+                db.add(ConfigList(id=str(_uuid.uuid4()), category=cat, value=val, is_active=True))
+            db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
 
 @app.get("/health")
 def health():

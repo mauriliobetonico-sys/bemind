@@ -76,8 +76,15 @@ export function ClientForm({ isReseller }: Props) {
   }, [client, reset])
 
   const saveMutation = useMutation({
-    mutationFn: (data: ClientFormData) =>
-      isEditing ? api.patch(`/clients/${id}`, data) : api.post('/clients', data),
+    mutationFn: (data: ClientFormData) => {
+      const payload = {
+        ...data,
+        reseller_discount_pct: (data.reseller_discount_pct != null && !isNaN(Number(data.reseller_discount_pct)))
+          ? Number(data.reseller_discount_pct) : null,
+        email: data.email || undefined,
+      }
+      return isEditing ? api.patch(`/clients/${id}`, payload) : api.post('/clients', payload)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       toast({ title: `${isReseller ? 'Revendedor' : 'Cliente'} ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso.` })
@@ -86,8 +93,8 @@ export function ClientForm({ isReseller }: Props) {
     onError: (err: any) => {
       const detail = err?.response?.data?.detail
       const msg = typeof detail === 'string' ? detail
-        : Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ')
-        : 'Erro ao salvar. Verifique os dados.'
+        : Array.isArray(detail) ? detail.map((d: any) => d.msg ?? d.message ?? JSON.stringify(d)).join(', ')
+        : err?.message ?? 'Erro ao salvar. Verifique os dados.'
       toast({ title: msg, variant: 'destructive' })
     },
   })

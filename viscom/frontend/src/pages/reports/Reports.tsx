@@ -77,7 +77,7 @@ export function Reports() {
     try {
       const endpointMap: Record<Tab, string> = {
         periodo: 'sales-by-period', vendedor: 'by-seller', cliente: 'by-client',
-        material: 'by-material', inadimplencia: 'delinquency', produtos: 'top-products',
+        historico: 'client-history', material: 'by-material', inadimplencia: 'delinquency', produtos: 'top-products',
       }
       const res = await api.get(`/reports/${endpointMap[tab]}/${format}`, { params, responseType: 'blob' })
       downloadBlob(res.data, `relatorio-${tab}.${format === 'pdf' ? 'pdf' : 'xlsx'}`)
