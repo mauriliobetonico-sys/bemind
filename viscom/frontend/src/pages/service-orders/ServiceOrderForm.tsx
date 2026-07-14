@@ -4,7 +4,7 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
-import { formatCurrency, formatDate, osStatusLabel, downloadBlob } from '@/lib/utils'
+import { formatCurrency, formatDate, osStatusLabel } from '@/lib/utils'
 import { serviceOrderSchema, type ServiceOrderFormData } from '@/lib/validators'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -143,7 +143,7 @@ export function ServiceOrderForm() {
     <div>
       <PageHeader title={isEditing ? `OS #${String(os?.number ?? '').padStart(5, '0')}` : 'Nova Ordem de Serviço'}>
         <div className="flex gap-2">
-          {isEditing && <Button variant="outline" onClick={downloadPdf}><FileDown className="mr-2 h-4 w-4" />PDF</Button>}
+          {isEditing && <Button variant="outline" onClick={openPdf}><FileDown className="mr-2 h-4 w-4" />PDF</Button>}
           {isEditing && <Button variant="outline" onClick={() => navigate(`/recibos/novo?os_id=${id}`)}><Receipt className="mr-2 h-4 w-4" />Recibo</Button>}
           <Button onClick={form.handleSubmit((d) => mutation.mutate(d))} disabled={mutation.isPending}>
             <Save className="mr-2 h-4 w-4" />{mutation.isPending ? 'Salvando...' : 'Salvar'}
