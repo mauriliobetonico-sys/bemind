@@ -218,6 +218,45 @@ def by_material(
     return [{"material_type": r.material_type, "total": float(r.total or 0), "count": r.count, "area_total": float(r.area_total or 0)} for r in rows]
 
 
+@router.get("/client-history")
+def client_history(
+    client_name: Optional[str] = None,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_active_user),
+):
+    """Return all service orders for a client (or all clients if no filter)."""
+    q = db.query(ServiceOrder).filter(ServiceOrder.is_deleted == False)
+    if client_name:
+        q = q.join(Client, Client.id == ServiceOrder.client_id).filter(Client.name.ilike(f"%{client_name}%"))
+    orders = q.order_by(ServiceOrder.created_at.desc()).all()
+    result = []
+    for os_obj in orders:
+        items = []
+        for it in os_obj.items:
+            items.append({
+                "product": it.product.name if it.product else "-",
+                "material_type": it.material_type or "-",
+                "installation_type": it.installation_type or "-",
+                "width_m": float(it.width_m) if it.width_m else None,
+                "height_m": float(it.height_m) if it.height_m else None,
+                "area_m2": float(it.area_m2) if it.area_m2 else None,
+                "quantity": it.quantity,
+                "unit_price": float(it.unit_price),
+                "subtotal": float(it.subtotal),
+            })
+        result.append({
+            "os_number": os_obj.number,
+            "status": os_obj.status,
+            "opened_at": os_obj.opened_at.strftime("%d/%m/%Y") if os_obj.opened_at else "-",
+            "deadline": os_obj.deadline.strftime("%d/%m/%Y") if os_obj.deadline else "-",
+            "total_value": float(os_obj.total_value),
+            "client_name": os_obj.client.name if os_obj.client else "-",
+            "payment_method": os_obj.payment_method or "-",
+            "items": items,
+        })
+    return result
+
+
 @router.get("/delinquency")
 def delinquency_list(
     db: Session = Depends(get_db),

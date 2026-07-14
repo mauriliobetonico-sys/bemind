@@ -42,11 +42,12 @@ function DateFilter({ from, to, setFrom, setTo, onSubmit }: any) {
   )
 }
 
-type Tab = 'periodo' | 'vendedor' | 'cliente' | 'material' | 'inadimplencia' | 'produtos'
+type Tab = 'periodo' | 'vendedor' | 'cliente' | 'historico' | 'material' | 'inadimplencia' | 'produtos'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'periodo', label: 'Por Período' },
   { id: 'vendedor', label: 'Por Vendedor' },
   { id: 'cliente', label: 'Por Cliente' },
+  { id: 'historico', label: 'Histórico do Cliente' },
   { id: 'material', label: 'Por Material' },
   { id: 'inadimplencia', label: 'Inadimplência' },
   { id: 'produtos', label: 'Top Produtos' },
@@ -57,6 +58,7 @@ export function Reports() {
   const [from, setFrom] = useState(DEFAULT_FROM)
   const [to, setTo] = useState(DEFAULT_TO)
   const [clientName, setClientName] = useState('')
+  const [historicoClient, setHistoricoClient] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
   const params = { date_from: from, date_to: to }
@@ -66,6 +68,7 @@ export function Reports() {
   const periodData = useReport('sales-by-period', params, enabled && tab === 'periodo')
   const sellerData = useReport('by-seller', params, enabled && tab === 'vendedor')
   const clientData = useReport('by-client', clientParams, enabled && tab === 'cliente')
+  const historicoData = useReport('client-history', { client_name: historicoClient || undefined }, enabled && tab === 'historico')
   const materialData = useReport('by-material', params, enabled && tab === 'material')
   const delinqData = useReport('delinquency', {}, enabled && tab === 'inadimplencia')
   const topProdData = useReport('top-products', params, enabled && tab === 'produtos')
@@ -97,27 +100,35 @@ export function Reports() {
         ))}
       </div>
 
-      {tab !== 'inadimplencia' && (
+      {tab === 'historico' ? (
+        <div className="flex gap-2 mb-4 items-end">
+          <div className="space-y-1">
+            <Label className="text-xs">Nome do cliente</Label>
+            <Input className="h-9 w-72" placeholder="Digite o nome do cliente..." value={historicoClient}
+              onChange={(e) => setHistoricoClient(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && setSubmitted(true)} />
+          </div>
+          <Button size="sm" onClick={() => setSubmitted(true)}><Search className="mr-2 h-4 w-4" />Buscar</Button>
+          <Button size="sm" variant="outline" onClick={() => { setHistoricoClient(''); setSubmitted(false) }}>Limpar</Button>
+        </div>
+      ) : tab !== 'inadimplencia' ? (
         <div>
           <DateFilter from={from} to={to} setFrom={setFrom} setTo={setTo} onSubmit={handleSearch} />
           {tab === 'cliente' && (
             <div className="flex gap-2 mb-4 items-end">
               <div className="space-y-1">
                 <Label className="text-xs">Buscar por nome do cliente</Label>
-                <Input
-                  className="h-9 w-64"
-                  placeholder="Digite o nome do cliente..."
-                  value={clientName}
+                <Input className="h-9 w-64" placeholder="Digite o nome do cliente..." value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
               </div>
               <Button size="sm" variant="outline" onClick={() => { setClientName(''); setSubmitted(false) }}>Limpar</Button>
             </div>
           )}
         </div>
+      ) : (
+        <Button size="sm" className="mb-4" onClick={() => setSubmitted(true)}><Search className="mr-2 h-4 w-4" />Carregar</Button>
       )}
-      {tab === 'inadimplencia' && <Button size="sm" className="mb-4" onClick={() => setSubmitted(true)}><Search className="mr-2 h-4 w-4" />Carregar</Button>}
 
       <ReportToolbar onPdf={() => handleDownload('pdf')} onExcel={() => handleDownload('xlsx')} />
 
@@ -149,6 +160,44 @@ export function Reports() {
                   : clientData.data.map((r: any, i: number) => <TableRow key={i}><TableCell>{r.client_name}</TableCell><TableCell>{r.count}</TableCell><TableCell className="text-right">{formatCurrency(r.total)}</TableCell></TableRow>)}
               </TableBody>
             </Table>
+          )}
+          {tab === 'historico' && (
+            <div className="p-4 space-y-6">
+              {!historicoData.data?.length ? (
+                <p className="text-center py-8 text-muted-foreground">
+                  {submitted ? 'Nenhuma OS encontrada para este cliente.' : 'Digite o nome do cliente e clique em Buscar.'}
+                </p>
+              ) : historicoData.data.map((os: any, i: number) => (
+                <div key={i} className="border rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-bold text-base">OS #{String(os.os_number).padStart(5, '0')} — {os.client_name}</p>
+                      <p className="text-sm text-muted-foreground">Abertura: {os.opened_at} {os.deadline !== '-' ? `| Prazo: ${os.deadline}` : ''} | Status: {os.status.replace('_', ' ')} | Pgto: {os.payment_method}</p>
+                    </div>
+                    <p className="font-bold text-primary text-lg">{formatCurrency(os.total_value)}</p>
+                  </div>
+                  {os.items.length > 0 && (
+                    <table className="w-full text-xs border-collapse">
+                      <thead><tr className="bg-muted"><th className="text-left p-1 border">Produto</th><th className="p-1 border">Material</th><th className="p-1 border">Instalação</th><th className="p-1 border text-center">L×A(m)</th><th className="p-1 border text-center">Área(m²)</th><th className="p-1 border text-center">Qtd</th><th className="p-1 border text-right">Preço Unit.</th><th className="p-1 border text-right">Subtotal</th></tr></thead>
+                      <tbody>
+                        {os.items.map((it: any, j: number) => (
+                          <tr key={j} className="border-b">
+                            <td className="p-1 border">{it.product}</td>
+                            <td className="p-1 border text-center">{it.material_type}</td>
+                            <td className="p-1 border text-center">{it.installation_type}</td>
+                            <td className="p-1 border text-center">{it.width_m && it.height_m ? `${it.width_m.toFixed(2)}×${it.height_m.toFixed(2)}` : '-'}</td>
+                            <td className="p-1 border text-center">{it.area_m2 ? it.area_m2.toFixed(4) : '-'}</td>
+                            <td className="p-1 border text-center">{it.quantity}</td>
+                            <td className="p-1 border text-right">{formatCurrency(it.unit_price)}</td>
+                            <td className="p-1 border text-right">{formatCurrency(it.subtotal)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
           {tab === 'material' && (
             <Table>

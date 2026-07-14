@@ -54,8 +54,24 @@ def startup_event():
     from app.models import ServiceOrder, ServiceOrderItem, StatusHistory, Receivable, Payment, CashFlow, Receipt
     from app.core.database import Base
     from app.core.security import hash_password
-    import uuid
+    from sqlalchemy import text
     Base.metadata.create_all(bind=engine)
+
+    # Safe column migrations — add missing columns without dropping data
+    _migrations = [
+        "ALTER TABLE company ADD COLUMN IF NOT EXISTS logo_path VARCHAR(500)",
+        "ALTER TABLE company ADD COLUMN IF NOT EXISTS address VARCHAR(500)",
+        "ALTER TABLE company ADD COLUMN IF NOT EXISTS phone VARCHAR(30)",
+        "ALTER TABLE company ADD COLUMN IF NOT EXISTS email VARCHAR(200)",
+        "ALTER TABLE clients ADD COLUMN IF NOT EXISTS created_by_id VARCHAR(36)",
+    ]
+    with engine.begin() as conn:
+        for sql in _migrations:
+            try:
+                conn.execute(text(sql))
+            except Exception:
+                pass
+
     # Ensure at least one admin user exists
     db = SessionLocal()
     try:
