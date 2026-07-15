@@ -74,7 +74,7 @@ class QuoteResponse(BaseModel):
     notes: Optional[str]
     items: List[QuoteItemResponse] = []
     is_deleted: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
     @property

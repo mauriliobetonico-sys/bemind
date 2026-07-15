@@ -26,4 +26,4 @@ class ReceiptResponse(BaseModel):
     reference: str
     payment_method: str
     receipt_date: date
-    created_at: datetime
+    created_at: Optional[datetime] = None

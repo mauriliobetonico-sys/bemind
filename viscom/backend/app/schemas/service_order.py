@@ -102,5 +102,5 @@ class ServiceOrderResponse(BaseModel):
     items: List[ServiceOrderItemResponse] = []
     status_history: List[StatusHistoryResponse] = []
     is_deleted: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
