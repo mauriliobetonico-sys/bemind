@@ -146,6 +146,32 @@ def quote_html(quote_id: str, db: Session = Depends(get_db)):
       <tr><td>Subtotal:</td><td class="tr">{_fmt_currency(sub)}</td></tr>{disc_row}</table>
     <div class="total-box">TOTAL: {_fmt_currency(total)}</div></div>
     {"<div class='section'><div class='section-title'>Observações</div><div class='notes'>" + quote.notes + "</div></div>" if quote.notes else ""}
+    <div style="margin-top:24px;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;font-size:9pt">
+      <div style="background:#1e40af;color:#fff;padding:7px 12px;font-weight:bold;font-size:9.5pt;letter-spacing:.3px">
+        COMO APROVAR ESTE ORÇAMENTO
+      </div>
+      <div style="padding:12px 14px;line-height:1.7;color:#1e293b">
+        <p style="margin:0 0 8px">Para solicitar o serviço, basta responder este e-mail ou mensagem seguindo os passos abaixo:</p>
+        <p style="margin:0 0 4px"><strong>1 –</strong> Escreva: <span style="background:#fef08a;padding:1px 6px;border-radius:3px;font-weight:bold">"Está aprovado"</span></p>
+        <p style="margin:0 0 10px"><strong>2 –</strong> Encaminhe a arte em <strong>JPG 300 dpi</strong> tamanho real ou <strong>PDF/X-1a</strong> (com todas as fontes em curvas).</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:#f1f5f9;border-radius:4px;padding:8px 10px">
+            <p style="margin:0 0 4px;font-weight:bold;color:#1e40af;text-transform:uppercase;font-size:8.5pt">Tipo de Arquivo e Resolução</p>
+            <p style="margin:0;color:#334155">Formato <strong>PDF/X-1a</strong>, resolução entre <strong>150 e 300 DPI</strong>, tamanho real.<br>
+            Máx. 100 MB — até 20 MB por e-mail; acima disso via
+            <span style="color:#1e40af">www.wetransfer.com</span></p>
+          </div>
+          <div style="background:#f1f5f9;border-radius:4px;padding:8px 10px">
+            <p style="margin:0 0 4px;font-weight:bold;color:#1e40af;text-transform:uppercase;font-size:8.5pt">Horário de Funcionamento</p>
+            <p style="margin:0;color:#334155">2ª a 6ª feira<br><strong>08:00 às 18:00 h</strong></p>
+          </div>
+        </div>
+        <p style="margin:10px 0 0;font-style:italic;color:#64748b;border-top:1px dashed #cbd5e1;padding-top:8px">
+          A gráfica não se responsabiliza por erros de arte final fornecida pelo cliente.
+          O arquivo enviado para produção será considerado aprovado e será produzido.
+        </p>
+      </div>
+    </div>
     </body></html>"""
     return HTMLResponse(content=html)
 
