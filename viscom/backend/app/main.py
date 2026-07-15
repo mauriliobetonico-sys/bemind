@@ -79,9 +79,19 @@ def startup_event():
         "ALTER TABLE service_order_items ADD COLUMN IF NOT EXISTS installation_type VARCHAR(100)",
         "ALTER TABLE service_order_items ADD COLUMN IF NOT EXISTS finishing VARCHAR(100)",
         "ALTER TABLE service_order_items ADD COLUMN IF NOT EXISTS area_m2 NUMERIC(10,4)",
+        "ALTER TABLE service_order_items ADD COLUMN IF NOT EXISTS subtotal NUMERIC(12,2) DEFAULT 0",
+        # quote_items columns
+        "ALTER TABLE quote_items ADD COLUMN IF NOT EXISTS subtotal NUMERIC(12,2) DEFAULT 0",
+        "ALTER TABLE quote_items ADD COLUMN IF NOT EXISTS area_m2 NUMERIC(10,4)",
+        "ALTER TABLE quote_items ADD COLUMN IF NOT EXISTS discount_pct NUMERIC(5,2) DEFAULT 0",
+        # receipts columns
+        "ALTER TABLE receipts ADD COLUMN IF NOT EXISTS created_by_id VARCHAR(36)",
+        "ALTER TABLE receipts ADD COLUMN IF NOT EXISTS amount_words VARCHAR(500) DEFAULT ''",
         # receivables columns
         "ALTER TABLE receivables ADD COLUMN IF NOT EXISTS interest_rate NUMERIC(5,2) DEFAULT 0",
         "ALTER TABLE receivables ADD COLUMN IF NOT EXISTS fine_rate NUMERIC(5,2) DEFAULT 0",
+        # status_history: make old_status nullable (was NOT NULL in some versions)
+        "ALTER TABLE status_history ALTER COLUMN old_status DROP NOT NULL",
     ]
     with engine.begin() as conn:
         for sql in _migrations:

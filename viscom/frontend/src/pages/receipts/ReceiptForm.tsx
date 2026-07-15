@@ -61,7 +61,13 @@ export function ReceiptForm() {
   const mutation = useMutation({
     mutationFn: (data: ReceiptFormData) => api.post('/receipts', data),
     onSuccess: (res) => { qc.invalidateQueries({ queryKey: ['receipts'] }); toast({ title: 'Recibo criado!' }); navigate(`/recibos/${res.data.id}`) },
-    onError: () => toast({ title: 'Erro ao criar recibo', variant: 'destructive' }),
+    onError: (e: any) => {
+      const detail = e?.response?.data?.detail
+      const msg = typeof detail === 'string' ? detail
+        : Array.isArray(detail) ? detail.map((d: any) => d.msg ?? d.message ?? JSON.stringify(d)).join(', ')
+        : e?.message ?? 'Erro ao criar recibo'
+      toast({ title: msg, variant: 'destructive' })
+    },
   })
 
   function openPdf() {
