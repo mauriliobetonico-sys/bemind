@@ -106,4 +106,4 @@ class ClientResponse(BaseModel):
     is_reseller: bool
     reseller_discount_pct: Optional[Decimal]
     is_deleted: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None

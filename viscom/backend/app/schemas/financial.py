@@ -20,7 +20,7 @@ class PaymentResponse(BaseModel):
     payment_date: date
     payment_method: str
     notes: Optional[str]
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
 
 class ReceivableCreate(BaseModel):
@@ -56,7 +56,7 @@ class ReceivableResponse(BaseModel):
     total_installments: int
     interest_rate: Decimal
     fine_rate: Decimal
-    created_at: datetime
+    created_at: Optional[datetime] = None
     payments: List[PaymentResponse] = []
 
 
@@ -76,7 +76,7 @@ class CashFlowResponse(BaseModel):
     description: str
     amount: Decimal
     date: date
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
 
 class ClientDebtResponse(BaseModel):

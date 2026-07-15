@@ -35,7 +35,7 @@ class ProductResponse(BaseModel):
     price_client: Decimal
     price_reseller: Decimal
     is_active: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
 
 class ConfigListCreate(BaseModel):

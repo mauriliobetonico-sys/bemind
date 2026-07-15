@@ -36,7 +36,7 @@ class UserResponse(BaseModel):
     email: str
     role: str
     is_active: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
 
 class Token(BaseModel):
