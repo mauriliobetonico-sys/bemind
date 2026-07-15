@@ -137,7 +137,11 @@ export function QuoteForm() {
               <ArrowRight className="mr-2 h-4 w-4" />Converter em OS
             </Button>
           )}
-          <Button onClick={form.handleSubmit((d) => mutation.mutate(d))} disabled={mutation.isPending}>
+          <Button onClick={form.handleSubmit((d) => {
+            const validItems = d.items.filter(i => i.product_id && i.product_id !== '')
+            if (!validItems.length) { toast({ title: 'Adicione ao menos um item com produto selecionado', variant: 'destructive' }); return }
+            mutation.mutate({ ...d, items: validItems })
+          })} disabled={mutation.isPending}>
             <Save className="mr-2 h-4 w-4" />{mutation.isPending ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
@@ -205,8 +209,9 @@ export function QuoteForm() {
                     const w = Number(form.watch(`items.${idx}.width_m`)) || 0
                     const h = Number(form.watch(`items.${idx}.height_m`)) || 0
                     const area = w > 0 && h > 0 ? (w * h).toFixed(4) : '-'
+                    const noProduct = !form.watch(`items.${idx}.product_id`)
                     return (
-                      <tr key={field.id} className="border-b">
+                      <tr key={field.id} className={`border-b ${noProduct ? 'bg-red-50 dark:bg-red-950/20' : ''}`}>
                         <td className="p-2">
                           <select className="w-full border rounded px-2 py-1" {...form.register(`items.${idx}.product_id`)}
                             onChange={(e) => {

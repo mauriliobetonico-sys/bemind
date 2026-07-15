@@ -147,7 +147,11 @@ export function ServiceOrderForm() {
         <div className="flex gap-2">
           {isEditing && <Button variant="outline" onClick={openPdf}><FileDown className="mr-2 h-4 w-4" />PDF</Button>}
           {isEditing && <Button variant="outline" onClick={() => navigate(`/recibos/novo?os_id=${id}`)}><Receipt className="mr-2 h-4 w-4" />Recibo</Button>}
-          <Button onClick={form.handleSubmit((d) => mutation.mutate(d))} disabled={mutation.isPending}>
+          <Button onClick={form.handleSubmit((d) => {
+            const validItems = d.items.filter(i => i.product_id && i.product_id !== '')
+            if (!validItems.length) { toast({ title: 'Adicione ao menos um item com produto selecionado', variant: 'destructive' }); return }
+            mutation.mutate({ ...d, items: validItems })
+          })} disabled={mutation.isPending}>
             <Save className="mr-2 h-4 w-4" />{mutation.isPending ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
@@ -215,8 +219,9 @@ export function ServiceOrderForm() {
                     const w = Number(form.watch(`items.${idx}.width_m`)) || 0
                     const h = Number(form.watch(`items.${idx}.height_m`)) || 0
                     const area = w > 0 && h > 0 ? (w * h).toFixed(2) : '-'
+                    const noProduct = !form.watch(`items.${idx}.product_id`)
                     return (
-                      <tr key={field.id} className="border-b">
+                      <tr key={field.id} className={`border-b ${noProduct ? 'bg-red-50 dark:bg-red-950/20' : ''}`}>
                         <td className="p-1">
                           <select className="w-full border rounded px-2 py-1 text-xs" {...form.register(`items.${idx}.product_id`)}
                             onChange={(e) => { form.setValue(`items.${idx}.product_id`, e.target.value); form.setValue(`items.${idx}.unit_price`, getUnitPrice(e.target.value)) }}>
