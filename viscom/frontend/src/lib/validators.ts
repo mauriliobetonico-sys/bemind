@@ -30,6 +30,18 @@ function validateCNPJ(cnpj: string): boolean {
   return d2 === parseInt(digits[13])
 }
 
+// Inputs numéricos vazios com valueAsNumber:true produzem NaN.
+// Zod z.number() rejeita NaN silenciosamente. Este helper converte NaN → undefined.
+const nanToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((v) => (typeof v === 'number' && isNaN(v) ? undefined : v), schema)
+
+const optionalNum = nanToUndefined(z.number().optional().nullable())
+const requiredNum = (min = 0, fallback?: number) =>
+  z.preprocess(
+    (v) => (typeof v === 'number' && isNaN(v) ? (fallback ?? undefined) : v),
+    z.number().min(min),
+  )
+
 export const cpfCnpjSchema = z.string().refine((val) => {
   const digits = val.replace(/\D/g, '')
   return digits.length === 11 || digits.length === 14
@@ -50,30 +62,36 @@ export const clientSchema = z.object({
   uf: z.string().max(2).optional(),
   observations: z.string().optional(),
   is_reseller: z.boolean().default(false),
-  reseller_discount_pct: z.number().min(0).max(100).optional().nullable(),
+  reseller_discount_pct: nanToUndefined(z.number().min(0).max(100).optional().nullable()),
 })
 
 export const productSchema = z.object({
   name: z.string().min(2, 'Nome deve ter ao menos 2 caracteres'),
   unit: z.enum(['m2', 'unidade', 'metro_linear'], { required_error: 'Selecione a unidade' }),
-  price_client: z.number({ invalid_type_error: 'Preço inválido' }).min(0),
-  price_reseller: z.number({ invalid_type_error: 'Preço inválido' }).min(0),
+  price_client: requiredNum(0),
+  price_reseller: requiredNum(0),
   is_active: z.boolean().default(true),
 })
 
 export const quoteItemSchema = z.object({
   product_id: z.string().min(1, 'Selecione um produto'),
-  width_m: z.number().optional().nullable(),
-  height_m: z.number().optional().nullable(),
-  quantity: z.number().min(1, 'Quantidade mínima é 1'),
-  unit_price: z.number().min(0),
-  discount_pct: z.number().min(0).max(100).default(0),
+  width_m: optionalNum,
+  height_m: optionalNum,
+  quantity: requiredNum(1, 1),
+  unit_price: requiredNum(0, 0),
+  discount_pct: z.preprocess(
+    (v) => (typeof v === 'number' && isNaN(v) ? 0 : v),
+    z.number().min(0).max(100).default(0),
+  ),
 })
 
 export const quoteSchema = z.object({
   client_id: z.string().min(1, 'Selecione um cliente'),
   valid_until: z.string().optional(),
-  discount_general: z.number().min(0).max(100).default(0),
+  discount_general: z.preprocess(
+    (v) => (typeof v === 'number' && isNaN(v) ? 0 : v),
+    z.number().min(0).max(100).default(0),
+  ),
   notes: z.string().optional(),
   status: z.enum(['aberto', 'aprovado', 'recusado', 'expirado']).default('aberto'),
   items: z.array(quoteItemSchema).min(1, 'Adicione ao menos um item'),
@@ -84,10 +102,10 @@ export const serviceOrderItemSchema = z.object({
   material_type: z.string().optional(),
   installation_type: z.string().optional(),
   finishing: z.string().optional(),
-  width_m: z.number().optional().nullable(),
-  height_m: z.number().optional().nullable(),
-  quantity: z.number().min(1),
-  unit_price: z.number().min(0),
+  width_m: optionalNum,
+  height_m: optionalNum,
+  quantity: requiredNum(1, 1),
+  unit_price: requiredNum(0, 0),
 })
 
 export const serviceOrderSchema = z.object({
@@ -105,14 +123,14 @@ export const receiptSchema = z.object({
   client_id: z.string().min(1, 'Selecione um cliente'),
   os_id: z.string().optional().nullable(),
   payer_name: z.string().min(2, 'Nome do pagador obrigatório'),
-  amount: z.number().min(0.01, 'Valor deve ser positivo'),
+  amount: requiredNum(0.01),
   reference: z.string().min(2, 'Referência obrigatória'),
   payment_method: z.string().min(1, 'Forma de pagamento obrigatória'),
   receipt_date: z.string().min(1, 'Data obrigatória'),
 })
 
 export const paymentSchema = z.object({
-  amount: z.number().min(0.01, 'Valor deve ser positivo'),
+  amount: requiredNum(0.01),
   payment_date: z.string().min(1, 'Data obrigatória'),
   payment_method: z.string().min(1, 'Forma de pagamento obrigatória'),
   notes: z.string().optional(),
@@ -122,7 +140,7 @@ export const cashFlowSchema = z.object({
   type: z.enum(['entrada', 'saida']),
   category: z.string().min(1, 'Categoria obrigatória'),
   description: z.string().min(2, 'Descrição obrigatória'),
-  amount: z.number().min(0.01, 'Valor deve ser positivo'),
+  amount: requiredNum(0.01),
   date: z.string().min(1, 'Data obrigatória'),
 })
 
