@@ -58,9 +58,9 @@ function AppRoutes() {
               <Route path="/recibos" element={<ReceiptList />} />
               <Route path="/recibos/novo" element={<ReceiptForm />} />
               <Route path="/recibos/:id" element={<ReceiptForm />} />
-              <Route path="/financeiro/contas-a-receber" element={<AccountsReceivable />} />
+              <Route path="/financeiro/contas-a-receber" element={isAdmin ? <AccountsReceivable /> : <Navigate to="/" />} />
               <Route path="/financeiro/caixa" element={isAdmin ? <CashFlow /> : <Navigate to="/" />} />
-              <Route path="/financeiro/divida-cliente" element={<ClientDebt />} />
+              <Route path="/financeiro/divida-cliente" element={isAdmin ? <ClientDebt /> : <Navigate to="/" />} />
               <Route path="/relatorios" element={isAdmin ? <Reports /> : <Navigate to="/" />} />
               <Route path="/configuracoes" element={isAdmin ? <SettingsPage /> : <Navigate to="/" />} />
               <Route path="*" element={<Navigate to="/" replace />} />

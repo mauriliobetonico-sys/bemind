@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { useAuth } from '@/hooks/useAuth'
 import { PageHeader } from '@/components/PageHeader'
 import { PageLoading } from '@/components/LoadingSpinner'
 import { OSStatusBadge } from '@/components/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from '@/hooks/use-toast'
-import { Plus, Edit, FileDown } from 'lucide-react'
+import { Plus, Edit, FileDown, Trash2 } from 'lucide-react'
 import type { ServiceOrder } from '@/types'
 
 const STATUSES = ['', 'aberta', 'em_producao', 'pronta', 'instalada', 'finalizada']
@@ -20,6 +21,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 export function ServiceOrderList() {
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
+  const qc = useQueryClient()
   const [status, setStatus] = useState('')
 
   const { data, isLoading } = useQuery<ServiceOrder[]>({
@@ -32,6 +35,20 @@ export function ServiceOrderList() {
 
   function openPdf(id: string) {
     window.open(`/api/v1/pdf/html/service-order/${id}`, '_blank')
+  }
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/service-orders/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['service-orders'] })
+      toast({ title: 'OS excluída com sucesso.' })
+    },
+    onError: () => toast({ title: 'Erro ao excluir OS.', variant: 'destructive' }),
+  })
+
+  function handleDelete(os: ServiceOrder) {
+    if (!confirm(`Excluir OS #${String(os.number).padStart(5, '0')}? Esta ação não pode ser desfeita.`)) return
+    deleteMutation.mutate(os.id)
   }
 
   if (isLoading) return <PageLoading />
@@ -82,6 +99,11 @@ export function ServiceOrderList() {
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="icon" onClick={() => navigate(`/ordens-de-servico/${os.id}`)} title="Editar"><Edit className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => openPdf(os.id)} title="PDF"><FileDown className="h-4 w-4" /></Button>
+                    {isAdmin && (
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(os)} title="Excluir" disabled={deleteMutation.isPending}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

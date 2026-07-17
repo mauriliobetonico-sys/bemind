@@ -28,6 +28,7 @@ const navItems: NavItem[] = [
     label: 'Financeiro',
     href: '/financeiro',
     icon: DollarSign,
+    adminOnly: true,
     children: [
       { label: 'Contas a Receber', href: '/financeiro/contas-a-receber' },
       { label: 'Caixa / Fluxo', href: '/financeiro/caixa' },

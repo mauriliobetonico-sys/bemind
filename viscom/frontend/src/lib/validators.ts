@@ -88,6 +88,7 @@ export const quoteItemSchema = z.object({
 export const quoteSchema = z.object({
   client_id: z.string().min(1, 'Selecione um cliente'),
   valid_until: z.string().optional(),
+  installation_deadline: z.string().optional(),
   discount_general: z.preprocess(
     (v) => (typeof v === 'number' && isNaN(v) ? 0 : v),
     z.number().min(0).max(100).default(0),

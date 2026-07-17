@@ -45,6 +45,7 @@ export function QuoteForm() {
       form.reset({
         client_id: quote.client_id,
         valid_until: quote.valid_until ?? '',
+        installation_deadline: quote.installation_deadline ?? '',
         discount_general: Number(quote.discount_general),
         notes: quote.notes ?? '',
         status: quote.status,
@@ -88,6 +89,7 @@ export function QuoteForm() {
         status: data.status,
         discount_general: data.discount_general || 0,
         valid_until: clean(data.valid_until),
+        installation_deadline: clean(data.installation_deadline),
         notes: clean(data.notes),
         items: data.items.map((item, idx) => ({
           product_id: item.product_id,
@@ -168,6 +170,10 @@ export function QuoteForm() {
             <div className="space-y-2">
               <Label>Validade</Label>
               <Input type="date" {...form.register('valid_until')} />
+            </div>
+            <div className="space-y-2">
+              <Label>Prazo de Instalação</Label>
+              <Input type="date" {...form.register('installation_deadline')} />
             </div>
             <div className="space-y-2">
               <Label>Desconto Geral (%)</Label>

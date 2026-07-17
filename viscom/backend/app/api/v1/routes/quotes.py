@@ -60,6 +60,7 @@ def create_quote(body: QuoteCreate, db: Session = Depends(get_db), current_user=
         client_id=body.client_id,
         created_by_id=current_user.id,
         valid_until=body.valid_until,
+        installation_deadline=body.installation_deadline,
         discount_general=body.discount_general,
         notes=body.notes,
     )

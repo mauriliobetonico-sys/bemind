@@ -45,6 +45,7 @@ class QuoteItemResponse(BaseModel):
 class QuoteCreate(BaseModel):
     client_id: str
     valid_until: Optional[date] = None
+    installation_deadline: Optional[date] = None
     discount_general: Decimal = Decimal("0")
     notes: Optional[str] = None
     status: str = "aberto"
@@ -54,6 +55,7 @@ class QuoteCreate(BaseModel):
 class QuoteUpdate(BaseModel):
     client_id: Optional[str] = None
     valid_until: Optional[date] = None
+    installation_deadline: Optional[date] = None
     discount_general: Optional[Decimal] = None
     notes: Optional[str] = None
     status: Optional[str] = None
@@ -70,6 +72,7 @@ class QuoteResponse(BaseModel):
     created_by: Optional[UserResponse] = None
     status: str
     valid_until: Optional[date]
+    installation_deadline: Optional[date] = None
     discount_general: Decimal
     notes: Optional[str]
     items: List[QuoteItemResponse] = []

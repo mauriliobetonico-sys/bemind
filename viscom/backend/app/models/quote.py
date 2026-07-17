@@ -18,6 +18,7 @@ class Quote(Base):
         nullable=False, default="aberto"
     )
     valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    installation_deadline: Mapped[date | None] = mapped_column(Date, nullable=True)
     discount_general: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=Decimal("0"))
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
