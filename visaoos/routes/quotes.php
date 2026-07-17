@@ -14,7 +14,7 @@ if ($method === 'GET' && !$id) {
     if ($c = inp('client_id')) { $where[] = 'q.client_id=?'; $params[] = $c; }
     if ($q = inp('search'))    { $where[] = '(q.quote_number LIKE ? OR q.description LIKE ? OR c.name LIKE ?)'; $params = array_merge($params, ["%$q%","%$q%","%$q%"]); }
     $w    = implode(' AND ', $where);
-    $stmt = $db->prepare("SELECT q.id,q.quote_number,q.description,q.total,q.status,q.valid_until,q.created_at,c.name AS client_name FROM quotes q JOIN clients c ON q.client_id=c.id WHERE $w ORDER BY q.created_at DESC");
+    $stmt = $db->prepare("SELECT q.id,q.quote_number,q.description,q.total,q.status,q.valid_until,q.installation_deadline,q.created_at,c.name AS client_name FROM quotes q JOIN clients c ON q.client_id=c.id WHERE $w ORDER BY q.created_at DESC");
     $stmt->execute($params);
     json_out($stmt->fetchAll());
 }
@@ -48,8 +48,9 @@ if ($method === 'POST' && !$id) {
     $quoteNum = nextQuoteNumber($db);
     $validUntil = inp('valid_until') ?: date('Y-m-d', strtotime('+7 days'));
 
-    $db->prepare("INSERT INTO quotes (quote_number,client_id,attendant_id,client_type,description,notes,width_m,height_m,area_m2,quantity,subtotal,discount_pct,discount_val,total,valid_until) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
-       ->execute([$quoteNum, $client_id, $user['id'], $client['type'], $description, inp('notes'), $w?:null, $h?:null, $area?:null, $qty, $subtotal, $disc, $discVal, $total, $validUntil]);
+    $installDeadline = inp('installation_deadline') ?: null;
+    $db->prepare("INSERT INTO quotes (quote_number,client_id,attendant_id,client_type,description,notes,width_m,height_m,area_m2,quantity,subtotal,discount_pct,discount_val,total,valid_until,installation_deadline) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+       ->execute([$quoteNum, $client_id, $user['id'], $client['type'], $description, inp('notes'), $w?:null, $h?:null, $area?:null, $qty, $subtotal, $disc, $discVal, $total, $validUntil, $installDeadline]);
 
     $quoteId = $db->lastInsertId();
     notifyQuoteCreated($quoteId, $quoteNum, $client, $total, $validUntil);

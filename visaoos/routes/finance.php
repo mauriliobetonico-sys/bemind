@@ -1,6 +1,6 @@
 <?php
 $user = requireAuth();
-requireRole(['admin','financeiro'], $user);
+requireRole(['admin'], $user);
 $db     = getDB();
 $action = $id ?? '';
 

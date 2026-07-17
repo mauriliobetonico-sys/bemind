@@ -11,7 +11,7 @@ function nextOsNumber(PDO $db): string {
 // ── GET /api/os ───────────────────────────────────────────────────────────
 if ($method === 'GET' && !$id) {
     $db     = getDB();
-    $where  = ['1=1'];
+    $where  = ['so.deleted_at IS NULL'];
     $params = [];
     if ($s = inp('status'))    { $where[] = 'so.status=?';    $params[] = $s; }
     if ($c = inp('client_id')) { $where[] = 'so.client_id=?'; $params[] = $c; }
@@ -384,6 +384,21 @@ HTML;
 </body></html>
 HTML;
     exit;
+}
+
+// ── DELETE /api/os/:id ────────────────────────────────────────────────────
+if ($method === 'DELETE' && $id && !$sub) {
+    requireRole(['admin'], $user);
+    $db = getDB();
+    $stmt = $db->prepare('SELECT id,os_number FROM service_orders WHERE id=? AND deleted_at IS NULL');
+    $stmt->execute([$id]); $os = $stmt->fetch();
+    if (!$os) json_out(['error'=>'OS não encontrada.'], 404);
+
+    $db->prepare('UPDATE service_orders SET deleted_at=NOW() WHERE id=?')->execute([$id]);
+    $db->prepare('INSERT INTO activity_logs (user_id,action,entity_type,entity_id,description,ip_address) VALUES (?,?,?,?,?,?)')
+       ->execute([$user['id'],'delete_os','service_order',$id,"OS {$os['os_number']} excluída",$_SERVER['REMOTE_ADDR']??'']);
+
+    json_out(['message'=>'OS excluída com sucesso.']);
 }
 
 json_out(['error'=>'Rota de OS não encontrada.'], 404);

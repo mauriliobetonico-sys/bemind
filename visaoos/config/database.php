@@ -293,6 +293,7 @@ function installDB(): void {
         total           DECIMAL(10,2) NOT NULL DEFAULT 0,
         status          ENUM('pendente','aprovado','recusado','convertido') NOT NULL DEFAULT 'pendente',
         valid_until     DATE,
+        installation_deadline DATE,
         converted_os_id INT,
         n8n_followup_sent TINYINT(1) NOT NULL DEFAULT 0,
         created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -355,7 +356,19 @@ function installDB(): void {
     }
 }
 
+// Migração incremental: adiciona colunas que podem não existir
+function runMigrations(): void {
+    $db = getDB();
+    $migrations = [
+        "ALTER TABLE quotes ADD COLUMN IF NOT EXISTS installation_deadline DATE",
+        "ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL",
+    ];
+    foreach ($migrations as $sql) {
+        try { $db->exec($sql); } catch (Throwable) {}
+    }
+}
+
 // Executa instalação silenciosa
-try { installDB(); } catch (Throwable $e) {
+try { installDB(); runMigrations(); } catch (Throwable $e) {
     error_log('VisãoOS DB Install: ' . $e->getMessage());
 }

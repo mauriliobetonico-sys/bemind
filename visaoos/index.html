@@ -856,9 +856,17 @@
           <span class="nav-icon">📋</span>
           <span class="nav-label">Ordens de Serviço</span>
         </div>
+        <div class="nav-item" data-page="orcamentos">
+          <span class="nav-icon">📝</span>
+          <span class="nav-label">Orçamentos</span>
+        </div>
         <div class="nav-item" data-page="clientes">
           <span class="nav-icon">👥</span>
           <span class="nav-label">Clientes</span>
+        </div>
+        <div class="nav-item nav-admin-only" data-page="financeiro" style="display:none">
+          <span class="nav-icon">💰</span>
+          <span class="nav-label">Financeiro</span>
         </div>
       </nav>
       <div class="sidebar-footer">
@@ -965,11 +973,10 @@
               <input type="text" class="search-input" id="os-search" placeholder="🔍 Buscar OS..." oninput="debounceOsSearch()">
               <select class="filter-select" id="os-status-filter" onchange="loadOS()">
                 <option value="">Todos os status</option>
-                <option value="pendente">Pendente</option>
-                <option value="em_producao">Em Produção</option>
-                <option value="concluido">Concluído</option>
+                <option value="aguardando">Aguardando</option>
+                <option value="producao">Em Produção</option>
+                <option value="finalizado">Finalizado</option>
                 <option value="entregue">Entregue</option>
-                <option value="cancelado">Cancelado</option>
               </select>
             </div>
             <table>
@@ -989,6 +996,81 @@
               </tbody>
             </table>
             <div class="pagination" id="os-pagination"></div>
+          </div>
+        </section>
+
+        <!-- ORÇAMENTOS -->
+        <section class="page" id="page-orcamentos">
+          <div class="page-header">
+            <div>
+              <h2>Orçamentos</h2>
+              <p id="quotes-count-label">—</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="new-quote-btn">+ Novo Orçamento</button>
+          </div>
+
+          <div class="table-container">
+            <div class="table-toolbar">
+              <h3 style="flex:0">Filtros</h3>
+              <input type="text" class="search-input" id="quotes-search" placeholder="🔍 Buscar orçamento..." oninput="debounceQuotesSearch()">
+              <select class="filter-select" id="quotes-status-filter" onchange="loadQuotes()">
+                <option value="">Todos</option>
+                <option value="pendente">Pendente</option>
+                <option value="aprovado">Aprovado</option>
+                <option value="recusado">Recusado</option>
+                <option value="convertido">Convertido</option>
+              </select>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Cliente</th>
+                  <th>Descrição</th>
+                  <th>Status</th>
+                  <th>Total</th>
+                  <th>Validade</th>
+                  <th>Prazo Instal.</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="quotes-list">
+                <tr class="loading-row"><td colspan="8">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- FINANCEIRO -->
+        <section class="page" id="page-financeiro">
+          <div class="page-header">
+            <div>
+              <h2>Financeiro</h2>
+              <p>Visão geral das finanças — acesso restrito ao administrador</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="loadFinanceiro()">🔄 Atualizar</button>
+          </div>
+          <div class="cards-grid" id="fin-metrics-grid">
+            <div class="metric-card blue">
+              <div class="metric-icon">💰</div>
+              <div class="metric-label">Total Recebido</div>
+              <div class="metric-value" id="fin-paid">—</div>
+            </div>
+            <div class="metric-card green">
+              <div class="metric-icon">⏳</div>
+              <div class="metric-label">A Receber</div>
+              <div class="metric-value" id="fin-pending">—</div>
+            </div>
+            <div class="metric-card yellow">
+              <div class="metric-icon">📅</div>
+              <div class="metric-label">Faturamento do Mês</div>
+              <div class="metric-value" id="fin-month">—</div>
+            </div>
+            <div class="metric-card red">
+              <div class="metric-icon">⚠️</div>
+              <div class="metric-label">Em Atraso</div>
+              <div class="metric-value" id="fin-overdue">—</div>
+            </div>
           </div>
         </section>
 
@@ -1036,6 +1118,9 @@
     </div>
     <div class="bottom-nav-item" data-page="os">
       <span class="bnav-icon">📋</span>OS
+    </div>
+    <div class="bottom-nav-item" data-page="orcamentos">
+      <span class="bnav-icon">📝</span>Orçamentos
     </div>
     <div class="bottom-nav-item" data-page="clientes">
       <span class="bnav-icon">👥</span>Clientes
@@ -1101,9 +1186,96 @@
     </div>
     <div class="modal-body" id="view-os-body">
     </div>
-    <div class="modal-footer">
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
+      <button class="btn btn-danger btn-sm admin-only" style="display:none;margin-right:auto" id="delete-os-btn" onclick="deleteOS()">🗑️ Excluir OS</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-view-os')">Fechar</button>
       <select class="filter-select" id="view-os-status-select" onchange="updateOSStatus()"></select>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVO ORÇAMENTO -->
+<div class="modal-overlay" id="modal-new-quote">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <h3>Novo Orçamento</h3>
+      <button class="modal-close" onclick="closeModal('modal-new-quote')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="new-quote-form">
+        <div class="form-group">
+          <label>Cliente *</label>
+          <select id="quote-client-select" required>
+            <option value="">Selecione um cliente...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Descrição do Serviço *</label>
+          <textarea id="quote-description" placeholder="Descreva o serviço a ser orçado..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Observações</label>
+          <textarea id="quote-notes" placeholder="Informações adicionais..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Largura (m)</label>
+            <input type="number" id="quote-width" step="0.01" min="0" placeholder="0,00">
+          </div>
+          <div class="form-group">
+            <label>Altura (m)</label>
+            <input type="number" id="quote-height" step="0.01" min="0" placeholder="0,00">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantidade</label>
+            <input type="number" id="quote-qty" step="0.001" min="0.001" value="1" placeholder="1">
+          </div>
+          <div class="form-group">
+            <label>Subtotal (R$) *</label>
+            <input type="number" id="quote-subtotal" step="0.01" min="0" placeholder="0,00" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Desconto (%)</label>
+            <input type="number" id="quote-discount" step="0.01" min="0" max="100" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>Válido até</label>
+            <input type="date" id="quote-valid-until">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Prazo de Instalação</label>
+          <input type="date" id="quote-installation-deadline">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-quote')">Cancelar</button>
+      <button class="btn btn-primary" id="save-quote-btn" onclick="saveQuote()">Salvar Orçamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER ORÇAMENTO -->
+<div class="modal-overlay" id="modal-view-quote">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <h3 id="view-quote-title">Orçamento</h3>
+      <button class="modal-close" onclick="closeModal('modal-view-quote')">✕</button>
+    </div>
+    <div class="modal-body" id="view-quote-body"></div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
+      <button class="btn btn-ghost" onclick="closeModal('modal-view-quote')">Fechar</button>
+      <select class="filter-select" id="view-quote-status-select" onchange="updateQuoteStatus()">
+        <option value="pendente">Pendente</option>
+        <option value="aprovado">Aprovado</option>
+        <option value="recusado">Recusado</option>
+        <option value="convertido">Convertido em OS</option>
+      </select>
     </div>
   </div>
 </div>
@@ -1119,11 +1291,17 @@ const TOKEN_KEY = 'visaoos_token';
 const USER_KEY  = 'visaoos_user';
 
 const STATUS_LABELS = {
-  pendente:    'Pendente',
-  em_producao: 'Em Produção',
-  concluido:   'Concluído',
+  aguardando:  'Aguardando',
+  producao:    'Em Produção',
+  finalizado:  'Finalizado',
   entregue:    'Entregue',
-  cancelado:   'Cancelado',
+};
+
+const QUOTE_STATUS_LABELS = {
+  pendente:   'Pendente',
+  aprovado:   'Aprovado',
+  recusado:   'Recusado',
+  convertido: 'Convertido',
 };
 
 let state = {
@@ -1134,6 +1312,7 @@ let state = {
   clientsPage: 1,
   clientsLimit: 20,
   viewingOS: null,
+  viewingQuote: null,
 };
 
 let searchTimers = {};
@@ -1229,6 +1408,11 @@ function showApp() {
   document.getElementById('user-name-label').textContent = name;
   document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
 
+  // Show admin-only elements
+  const isAdmin = state.user?.role === 'admin';
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? '' : 'none');
+  document.querySelectorAll('.nav-admin-only').forEach(el => el.style.display = isAdmin ? '' : 'none');
+
   // hash routing
   const hash = location.hash.replace('#', '') || 'dashboard';
   navigate(hash, false);
@@ -1257,7 +1441,7 @@ function navigate(page, updateHash = true) {
   });
 
   // page title
-  const titles = { dashboard: 'Dashboard', os: 'Ordens de Serviço', clientes: 'Clientes' };
+  const titles = { dashboard: 'Dashboard', os: 'Ordens de Serviço', clientes: 'Clientes', orcamentos: 'Orçamentos', financeiro: 'Financeiro' };
   document.getElementById('page-title').textContent = titles[page] || page;
 
   // topbar actions
@@ -1271,9 +1455,11 @@ function navigate(page, updateHash = true) {
   document.getElementById('sidebar-backdrop').classList.remove('active');
 
   // load data
-  if (page === 'dashboard') loadDashboard();
-  if (page === 'os')        { loadOS(); loadClientsForSelect(); }
-  if (page === 'clientes')  loadClients();
+  if (page === 'dashboard')  loadDashboard();
+  if (page === 'os')         { loadOS(); loadClientsForSelect(); }
+  if (page === 'clientes')   loadClients();
+  if (page === 'orcamentos') loadQuotes();
+  if (page === 'financeiro') loadFinanceiro();
 }
 
 // ═══════════════════════════════════════════
@@ -1336,11 +1522,11 @@ async function loadDashboard() {
     }
     tbody.innerHTML = list.map(os => `
       <tr>
-        <td class="fw-bold">#${os.id}</td>
-        <td>${esc(os.client_name || os.client?.name || '—')}</td>
-        <td>${esc(os.service || os.title || os.description || '—')}</td>
+        <td class="fw-bold">${esc(os.os_number || '#'+os.id)}</td>
+        <td>${esc(os.client_name || '—')}</td>
+        <td>${esc(os.description || '—')}</td>
         <td>${statusBadge(os.status)}</td>
-        <td class="fw-bold">${formatCurrency(os.value || os.total || 0)}</td>
+        <td class="fw-bold">${formatCurrency(os.total || 0)}</td>
         <td class="td-muted">${formatDate(os.created_at)}</td>
       </tr>
     `).join('');
@@ -1379,12 +1565,12 @@ async function loadOS() {
 
     tbody.innerHTML = list.map(os => `
       <tr>
-        <td class="fw-bold">#${os.id}</td>
-        <td>${esc(os.client_name || os.client?.name || '—')}</td>
-        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(os.service || os.title || os.description || '—')}</td>
+        <td class="fw-bold">${esc(os.os_number || '#'+os.id)}</td>
+        <td>${esc(os.client_name || '—')}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(os.description || '—')}</td>
         <td>${statusBadge(os.status)}</td>
-        <td class="fw-bold">${formatCurrency(os.value || os.total || 0)}</td>
-        <td class="td-muted">${os.deadline ? formatDate(os.deadline) : '—'}</td>
+        <td class="fw-bold">${formatCurrency(os.total || 0)}</td>
+        <td class="td-muted">${os.due_date ? formatDate(os.due_date) : '—'}</td>
         <td>
           <button class="btn btn-ghost btn-sm" onclick="viewOS(${os.id})">Ver</button>
         </td>
@@ -1417,15 +1603,20 @@ async function viewOS(id) {
       `<option value="${k}" ${os.status === k ? 'selected' : ''}>${v}</option>`
     ).join('');
 
+    // show/hide delete button for admin
+    const delBtn = document.getElementById('delete-os-btn');
+    if (delBtn) delBtn.style.display = (state.user?.role === 'admin') ? '' : 'none';
+
     body.innerHTML = `
-      <div class="detail-row"><span class="detail-label">Cliente</span><span class="detail-value">${esc(os.client_name || os.client?.name || '—')}</span></div>
-      <div class="detail-row"><span class="detail-label">Serviço</span><span class="detail-value">${esc(os.service || os.title || '—')}</span></div>
-      <div class="detail-row"><span class="detail-label">Detalhes</span><span class="detail-value">${esc(os.details || os.description || '—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Número</span><span class="detail-value fw-bold">${esc(os.os_number || '#'+os.id)}</span></div>
+      <div class="detail-row"><span class="detail-label">Cliente</span><span class="detail-value">${esc(os.client_name || '—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Descrição</span><span class="detail-value">${esc(os.description || '—')}</span></div>
+      ${os.notes ? `<div class="detail-row"><span class="detail-label">Notas</span><span class="detail-value">${esc(os.notes)}</span></div>` : ''}
       <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${statusBadge(os.status)}</span></div>
-      <div class="detail-row"><span class="detail-label">Valor</span><span class="detail-value fw-bold">${formatCurrency(os.value || os.total || 0)}</span></div>
-      <div class="detail-row"><span class="detail-label">Prazo</span><span class="detail-value">${os.deadline ? formatDate(os.deadline) : '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Valor</span><span class="detail-value fw-bold">${formatCurrency(os.total || 0)}</span></div>
+      <div class="detail-row"><span class="detail-label">Prazo</span><span class="detail-value">${os.due_date ? formatDate(os.due_date) : '—'}</span></div>
       <div class="detail-row"><span class="detail-label">Criada em</span><span class="detail-value td-muted">${formatDate(os.created_at)}</span></div>
-      ${os.updated_at ? `<div class="detail-row"><span class="detail-label">Atualizada</span><span class="detail-value td-muted">${formatDate(os.updated_at)}</span></div>` : ''}
+      ${os.attendant_name ? `<div class="detail-row"><span class="detail-label">Atendente</span><span class="detail-value">${esc(os.attendant_name)}</span></div>` : ''}
     `;
   } catch (e) {
     body.innerHTML = `<p style="text-align:center;padding:40px;color:var(--danger)">Erro: ${esc(e.message)}</p>`;
@@ -1444,6 +1635,188 @@ async function updateOSStatus() {
     loadOS();
   } catch (e) {
     showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+async function deleteOS() {
+  const os = state.viewingOS;
+  if (!os) return;
+  const id = typeof os === 'object' ? os.id : os;
+  const num = typeof os === 'object' ? (os.os_number || '#'+id) : '#'+id;
+  if (!confirm(`Tem certeza que deseja excluir a ${num}? Esta ação não pode ser desfeita.`)) return;
+
+  try {
+    await api('DELETE', `/api/os/${id}`);
+    showToast('OS excluída com sucesso.', 'success');
+    closeModal('modal-view-os');
+    loadOS();
+  } catch (e) {
+    showToast('Erro ao excluir: ' + e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════
+//  ORÇAMENTOS
+// ═══════════════════════════════════════════
+async function loadQuotes() {
+  const search = document.getElementById('quotes-search').value.trim();
+  const status = document.getElementById('quotes-status-filter').value;
+  const tbody  = document.getElementById('quotes-list');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="8"><span class="spinner" style="border-color:rgba(59,91,219,.3);border-top-color:var(--primary)"></span> Carregando...</td></tr>';
+
+  let url = '/api/quotes?limit=50';
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (status) url += `&status=${encodeURIComponent(status)}`;
+
+  try {
+    const list = await GET(url);
+    const arr  = Array.isArray(list) ? list : (list.data || []);
+    document.getElementById('quotes-count-label').textContent = `${arr.length} orçamento(s)`;
+
+    if (!arr.length) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📝</div><p>Nenhum orçamento encontrado.</p></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = arr.map(q => `
+      <tr>
+        <td class="fw-bold">${esc(q.quote_number || '#'+q.id)}</td>
+        <td>${esc(q.client_name || '—')}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.description || '—')}</td>
+        <td>${quoteBadge(q.status)}</td>
+        <td class="fw-bold">${formatCurrency(q.total || 0)}</td>
+        <td class="td-muted">${q.valid_until ? formatDate(q.valid_until) : '—'}</td>
+        <td class="td-muted">${q.installation_deadline ? formatDate(q.installation_deadline) : '—'}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="viewQuote(${q.id})">Ver</button></td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr class="loading-row"><td colspan="8">Erro: ${esc(e.message)}</td></tr>`;
+  }
+}
+
+async function viewQuote(id) {
+  state.viewingQuote = id;
+  const body  = document.getElementById('view-quote-body');
+  const title = document.getElementById('view-quote-title');
+  body.innerHTML = '<p style="text-align:center;padding:40px;color:var(--gray-400)">Carregando...</p>';
+  openModal('modal-view-quote');
+
+  try {
+    const q = await GET(`/api/quotes/${id}`);
+    state.viewingQuote = q;
+    title.textContent = `Orçamento ${q.quote_number || '#'+q.id}`;
+
+    const sel = document.getElementById('view-quote-status-select');
+    sel.value = q.status;
+
+    body.innerHTML = `
+      <div class="detail-row"><span class="detail-label">Número</span><span class="detail-value fw-bold">${esc(q.quote_number || '#'+q.id)}</span></div>
+      <div class="detail-row"><span class="detail-label">Cliente</span><span class="detail-value">${esc(q.client_name || '—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Descrição</span><span class="detail-value">${esc(q.description || '—')}</span></div>
+      ${q.notes ? `<div class="detail-row"><span class="detail-label">Obs.</span><span class="detail-value">${esc(q.notes)}</span></div>` : ''}
+      <div class="detail-row"><span class="detail-label">Total</span><span class="detail-value fw-bold">${formatCurrency(q.total || 0)}</span></div>
+      <div class="detail-row"><span class="detail-label">Válido até</span><span class="detail-value">${q.valid_until ? formatDate(q.valid_until) : '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Prazo Instalação</span><span class="detail-value">${q.installation_deadline ? formatDate(q.installation_deadline) : '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${quoteBadge(q.status)}</span></div>
+      <div class="detail-row"><span class="detail-label">Criado em</span><span class="detail-value td-muted">${formatDate(q.created_at)}</span></div>
+    `;
+  } catch (e) {
+    body.innerHTML = `<p style="text-align:center;padding:40px;color:var(--danger)">Erro: ${esc(e.message)}</p>`;
+  }
+}
+
+async function updateQuoteStatus() {
+  const q = state.viewingQuote;
+  if (!q) return;
+  const id     = typeof q === 'object' ? q.id : q;
+  const status = document.getElementById('view-quote-status-select').value;
+
+  try {
+    await PUT(`/api/quotes/${id}/status`, { status });
+    showToast('Status atualizado!', 'success');
+    closeModal('modal-view-quote');
+    loadQuotes();
+  } catch (e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+document.getElementById('new-quote-btn').addEventListener('click', () => {
+  document.getElementById('new-quote-form').reset();
+  loadClientsForSelect2();
+  openModal('modal-new-quote');
+});
+
+async function loadClientsForSelect2() {
+  try {
+    const res = await GET('/api/clients?limit=200');
+    const list = res.data || res.clients || (Array.isArray(res) ? res : []);
+    const sel  = document.getElementById('quote-client-select');
+    sel.innerHTML = '<option value="">Selecione um cliente...</option>' +
+      list.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  } catch (e) {}
+}
+
+async function saveQuote() {
+  const btn = document.getElementById('save-quote-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Salvando...';
+
+  const body = {
+    client_id:            document.getElementById('quote-client-select').value,
+    description:          document.getElementById('quote-description').value.trim(),
+    notes:                document.getElementById('quote-notes').value.trim(),
+    width_m:              parseFloat(document.getElementById('quote-width').value) || 0,
+    height_m:             parseFloat(document.getElementById('quote-height').value) || 0,
+    quantity:             parseFloat(document.getElementById('quote-qty').value) || 1,
+    subtotal:             parseFloat(document.getElementById('quote-subtotal').value) || 0,
+    discount_pct:         parseFloat(document.getElementById('quote-discount').value) || 0,
+    valid_until:          document.getElementById('quote-valid-until').value || null,
+    installation_deadline: document.getElementById('quote-installation-deadline').value || null,
+  };
+
+  if (!body.client_id || !body.description) {
+    showToast('Preencha os campos obrigatórios.', 'error');
+    btn.disabled = false; btn.textContent = 'Salvar Orçamento';
+    return;
+  }
+
+  try {
+    await POST('/api/quotes', body);
+    showToast('Orçamento criado com sucesso!', 'success');
+    closeModal('modal-new-quote');
+    loadQuotes();
+  } catch (e) {
+    showToast('Erro ao criar orçamento: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar Orçamento';
+  }
+}
+
+function quoteBadge(status) {
+  const label = QUOTE_STATUS_LABELS[status] || status || '—';
+  const colors = { pendente:'badge-pendente', aprovado:'badge-concluido', recusado:'badge-cancelado', convertido:'badge-entregue' };
+  return `<span class="badge ${colors[status]||''}">${esc(label)}</span>`;
+}
+
+function debounceQuotesSearch() {
+  clearTimeout(searchTimers.quotes);
+  searchTimers.quotes = setTimeout(() => loadQuotes(), 400);
+}
+
+// ═══════════════════════════════════════════
+//  FINANCEIRO
+// ═══════════════════════════════════════════
+async function loadFinanceiro() {
+  try {
+    const fin = await GET('/api/finance/summary');
+    document.getElementById('fin-paid').textContent    = formatCurrency(fin.total_paid ?? 0);
+    document.getElementById('fin-pending').textContent = formatCurrency(fin.total_pending ?? 0);
+    document.getElementById('fin-month').textContent   = formatCurrency(fin.month_revenue ?? 0);
+    document.getElementById('fin-overdue').textContent = fin.overdue_count ?? '0';
+  } catch (e) {
+    showToast('Erro ao carregar dados financeiros: ' + e.message, 'error');
   }
 }
 
@@ -1469,12 +1842,11 @@ async function saveOS() {
   btn.innerHTML = '<span class="spinner"></span> Salvando...';
 
   const body = {
-    client_id:  document.getElementById('os-client-select').value,
-    service:    document.getElementById('os-service').value.trim(),
-    details:    document.getElementById('os-details').value.trim(),
-    value:      parseFloat(document.getElementById('os-value').value) || 0,
-    deadline:   document.getElementById('os-deadline').value || null,
-    status:     document.getElementById('os-initial-status').value,
+    client_id:   document.getElementById('os-client-select').value,
+    description: document.getElementById('os-service').value.trim(),
+    notes:       document.getElementById('os-details').value.trim(),
+    subtotal:    parseFloat(document.getElementById('os-value').value) || 0,
+    due_date:    document.getElementById('os-deadline').value || null,
   };
 
   if (!body.client_id || !body.service) {
