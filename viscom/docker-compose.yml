@@ -39,6 +39,7 @@ services:
     volumes:
       - ./backend/static:/app/static
       - ./backend/media:/app/media
+      - ./backend/app/templates:/app/app/templates
     depends_on:
       db:
         condition: service_healthy
