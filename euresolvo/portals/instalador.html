@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EU RESOLVO — Portal Instalador</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+</head>
+<body>
+  <div id="topbar"></div>
+  <div class="er-page">
+    <div class="er-between" style="margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div class="er-tabs" style="width:fit-content">
+        <button class="er-tab active" data-view="ofertas">Ofertas</button>
+        <button class="er-tab" data-view="execucao">Execução</button>
+        <button class="er-tab" data-view="carteira">Carteira</button>
+        <button class="er-tab" data-view="perfil">Perfil</button>
+      </div>
+      <label class="er-flex er-gap-8" style="align-items:center;font-size:12.5px;font-weight:600">
+        <input type="checkbox" id="online-toggle"> Online
+      </label>
+    </div>
+
+    <div id="view-ofertas">
+      <div class="er-h1">Ofertas próximas</div>
+      <div class="er-dim er-mt-8">Aceite, recuse ou faça uma contra-proposta.</div>
+      <div id="offers-list" class="er-flex er-mt-16" style="flex-direction:column;gap:10px"></div>
+    </div>
+
+    <div id="view-execucao" class="er-hidden">
+      <div class="er-h1">Execução da OS</div>
+      <div id="current-os" class="er-mt-16"></div>
+    </div>
+
+    <div id="view-carteira" class="er-hidden">
+      <div class="er-h1">Carteira</div>
+      <div class="er-grid-2 er-mt-16">
+        <div class="er-card">
+          <div class="er-micro">Saldo disponível</div>
+          <div class="er-h1" id="wallet-balance">R$ 0,00</div>
+          <div class="er-dim" style="font-size:12.5px" id="wallet-held"></div>
+          <button class="er-btn er-btn-primary er-mt-16" onclick="promptPayout()">Sacar via PIX</button>
+        </div>
+        <div class="er-card">
+          <div class="er-micro">Nível</div>
+          <div class="er-h1" id="level-label">Bronze</div>
+          <div class="er-dim" id="level-progress"></div>
+        </div>
+      </div>
+      <div class="er-h3 er-mt-24">Extrato</div>
+      <div id="statement" class="er-card"></div>
+    </div>
+
+    <div id="view-perfil" class="er-hidden">
+      <div class="er-h1">Meu perfil</div>
+      <form id="profile-form" class="er-card er-mt-16" style="max-width:720px">
+        <div class="er-form-row">
+          <div class="er-field"><div class="er-field-label">Nome completo</div><input class="er-input" name="full_name"></div>
+          <div class="er-field"><div class="er-field-label">Chave PIX</div><input class="er-input" name="pix_key"></div>
+        </div>
+        <div class="er-form-row">
+          <div class="er-field"><div class="er-field-label">Endereço base</div><input class="er-input" name="base_address" id="base-addr"></div>
+          <div class="er-field"><div class="er-field-label">Raio de atendimento (km)</div><input class="er-input" type="number" name="service_radius_km" min="1" max="200"></div>
+        </div>
+        <div class="er-field">
+          <div class="er-field-label">Especialidades</div>
+          <div class="er-chips" id="spec-chips"></div>
+        </div>
+        <div class="er-field">
+          <div class="er-field-label">Ferramentas</div>
+          <div class="er-chips" id="tools-chips"></div>
+        </div>
+        <div class="er-field">
+          <div class="er-field-label">Localização base (clique no mapa)</div>
+          <div id="perfil-map" style="height:220px;border-radius:12px"></div>
+          <input type="hidden" name="base_lat"><input type="hidden" name="base_lng">
+        </div>
+        <button class="er-btn er-btn-primary er-btn-block" type="submit">Salvar perfil</button>
+      </form>
+    </div>
+  </div>
+
+<script src="/assets/js/app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+const user = ER.auth.require(['instalador']);
+if (user) init();
+
+const CATS  = ['ACM','Fachada','Letreiro','Totem','Adesivo','Envelopamento','Manutenção','Outros'];
+const TOOLS = ['andaime','munck','plataforma','escada','eletricista','soldador','equipe2'];
+
+let currentExec, wallet, perfilMap, perfilMarker, pingInterval;
+
+async function init() {
+  document.getElementById('topbar').innerHTML = ER.renderTopbar('instalador');
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+  buildChipList('spec-chips', CATS);
+  buildChipList('tools-chips', TOOLS);
+
+  ER.ws.connect(WS_URL());
+  ER.ws.on('order.published', () => loadOffers());
+  ER.ws.on('offer.chosen', () => loadOffers());
+
+  document.getElementById('online-toggle').addEventListener('change', toggleOnline);
+  document.getElementById('profile-form').addEventListener('submit', saveProfile);
+
+  await loadMe();
+  await loadOffers();
+}
+
+function WS_URL() { const p = location.protocol === 'https:' ? 'wss' : 'ws'; return `${p}://${location.host}/ws`; }
+
+function setView(v) {
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  ['ofertas','execucao','carteira','perfil'].forEach(name =>
+    document.getElementById('view-' + name).classList.toggle('er-hidden', name !== v));
+  if (v === 'carteira')  loadWallet();
+  if (v === 'perfil')    setTimeout(loadPerfilMap, 100);
+  if (v === 'execucao')  loadExecucao();
+}
+
+function buildChipList(id, values) {
+  document.getElementById(id).innerHTML = values.map(v => `<button type="button" class="er-chip" data-v="${v}">${v}</button>`).join('');
+  document.getElementById(id).querySelectorAll('.er-chip').forEach(c => c.addEventListener('click', () => c.classList.toggle('active')));
+}
+
+async function loadMe() {
+  const me = await ER.api('/me');
+  const inst = me.installer || {};
+  const f = document.getElementById('profile-form');
+  f.full_name.value = inst.full_name || user.name;
+  f.pix_key.value = inst.pix_key || '';
+  f.base_address.value = inst.base_address || '';
+  f.service_radius_km.value = inst.service_radius_km || 25;
+  f.base_lat.value = inst.base_lat || '';
+  f.base_lng.value = inst.base_lng || '';
+  document.getElementById('online-toggle').checked = !!inst.online;
+
+  const specs = JSON.parse(inst.specialties || '[]');
+  const tools = JSON.parse(inst.tools || '[]');
+  document.querySelectorAll('#spec-chips .er-chip').forEach(c => c.classList.toggle('active', specs.includes(c.dataset.v)));
+  document.querySelectorAll('#tools-chips .er-chip').forEach(c => c.classList.toggle('active', tools.includes(c.dataset.v)));
+
+  document.getElementById('level-label').textContent = (inst.level || 'bronze').toUpperCase();
+  document.getElementById('level-progress').textContent = `${inst.completed_count || 0} serviços concluídos · nota ${inst.rating_avg || '—'}`;
+}
+
+async function loadOffers() {
+  const offers = await ER.api('/offers');
+  const el = document.getElementById('offers-list');
+  if (!offers.length) { el.innerHTML = '<div class="er-card er-dim">Nenhuma oferta ativa no momento.</div>'; return; }
+  el.innerHTML = offers.map(o => `
+    <div class="er-card">
+      <div class="er-between" style="align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <div class="er-micro">${ER.escapeHtml(o.category)} · ${ER.escapeHtml(o.urgency)}</div>
+          <div style="font-weight:700;margin-top:4px">${ER.escapeHtml(o.os_number)} · ${ER.escapeHtml(o.title)}</div>
+          <div class="er-dim" style="font-size:12.5px;margin-top:4px">${ER.escapeHtml(o.address_city || '')}${o.address_state ? ' - ' + o.address_state : ''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:800">${ER.fmt.brl(o.offered_value)}</div>
+          <div class="er-dim" style="font-size:11.5px">Score: ${o.score}</div>
+        </div>
+      </div>
+      <div class="er-flex er-gap-8 er-mt-16" style="flex-wrap:wrap">
+        <button class="er-btn er-btn-success" onclick="acceptOffer(${o.id})">Aceitar</button>
+        <button class="er-btn er-btn-ghost"   onclick="rejectOffer(${o.id})">Recusar</button>
+        <button class="er-btn er-btn-ghost"   onclick="counterOffer(${o.id}, ${o.offered_value})">Contra-proposta</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function acceptOffer(id) { try { await ER.api('/offers/' + id + '/accept', { method: 'POST' }); ER.toast.success('Oferta aceita!'); loadOffers(); setView('execucao'); document.querySelector('[data-view=execucao]').click(); } catch (e) { ER.toast.error(e.message); } }
+async function rejectOffer(id) { try { await ER.api('/offers/' + id + '/reject', { method: 'POST' }); loadOffers(); } catch (e) { ER.toast.error(e.message); } }
+async function counterOffer(id, cur) { const v = prompt('Contra-proposta (R$):', cur); if (!v) return; try { await ER.api('/offers/' + id + '/counter', { method: 'POST', body: { value: parseFloat(v) } }); ER.toast.success('Enviada!'); loadOffers(); } catch (e) { ER.toast.error(e.message); } }
+
+async function loadExecucao() {
+  const orders = await ER.api('/service-orders?status=accepted');
+  const ip = await ER.api('/service-orders?status=in_progress');
+  const active = [...orders, ...ip];
+  if (!active.length) { document.getElementById('current-os').innerHTML = '<div class="er-card er-dim">Nenhuma OS em execução.</div>'; return; }
+  currentExec = active[0];
+  const o = currentExec;
+  const nextMap = {
+    accepted:    { to: 'en_route',    label: 'Sair para o local' },
+    en_route:    { to: 'checked_in',  label: 'Cheguei ao local' },
+    checked_in:  { to: 'in_progress', label: 'Iniciar execução' },
+    in_progress: { to: 'completed',   label: 'Finalizar e cobrar' },
+  };
+  const next = nextMap[o.status] || null;
+  document.getElementById('current-os').innerHTML = `
+    <div class="er-card">
+      <div class="er-h2">${ER.escapeHtml(o.os_number)} · ${ER.escapeHtml(o.title)}</div>
+      <div class="er-dim er-mt-8">${ER.escapeHtml(o.description)}</div>
+      <div class="er-dim er-mt-8">${ER.escapeHtml(o.address_street || '')}</div>
+      <div class="er-mt-16"><span class="er-badge er-badge-info">${ER.badgeForStatus[o.status].label}</span></div>
+      <div class="er-h3 er-mt-24">Checklist</div>
+      ${(o.checklist || []).map(c => `<label class="er-flex er-gap-8" style="margin-bottom:6px"><input type="checkbox" ${c.done ? 'checked' : ''} onchange="toggleCheck(${c.id})"> ${ER.escapeHtml(c.item)}</label>`).join('')}
+      ${next ? `<button class="er-btn er-btn-primary er-btn-block er-mt-16" onclick="advance('${next.to}')">${next.label}</button>` : ''}
+    </div>
+  `;
+}
+
+async function toggleCheck(itemId) { await ER.api('/service-orders/' + currentExec.id + '/checklist/' + itemId + '/toggle', { method: 'POST' }); loadExecucao(); }
+async function advance(to) { try { await ER.api('/service-orders/' + currentExec.id + '/status', { method: 'POST', body: { to } }); loadExecucao(); loadWallet(); } catch (e) { ER.toast.error(e.message); } }
+
+async function loadWallet() {
+  wallet = await ER.api('/wallets/me');
+  document.getElementById('wallet-balance').textContent = ER.fmt.brl(wallet.balance);
+  document.getElementById('wallet-held').textContent = wallet.held > 0 ? 'Retido: ' + ER.fmt.brl(wallet.held) : '';
+  const st = await ER.api('/wallets/me/statement');
+  document.getElementById('statement').innerHTML = st.length
+    ? st.map(e => `<div class="er-list-row"><div style="flex:1"><div style="font-weight:600">${ER.escapeHtml(e.description || e.entry_type)}</div><div class="er-dim" style="font-size:12px">${ER.fmt.dt(e.created_at)}</div></div><div style="font-weight:700;color:${e.amount_cents >= 0 ? 'var(--success)' : 'var(--danger)'}">${ER.fmt.brl((e.entry_type==='credit'?1:-1) * e.amount_cents / 100)}</div></div>`).join('')
+    : '<div class="er-dim">Nenhum lançamento ainda.</div>';
+}
+
+async function promptPayout() {
+  const v = prompt('Valor a sacar (R$):');
+  if (!v) return;
+  try { await ER.api('/wallets/me/payout', { method: 'POST', body: { amount: parseFloat(v) } }); ER.toast.success('Saque solicitado!'); loadWallet(); }
+  catch (e) { ER.toast.error(e.message); }
+}
+
+async function saveProfile(e) {
+  e.preventDefault();
+  const f = e.target;
+  const body = {
+    full_name: f.full_name.value,
+    pix_key: f.pix_key.value,
+    base_address: f.base_address.value,
+    service_radius_km: parseInt(f.service_radius_km.value) || 25,
+    base_lat: parseFloat(f.base_lat.value) || null,
+    base_lng: parseFloat(f.base_lng.value) || null,
+    specialties: [...document.querySelectorAll('#spec-chips .er-chip.active')].map(c => c.dataset.v),
+    tools:       [...document.querySelectorAll('#tools-chips .er-chip.active')].map(c => c.dataset.v),
+  };
+  try { await ER.api('/installers/me', { method: 'PUT', body }); ER.toast.success('Perfil atualizado!'); }
+  catch (err) { ER.toast.error(err.message); }
+}
+
+function loadPerfilMap() {
+  const f = document.getElementById('profile-form');
+  const lat = parseFloat(f.base_lat.value) || -23.5505;
+  const lng = parseFloat(f.base_lng.value) || -46.6333;
+  if (!perfilMap) {
+    perfilMap = L.map('perfil-map').setView([lat, lng], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(perfilMap);
+    perfilMap.on('click', (e) => {
+      f.base_lat.value = e.latlng.lat.toFixed(7);
+      f.base_lng.value = e.latlng.lng.toFixed(7);
+      if (perfilMarker) perfilMarker.setLatLng(e.latlng); else perfilMarker = L.marker(e.latlng).addTo(perfilMap);
+    });
+    if (f.base_lat.value) perfilMarker = L.marker([lat, lng]).addTo(perfilMap);
+  } else perfilMap.invalidateSize();
+}
+
+async function toggleOnline(e) {
+  const online = e.target.checked;
+  await ER.api('/installers/me/status', { method: 'POST', body: { online, available: 1 } });
+  if (online) startPings(); else stopPings();
+}
+
+function startPings() {
+  stopPings();
+  if (!navigator.geolocation) return;
+  const send = () => navigator.geolocation.getCurrentPosition(async (pos) => {
+    try {
+      await ER.api('/tracking/ping', { method: 'POST', body: {
+        lat: pos.coords.latitude, lng: pos.coords.longitude,
+        accuracy_m: pos.coords.accuracy, speed_kmh: (pos.coords.speed || 0) * 3.6,
+        heading_deg: pos.coords.heading || null,
+        order_id: currentExec?.id || null,
+      }});
+    } catch {}
+  });
+  send();
+  pingInterval = setInterval(send, 25000);
+}
+function stopPings() { if (pingInterval) clearInterval(pingInterval); pingInterval = null; }
+</script>
+</body>
+</html>

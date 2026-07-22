@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EU RESOLVO — Entrar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+<div class="er-auth-wrap">
+  <div class="er-auth-card">
+    <div class="er-logo" style="justify-content:center;margin-bottom:20px">
+      <div class="er-logo-mark">ER</div>
+      <div>
+        <div class="er-logo-name">EU RESOLVO</div>
+        <div class="er-logo-slogan">A instalação certa, no profissional certo.</div>
+      </div>
+    </div>
+
+    <div id="tabs" style="display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:var(--r-pill);margin-bottom:24px">
+      <button class="er-tab active" data-mode="login">Entrar</button>
+      <button class="er-tab" data-mode="register">Criar conta</button>
+    </div>
+
+    <form id="form-login">
+      <div class="er-field">
+        <div class="er-field-label">E-mail</div>
+        <input class="er-input" type="email" name="email" required autocomplete="email">
+      </div>
+      <div class="er-field">
+        <div class="er-field-label">Senha</div>
+        <input class="er-input" type="password" name="password" required minlength="8" autocomplete="current-password">
+      </div>
+      <button class="er-btn er-btn-primary er-btn-block" type="submit">Entrar</button>
+    </form>
+
+    <form id="form-register" class="er-hidden">
+      <div class="er-field">
+        <div class="er-field-label">Perfil</div>
+        <div class="er-chips">
+          <button type="button" class="er-chip active" data-role="empresa">Empresa</button>
+          <button type="button" class="er-chip" data-role="instalador">Instalador</button>
+        </div>
+      </div>
+      <div class="er-field">
+        <div class="er-field-label">Nome ou razão social</div>
+        <input class="er-input" name="name" required minlength="3">
+      </div>
+      <div class="er-field" id="doc-field">
+        <div class="er-field-label" id="doc-label">CNPJ</div>
+        <input class="er-input" name="doc" required>
+      </div>
+      <div class="er-form-row">
+        <div class="er-field">
+          <div class="er-field-label">E-mail</div>
+          <input class="er-input" type="email" name="email" required>
+        </div>
+        <div class="er-field">
+          <div class="er-field-label">Telefone</div>
+          <input class="er-input" name="phone" required placeholder="(11) 99999-9999">
+        </div>
+      </div>
+      <div class="er-field">
+        <div class="er-field-label">Senha (mínimo 8 caracteres)</div>
+        <input class="er-input" type="password" name="password" required minlength="8" autocomplete="new-password">
+      </div>
+      <button class="er-btn er-btn-primary er-btn-block" type="submit">Criar conta</button>
+    </form>
+
+    <div style="text-align:center;margin-top:16px;font-size:12.5px">
+      <a href="/" class="er-dim">← Voltar ao site</a>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+  // Se já logado, envia para o portal correto
+  if (ER.store.user && ER.store.token) {
+    const r = ER.store.user.role;
+    location.href = r === 'empresa' ? '/portal/empresa' : r === 'instalador' ? '/portal/instalador' : '/portal/admin';
+  }
+
+  const tabs = document.querySelectorAll('#tabs .er-tab');
+  const fLogin = document.getElementById('form-login');
+  const fReg   = document.getElementById('form-register');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active')); t.classList.add('active');
+    const mode = t.dataset.mode;
+    fLogin.classList.toggle('er-hidden', mode !== 'login');
+    fReg.classList.toggle('er-hidden', mode !== 'register');
+  }));
+
+  let regRole = 'empresa';
+  document.querySelectorAll('#form-register [data-role]').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#form-register [data-role]').forEach(x => x.classList.remove('active'));
+      b.classList.add('active'); regRole = b.dataset.role;
+      document.getElementById('doc-label').textContent = regRole === 'empresa' ? 'CNPJ' : 'CPF';
+    });
+  });
+
+  fLogin.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = fLogin.querySelector('button[type=submit]'); btn.disabled = true;
+    try {
+      const fd = new FormData(fLogin);
+      const u  = await ER.auth.login(fd.get('email'), fd.get('password'));
+      ER.toast.success('Bem-vindo!');
+      location.href = u.role === 'empresa' ? '/portal/empresa'
+                    : u.role === 'instalador' ? '/portal/instalador'
+                    : '/portal/admin';
+    } catch (err) { ER.toast.error(err.message); }
+    finally { btn.disabled = false; }
+  });
+
+  fReg.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = fReg.querySelector('button[type=submit]'); btn.disabled = true;
+    try {
+      const fd = new FormData(fReg);
+      const payload = {
+        role: regRole,
+        name: fd.get('name'),
+        email: fd.get('email'),
+        phone: fd.get('phone'),
+        password: fd.get('password'),
+      };
+      if (regRole === 'empresa') { payload.cnpj = fd.get('doc'); payload.razao_social = fd.get('name'); }
+      else                       { payload.cpf  = fd.get('doc'); }
+      const u = await ER.auth.register(payload);
+      ER.toast.success('Conta criada!');
+      location.href = u.role === 'empresa' ? '/portal/empresa' : '/portal/instalador';
+    } catch (err) { ER.toast.error(err.message); }
+    finally { btn.disabled = false; }
+  });
+</script>
+</body>
+</html>

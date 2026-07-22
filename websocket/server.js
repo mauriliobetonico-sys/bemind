@@ -1,11 +1,13 @@
 /**
- * VisãoOS — Servidor WebSocket para atualizações em tempo real
+ * BEMIND — Servidor WebSocket unificado (VisãoOS + EU RESOLVO)
  *
  * Clientes (browser) conectam via WS e recebem eventos.
  * O PHP faz POST em /broadcast para enviar eventos a todos os clientes.
+ * Suporta salas (rooms) para chat por OS e broadcast por role.
  */
 
-require('dotenv').config({ path: '../visaoos/.env' });
+require('dotenv').config({ path: '../euresolvo/.env' });
+try { require('dotenv').config({ path: '../visaoos/.env' }); } catch (_) {}
 
 const WebSocket = require('ws');
 const express   = require('express');
@@ -20,12 +22,12 @@ app.use(express.json());
 const server = http.createServer(app);
 const wss    = new WebSocket.Server({ server, path: '/ws' });
 
-// ── Clientes conectados, indexados por role ───────────────────────────────
-const clients = new Map(); // ws → { userId, role, authenticated }
+// ── Clientes conectados, indexados por role e por sala (rooms) ────────────
+const clients = new Map(); // ws → { userId, role, authenticated, rooms: Set }
 
 wss.on('connection', (ws, req) => {
     const clientIp = req.socket.remoteAddress;
-    clients.set(ws, { userId: null, role: null, authenticated: false, ip: clientIp });
+    clients.set(ws, { userId: null, role: null, authenticated: false, ip: clientIp, rooms: new Set() });
 
     console.log(`[WS] Nova conexão de ${clientIp} | Total: ${clients.size}`);
 
@@ -50,6 +52,7 @@ wss.on('connection', (ws, req) => {
                         role:          payload.role,
                         authenticated: true,
                         ip:            clientIp,
+                        rooms:         new Set(),
                     });
                     ws.send(JSON.stringify({ type: 'auth', status: 'ok', role: payload.role }));
                     console.log(`[WS] Autenticado: user=${payload.sub} role=${payload.role}`);
@@ -63,6 +66,18 @@ wss.on('connection', (ws, req) => {
             // Ping/pong para manter conexão viva
             if (msg.type === 'ping') {
                 ws.send(JSON.stringify({ type: 'pong', ts: Date.now() }));
+            }
+
+            // Entra/sai de uma sala (ex.: "order:123")
+            const info = clients.get(ws);
+            if (info && info.authenticated) {
+                if (msg.type === 'join' && typeof msg.room === 'string') {
+                    info.rooms.add(msg.room);
+                    ws.send(JSON.stringify({ type: 'joined', room: msg.room }));
+                }
+                if (msg.type === 'leave' && typeof msg.room === 'string') {
+                    info.rooms.delete(msg.room);
+                }
             }
 
         } catch {
@@ -86,7 +101,7 @@ wss.on('connection', (ws, req) => {
 
 // ── Endpoint HTTP para o PHP enviar eventos ───────────────────────────────
 app.post('/broadcast', (req, res) => {
-    const { event, data, secret, roles } = req.body;
+    const { event, data, secret, roles, room, user_ids } = req.body;
 
     if (secret !== WS_SECRET) {
         return res.status(401).json({ error: 'Acesso negado.' });
@@ -98,8 +113,14 @@ app.post('/broadcast', (req, res) => {
     clients.forEach((info, ws) => {
         if (!info.authenticated) return;
         if (ws.readyState !== WebSocket.OPEN) return;
-        // Filtra por role se especificado
         if (roles && roles.length > 0 && !roles.includes(info.role)) return;
+        if (user_ids && user_ids.length > 0 && !user_ids.map(String).includes(String(info.userId))) return;
+        if (room && !info.rooms.has(room)) return;
+        // Se o evento vier com order_id, entrega também para quem entrou naquela sala
+        if (!room && data && data.order_id) {
+            const auto = `order:${data.order_id}`;
+            if (!info.rooms.has(auto) && (roles && !roles.includes(info.role))) return;
+        }
         ws.send(payload);
         count++;
     });

@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EU RESOLVO — Portal Empresa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <div class="er-page">
+    <div class="er-tabs" style="margin-bottom:20px;width:fit-content">
+      <button class="er-tab active" data-view="dashboard">Dashboard</button>
+      <button class="er-tab" data-view="nova">Nova OS</button>
+      <button class="er-tab" data-view="andamento">Acompanhamento</button>
+    </div>
+
+    <div id="view-dashboard">
+      <div class="er-between" style="flex-wrap:wrap;gap:16px;margin-bottom:20px">
+        <div>
+          <div class="er-h1" id="greet">Carregando…</div>
+          <div class="er-dim" style="margin-top:4px">Acompanhe suas ordens de serviço em andamento</div>
+        </div>
+        <button class="er-btn er-btn-primary" onclick="goNova()">+ Nova Ordem de Serviço</button>
+      </div>
+      <div class="er-grid-4" id="kpi-row"></div>
+      <div class="er-h3" style="margin-top:28px">Ordens recentes</div>
+      <div id="orders-list" class="er-flex" style="flex-direction:column;gap:10px"></div>
+    </div>
+
+    <div id="view-nova" class="er-hidden">
+      <form id="nova-form" class="er-card" style="max-width:800px">
+        <div class="er-h2" style="margin-bottom:4px">Nova Ordem de Serviço</div>
+        <div class="er-dim" style="margin-bottom:20px">Preencha os detalhes para publicar e encontrar o instalador ideal.</div>
+
+        <div class="er-field">
+          <div class="er-field-label">Tipo de serviço</div>
+          <div class="er-chips" id="cat-chips"></div>
+        </div>
+
+        <div class="er-field">
+          <div class="er-field-label">Título</div>
+          <input class="er-input" name="title" required maxlength="180" placeholder="Ex.: Trocar letreiro do fachada">
+        </div>
+
+        <div class="er-field">
+          <div class="er-field-label">Descrição</div>
+          <textarea class="er-textarea" name="description" required placeholder="Descreva materiais, medidas e detalhes técnicos…"></textarea>
+        </div>
+
+        <div class="er-form-row">
+          <div class="er-field">
+            <div class="er-field-label">Data & hora</div>
+            <input class="er-input" type="datetime-local" name="scheduled_for">
+          </div>
+          <div class="er-field">
+            <div class="er-field-label">Urgência</div>
+            <div class="er-chips" id="urg-chips">
+              <button type="button" class="er-chip active" data-v="normal">Normal</button>
+              <button type="button" class="er-chip" data-v="urgente">Urgente</button>
+              <button type="button" class="er-chip" data-v="hoje">Hoje</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="er-field">
+          <div class="er-field-label">Endereço</div>
+          <input class="er-input" id="addr-input" name="address_street" placeholder="Rua, número, bairro, cidade — UF">
+          <div id="map" style="height:180px;border-radius:12px;overflow:hidden;margin-top:10px"></div>
+          <input type="hidden" name="lat"><input type="hidden" name="lng">
+          <div class="er-dim" style="font-size:12px;margin-top:6px">Clique no mapa para posicionar o ponto exato.</div>
+        </div>
+
+        <div class="er-field">
+          <div class="er-field-label">Requisitos técnicos</div>
+          <div class="er-chips" id="req-chips">
+            <button type="button" class="er-chip" data-v="andaime">Andaime</button>
+            <button type="button" class="er-chip" data-v="munck">Munck</button>
+            <button type="button" class="er-chip" data-v="plataforma">Plataforma elevatória</button>
+            <button type="button" class="er-chip" data-v="escada">Escada</button>
+            <button type="button" class="er-chip" data-v="eletricista">Eletricista</button>
+            <button type="button" class="er-chip" data-v="soldador">Soldador</button>
+            <button type="button" class="er-chip" data-v="equipe2">Equipe 2+</button>
+          </div>
+        </div>
+
+        <div class="er-form-row">
+          <div class="er-field">
+            <div class="er-field-label">Valor oferecido</div>
+            <input class="er-input" type="number" name="offered_value" step="0.01" min="0" required placeholder="R$ 0,00">
+          </div>
+          <div class="er-field">
+            <div class="er-field-label">Pagamento</div>
+            <select class="er-select" name="payment_method">
+              <option value="pix">PIX</option>
+              <option value="cartao">Cartão</option>
+              <option value="saldo">Saldo em conta</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="er-field">
+          <div class="er-field-label">Seleção de instalador</div>
+          <div class="er-grid-2">
+            <div class="er-card match-card active" data-v="automatico">
+              <div style="font-weight:700">Automático</div>
+              <div class="er-dim" style="font-size:12.5px;margin-top:4px">O sistema envia para o melhor match automaticamente.</div>
+            </div>
+            <div class="er-card match-card" data-v="manual">
+              <div style="font-weight:700">Manual</div>
+              <div class="er-dim" style="font-size:12.5px;margin-top:4px">Você escolhe entre até 5 candidatos ranqueados.</div>
+            </div>
+          </div>
+          <input type="hidden" name="match_mode" value="automatico">
+        </div>
+
+        <button class="er-btn er-btn-primary er-btn-block" type="submit" style="margin-top:12px">Publicar OS</button>
+      </form>
+    </div>
+
+    <div id="view-andamento" class="er-hidden">
+      <div id="track-empty" class="er-card er-dim">Selecione uma OS na aba <strong>Dashboard</strong> para acompanhar.</div>
+      <div id="track-content" class="er-hidden">
+        <div class="er-grid-2">
+          <div class="er-card">
+            <div class="er-h2" id="track-title"></div>
+            <div id="track-status" class="er-mt-8"></div>
+            <div id="track-map" style="height:260px;border-radius:12px;overflow:hidden;margin-top:14px"></div>
+            <div class="er-timeline er-mt-16" id="track-timeline"></div>
+          </div>
+          <div class="er-card">
+            <div class="er-h3">Instalador</div>
+            <div id="track-installer"></div>
+            <div class="er-h3" style="margin-top:20px">Chat</div>
+            <div id="chat-box" style="border:1px solid var(--border);border-radius:8px;height:220px;overflow-y:auto;padding:10px;background:var(--surface-2)"></div>
+            <form id="chat-form" class="er-flex er-gap-8 er-mt-8">
+              <input class="er-input" name="body" placeholder="Escreva uma mensagem…" required>
+              <button class="er-btn er-btn-primary" type="submit">Enviar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="/assets/js/app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+const user = ER.auth.require(['empresa','admin','operador']);
+if (user) init();
+
+const CATS = ['ACM','Fachada','Letreiro','Totem','Adesivo','Envelopamento','Manutenção','Outros'];
+
+let map, marker, trackMap, trackMarker, currentOrder;
+
+function init() {
+  document.getElementById('topbar').innerHTML = ER.renderTopbar('empresa');
+
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+  buildChips('cat-chips', CATS, 'category', true);
+  buildChips('urg-chips', null, 'urgency');
+  buildChips('req-chips', null, 'requirements', false, true);
+
+  document.querySelectorAll('.match-card').forEach(c => c.addEventListener('click', () => {
+    document.querySelectorAll('.match-card').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    document.querySelector('[name=match_mode]').value = c.dataset.v;
+  }));
+
+  loadDashboard();
+  ER.ws.connect(WS_URL());
+  ER.ws.on('order.status', () => loadDashboard());
+  ER.ws.on('order.funded', () => loadDashboard());
+  ER.ws.on('chat.message', (m) => currentOrder && m.order_id == currentOrder.id && appendChat(m));
+
+  document.getElementById('nova-form').addEventListener('submit', publishOS);
+  document.getElementById('chat-form').addEventListener('submit', sendChat);
+}
+
+function WS_URL() {
+  const p = location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${p}://${location.host}/ws`;
+}
+
+function setView(v) {
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  ['dashboard','nova','andamento'].forEach(name =>
+    document.getElementById('view-' + name).classList.toggle('er-hidden', name !== v));
+  if (v === 'nova') setTimeout(initMap, 100);
+  if (v === 'andamento' && currentOrder) setTimeout(initTrackMap, 100);
+}
+
+function goNova() { setView('nova'); document.querySelector('[data-view=nova]').click(); }
+
+function buildChips(containerId, values, name, single = false, multi = false) {
+  const el = document.getElementById(containerId);
+  if (values) el.innerHTML = values.map(v => `<button type="button" class="er-chip" data-v="${v}">${v}</button>`).join('');
+  el.querySelectorAll('.er-chip').forEach(c => c.addEventListener('click', () => {
+    if (single || (!multi && !single)) el.querySelectorAll('.er-chip').forEach(x => x.classList.remove('active'));
+    c.classList.toggle('active');
+  }));
+}
+
+function chipValues(id, single) {
+  const chips = [...document.querySelectorAll(`#${id} .er-chip.active`)].map(c => c.dataset.v);
+  return single ? chips[0] : chips;
+}
+
+async function loadDashboard() {
+  try {
+    const me = await ER.api('/me');
+    const c  = me.company || {};
+    document.getElementById('greet').textContent = 'Olá, ' + (c.nome_fantasia || c.razao_social || user.name);
+    const k  = me.kpi || {};
+    document.getElementById('kpi-row').innerHTML = [
+      { l: 'Serviços ativos',     v: k.active || 0 },
+      { l: 'Concluídos no mês',   v: k.done_month || 0 },
+      { l: 'Instaladores parceiros', v: k.partners || 0 },
+      { l: 'Investido no mês',    v: ER.fmt.brl(k.spent_month) },
+    ].map(x => `<div class="er-stat"><div class="er-stat-label">${x.l}</div><div class="er-stat-value">${x.v}</div></div>`).join('');
+
+    const orders = await ER.api('/service-orders?limit=20');
+    const list = document.getElementById('orders-list');
+    if (!orders.length) { list.innerHTML = '<div class="er-card er-dim">Nenhuma OS ainda. Crie a primeira!</div>'; return; }
+    list.innerHTML = orders.map(o => {
+      const b = ER.badgeForStatus[o.status] || {cls:'er-badge-neutral',label:o.status};
+      return `<div class="er-list-row" onclick="openOrder(${o.id})" style="cursor:pointer">
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:700">${ER.escapeHtml(o.os_number)} · ${ER.escapeHtml(o.title)}</div>
+          <div class="er-dim" style="font-size:12.5px;margin-top:3px">
+            ${o.installer_name ? 'Instalador: ' + ER.escapeHtml(o.installer_name) + ' · ' : ''}${ER.fmt.dtRel(o.created_at)} atrás
+          </div>
+        </div>
+        <div class="er-badge ${b.cls}">${b.label}</div>
+      </div>`;
+    }).join('');
+  } catch (e) { ER.toast.error(e.message); }
+}
+
+function initMap() {
+  if (map) { map.invalidateSize(); return; }
+  map = L.map('map').setView([-23.5505, -46.6333], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM', maxZoom: 19 }).addTo(map);
+  map.on('click', (e) => {
+    if (marker) marker.setLatLng(e.latlng); else marker = L.marker(e.latlng).addTo(map);
+    document.querySelector('[name=lat]').value = e.latlng.lat.toFixed(7);
+    document.querySelector('[name=lng]').value = e.latlng.lng.toFixed(7);
+  });
+}
+
+async function publishOS(e) {
+  e.preventDefault();
+  const form = e.target;
+  const fd = new FormData(form);
+  const body = Object.fromEntries(fd.entries());
+  body.category     = chipValues('cat-chips', true);
+  body.urgency      = chipValues('urg-chips', true) || 'normal';
+  body.requirements = chipValues('req-chips');
+  if (!body.category) return ER.toast.error('Selecione o tipo de serviço.');
+  if (!body.lat || !body.lng) return ER.toast.error('Selecione o local no mapa.');
+  try {
+    const created = await ER.api('/service-orders', { method: 'POST', body });
+    await ER.api('/service-orders/' + created.id + '/publish', { method: 'POST' });
+    ER.toast.success('OS publicada! Aguardando aceite do instalador.');
+    form.reset();
+    document.querySelectorAll('.er-chip').forEach(c => c.classList.remove('active'));
+    setView('dashboard');
+    document.querySelector('[data-view=dashboard]').classList.add('active');
+    loadDashboard();
+  } catch (err) { ER.toast.error(err.message); }
+}
+
+async function openOrder(id) {
+  try {
+    currentOrder = await ER.api('/service-orders/' + id);
+    document.getElementById('track-empty').classList.add('er-hidden');
+    document.getElementById('track-content').classList.remove('er-hidden');
+    setView('andamento');
+    document.querySelector('[data-view=andamento]').click();
+    renderTrack();
+    loadChat();
+  } catch (e) { ER.toast.error(e.message); }
+}
+
+function renderTrack() {
+  const o = currentOrder;
+  document.getElementById('track-title').textContent = `${o.os_number} · ${o.title}`;
+  const b = ER.badgeForStatus[o.status] || {cls:'er-badge-neutral',label:o.status};
+  document.getElementById('track-status').innerHTML = `<span class="er-badge ${b.cls}">${b.label}</span>`;
+  const steps = ['published','matched','accepted','en_route','checked_in','in_progress','completed'];
+  const cur = steps.indexOf(o.status);
+  document.getElementById('track-timeline').innerHTML = steps.map((s, i) => {
+    const cls = i < cur ? 'done' : (i === cur ? 'current' : '');
+    return `<div class="er-timeline-step ${cls}"><div class="er-timeline-dot"></div><div>${ER.badgeForStatus[s].label}</div></div>`;
+  }).join('');
+  const iName = o.installer_name || '—';
+  document.getElementById('track-installer').innerHTML = `
+    <div style="font-weight:700">${ER.escapeHtml(iName)}</div>
+    <div class="er-dim" style="font-size:12.5px;margin-top:4px">
+      Nível: ${o.installer_level || '—'} · Nota: ${o.installer_rating || '—'} ★
+    </div>
+    ${o.status === 'draft' || o.status === 'published' ? `<button class="er-btn er-btn-primary er-mt-16" onclick="fund(${o.id})">Pagar (PIX)</button>` : ''}
+  `;
+}
+
+function initTrackMap() {
+  const o = currentOrder;
+  if (!trackMap) {
+    trackMap = L.map('track-map').setView([o.lat, o.lng], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(trackMap);
+  } else { trackMap.setView([o.lat, o.lng], 14); trackMap.invalidateSize(); }
+  if (trackMarker) trackMap.removeLayer(trackMarker);
+  trackMarker = L.marker([o.lat, o.lng]).addTo(trackMap).bindPopup('Local do serviço').openPopup();
+  if (o.current_lat && o.current_lng) {
+    L.circleMarker([o.current_lat, o.current_lng], { color: 'var(--accent)', radius: 8 }).addTo(trackMap).bindPopup('Instalador');
+  }
+}
+
+async function fund(orderId) {
+  try {
+    const r = await ER.api('/payments/fund/' + orderId, { method: 'POST', body: { method: 'pix' } });
+    if (r.pix && r.pix.copy_paste) {
+      const modal = document.createElement('div'); modal.className = 'er-modal-back';
+      modal.innerHTML = `<div class="er-modal">
+        <div class="er-h2" style="margin-bottom:8px">Pague com PIX</div>
+        ${r.pix.qr_base64 ? `<div style="text-align:center;margin-bottom:12px"><img src="data:image/png;base64,${r.pix.qr_base64}" alt="QR" style="max-width:220px"></div>` : ''}
+        <textarea class="er-textarea" readonly onclick="this.select()">${r.pix.copy_paste}</textarea>
+        <div class="er-dim" style="font-size:12px;margin-top:8px">Após o pagamento a OS é liberada automaticamente.</div>
+        <button class="er-btn er-btn-primary er-btn-block er-mt-16" onclick="this.closest('.er-modal-back').remove()">Fechar</button>
+      </div>`;
+      document.body.appendChild(modal);
+    } else if (r.checkout_url) {
+      location.href = r.checkout_url;
+    } else {
+      ER.toast.info('Solicitação de pagamento registrada.');
+    }
+  } catch (e) { ER.toast.error(e.message); }
+}
+
+async function loadChat() {
+  const msgs = await ER.api('/chat/' + currentOrder.id);
+  const box = document.getElementById('chat-box');
+  box.innerHTML = msgs.map(renderMsg).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+function renderMsg(m) {
+  const own = m.sender_id === user.id;
+  return `<div style="margin-bottom:8px;text-align:${own ? 'right' : 'left'}">
+    <div style="display:inline-block;max-width:80%;padding:8px 12px;border-radius:12px;background:${own ? 'var(--accent)' : 'var(--surface)'};color:${own ? '#fff' : 'inherit'};text-align:left">
+      <div style="font-size:11px;opacity:.75">${ER.escapeHtml(m.sender_name)} · ${ER.fmt.dtRel(m.created_at || m.at)}</div>
+      <div>${ER.escapeHtml(m.body || '')}</div>
+    </div>
+  </div>`;
+}
+
+function appendChat(m) {
+  const box = document.getElementById('chat-box');
+  box.insertAdjacentHTML('beforeend', renderMsg(m));
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendChat(e) {
+  e.preventDefault();
+  const form = e.target; const body = form.body.value.trim();
+  if (!body) return;
+  try {
+    await ER.api('/chat/' + currentOrder.id, { method: 'POST', body: { body } });
+    form.reset();
+  } catch (err) { ER.toast.error(err.message); }
+}
+</script>
+</body>
+</html>

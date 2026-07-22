@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EU RESOLVO — Portal Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+</head>
+<body>
+  <div id="topbar"></div>
+  <div class="er-page">
+    <div class="er-tabs" style="margin-bottom:20px;width:fit-content;flex-wrap:wrap">
+      <button class="er-tab active" data-view="dashboard">Dashboard</button>
+      <button class="er-tab" data-view="financeiro">Financeiro</button>
+      <button class="er-tab" data-view="instaladores">Instaladores</button>
+      <button class="er-tab" data-view="leads">Leads</button>
+      <button class="er-tab" data-view="tickets">Tickets</button>
+      <button class="er-tab" data-view="regras">Comissões</button>
+      <button class="er-tab" data-view="auditoria">Auditoria</button>
+    </div>
+
+    <div id="view-dashboard">
+      <div class="er-h1">Painel administrativo</div>
+      <div id="kpi" class="er-grid-3 er-mt-16"></div>
+      <div class="er-grid-2 er-mt-24">
+        <div class="er-card">
+          <div class="er-h3">Mapa nacional (OSs ativas)</div>
+          <div id="heat-map" style="height:340px;border-radius:12px"></div>
+        </div>
+        <div class="er-card">
+          <div class="er-h3">Tickets abertos</div>
+          <div id="tickets-preview"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-financeiro" class="er-hidden">
+      <div class="er-h1">Financeiro</div>
+      <div id="fin-summary" class="er-grid-3 er-mt-16"></div>
+      <div class="er-h3 er-mt-24">Payouts recentes</div>
+      <div id="fin-payouts" class="er-card"></div>
+    </div>
+
+    <div id="view-instaladores" class="er-hidden">
+      <div class="er-h1">Instaladores</div>
+      <div id="installers-list" class="er-mt-16 er-flex" style="flex-direction:column;gap:10px"></div>
+    </div>
+
+    <div id="view-leads" class="er-hidden">
+      <div class="er-h1">Leads (site institucional)</div>
+      <div id="leads-list" class="er-mt-16 er-flex" style="flex-direction:column;gap:10px"></div>
+    </div>
+
+    <div id="view-tickets" class="er-hidden">
+      <div class="er-h1">Tickets de suporte</div>
+      <div id="tickets-list" class="er-mt-16 er-flex" style="flex-direction:column;gap:10px"></div>
+    </div>
+
+    <div id="view-regras" class="er-hidden">
+      <div class="er-h1">Regras de comissão</div>
+      <form id="rule-form" class="er-card er-mt-16" style="max-width:640px">
+        <div class="er-form-row">
+          <div class="er-field"><div class="er-field-label">Categoria (opcional)</div><input class="er-input" name="category" placeholder="ACM, Fachada… ou vazio"></div>
+          <div class="er-field"><div class="er-field-label">Nível (opcional)</div>
+            <select class="er-select" name="level"><option value="">Qualquer</option><option>bronze</option><option>prata</option><option>ouro</option><option>diamante</option></select>
+          </div>
+        </div>
+        <div class="er-form-row">
+          <div class="er-field"><div class="er-field-label">% comissão</div><input class="er-input" type="number" step="0.5" name="pct" required min="0" max="100"></div>
+          <div class="er-field"><div class="er-field-label">Prioridade</div><input class="er-input" type="number" name="priority" value="0"></div>
+        </div>
+        <button class="er-btn er-btn-primary er-btn-block" type="submit">Adicionar regra</button>
+      </form>
+      <div id="rules-list" class="er-mt-16 er-flex" style="flex-direction:column;gap:8px"></div>
+    </div>
+
+    <div id="view-auditoria" class="er-hidden">
+      <div class="er-h1">Log de auditoria</div>
+      <div id="audit-list" class="er-mt-16"></div>
+    </div>
+  </div>
+
+<script src="/assets/js/app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+const user = ER.auth.require(['admin','operador']);
+if (user) init();
+
+let heatMap;
+
+function init() {
+  document.getElementById('topbar').innerHTML = ER.renderTopbar('admin');
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+  document.getElementById('rule-form').addEventListener('submit', addRule);
+  loadDashboard();
+}
+
+function setView(v) {
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  ['dashboard','financeiro','instaladores','leads','tickets','regras','auditoria'].forEach(n =>
+    document.getElementById('view-' + n).classList.toggle('er-hidden', n !== v));
+  if (v === 'dashboard')    loadDashboard();
+  if (v === 'financeiro')   loadFinanceiro();
+  if (v === 'instaladores') loadInstaladores();
+  if (v === 'leads')        loadLeads();
+  if (v === 'tickets')      loadTickets();
+  if (v === 'regras')       loadRules();
+  if (v === 'auditoria')    loadAudit();
+}
+
+async function loadDashboard() {
+  const k = await ER.api('/admin/dashboard');
+  document.getElementById('kpi').innerHTML = [
+    { l: 'Faturamento mês',   v: ER.fmt.brl(k.revenue_month) },
+    { l: 'Comissão mês',      v: ER.fmt.brl(k.commission_month) },
+    { l: 'OSs no mês',        v: k.orders_month },
+    { l: 'OSs ativas',        v: k.active_orders },
+    { l: 'Empresas ativas',   v: k.companies_active },
+    { l: 'Instaladores online', v: k.installers_online + ' / ' + k.installers_active },
+  ].map(x => `<div class="er-stat"><div class="er-stat-label">${x.l}</div><div class="er-stat-value">${x.v}</div></div>`).join('');
+
+  const tk = await ER.api('/admin/tickets');
+  document.getElementById('tickets-preview').innerHTML = tk.slice(0, 5).map(t => `
+    <div class="er-list-row"><div style="flex:1"><div style="font-weight:600">${ER.escapeHtml(t.subject)}</div><div class="er-dim" style="font-size:12px">${ER.escapeHtml(t.user_name || 'anon')}</div></div>
+    <span class="er-badge er-badge-${t.priority==='critica'?'danger':t.priority==='alta'?'warn':'info'}">${t.priority}</span></div>`).join('') || '<div class="er-dim">Sem tickets abertos.</div>';
+
+  setTimeout(loadHeatMap, 100);
+}
+
+async function loadHeatMap() {
+  const pts = await ER.api('/admin/heatmap');
+  if (!heatMap) {
+    heatMap = L.map('heat-map').setView([-14.2, -51.9], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(heatMap);
+  } else heatMap.invalidateSize();
+  pts.filter(p => p.lat && p.lng).forEach(p => {
+    L.circleMarker([p.lat, p.lng], { color: '#ff5a1f', radius: 6 }).addTo(heatMap)
+      .bindPopup(`${ER.escapeHtml(p.address_city || '')} - ${ER.escapeHtml(p.address_state || '')}`);
+  });
+}
+
+async function loadFinanceiro() {
+  const d = await ER.api('/admin/financials');
+  document.getElementById('fin-summary').innerHTML = [
+    { l: 'Saldos de instaladores', v: ER.fmt.brl(d.summary.installer_balances) },
+    { l: 'Retido em escrow',       v: ER.fmt.brl(d.summary.escrow_held) },
+    { l: 'Comissão acumulada',     v: ER.fmt.brl(d.summary.commission_total) },
+  ].map(x => `<div class="er-stat"><div class="er-stat-label">${x.l}</div><div class="er-stat-value">${x.v}</div></div>`).join('');
+  document.getElementById('fin-payouts').innerHTML = d.payouts.length
+    ? `<table style="width:100%;font-size:13px"><thead><tr>
+        <th style="text-align:left;padding:8px">Instalador</th><th style="text-align:left;padding:8px">Valor</th>
+        <th style="text-align:left;padding:8px">Método</th><th style="text-align:left;padding:8px">Status</th>
+        <th style="text-align:left;padding:8px">Data</th></tr></thead><tbody>${
+      d.payouts.map(p => `<tr>
+        <td style="padding:8px">${ER.escapeHtml(p.installer_name)}</td>
+        <td style="padding:8px">${ER.fmt.brl(p.amount_cents/100)}</td>
+        <td style="padding:8px">${p.method}</td>
+        <td style="padding:8px"><span class="er-badge er-badge-${p.status==='sent'?'success':p.status==='failed'?'danger':'info'}">${p.status}</span></td>
+        <td style="padding:8px">${ER.fmt.dt(p.requested_at)}</td>
+      </tr>`).join('')
+    }</tbody></table>`
+    : '<div class="er-dim">Sem payouts.</div>';
+}
+
+async function loadInstaladores() {
+  const list = await ER.api('/installers');
+  document.getElementById('installers-list').innerHTML = list.map(i => `
+    <div class="er-list-row">
+      <div style="flex:1;min-width:200px">
+        <div style="font-weight:700">${ER.escapeHtml(i.name)}</div>
+        <div class="er-dim" style="font-size:12.5px">CPF ${ER.fmt.doc(i.cpf)} · ${ER.escapeHtml(i.email)} · Nível ${i.level}</div>
+      </div>
+      <span class="er-badge er-badge-${i.status==='aprovado'?'success':i.status==='pendente'?'warn':'danger'}">${i.status}</span>
+      ${i.status !== 'aprovado' ? `<button class="er-btn er-btn-success" onclick="approveInstaller(${i.id})">Aprovar</button>` : ''}
+      ${i.status !== 'suspenso' ? `<button class="er-btn er-btn-ghost" onclick="suspendInstaller(${i.id})">Suspender</button>` : ''}
+    </div>`).join('');
+}
+async function approveInstaller(id) { await ER.api('/installers/' + id + '/approve', { method: 'POST' }); loadInstaladores(); }
+async function suspendInstaller(id) { await ER.api('/installers/' + id + '/suspend', { method: 'POST' }); loadInstaladores(); }
+
+async function loadLeads() {
+  const list = await ER.api('/leads');
+  document.getElementById('leads-list').innerHTML = list.map(l => `
+    <div class="er-list-row">
+      <div style="flex:1;min-width:200px">
+        <div style="font-weight:700">${ER.escapeHtml(l.name)} <span class="er-dim" style="font-size:12px">· ${l.kind}</span></div>
+        <div class="er-dim" style="font-size:12.5px">${ER.escapeHtml(l.email)} · ${ER.fmt.phone(l.phone)} · ${ER.escapeHtml(l.city || '')}${l.state?' - '+l.state:''}</div>
+        ${l.message ? `<div style="font-size:12.5px;margin-top:6px">${ER.escapeHtml(l.message)}</div>` : ''}
+      </div>
+      <span class="er-badge er-badge-${l.status==='convertido'?'success':l.status==='novo'?'info':'neutral'}">${l.status}</span>
+      <select class="er-select" style="max-width:180px" onchange="ER.api('/leads/${l.id}/status',{method:'POST',body:{status:this.value}}).then(()=>ER.toast.success('Atualizado'))">
+        <option ${l.status==='novo'?'selected':''}>novo</option>
+        <option ${l.status==='contatado'?'selected':''}>contatado</option>
+        <option ${l.status==='convertido'?'selected':''}>convertido</option>
+        <option ${l.status==='descartado'?'selected':''}>descartado</option>
+      </select>
+    </div>`).join('');
+}
+
+async function loadTickets() {
+  const list = await ER.api('/admin/tickets');
+  document.getElementById('tickets-list').innerHTML = list.map(t => `
+    <div class="er-list-row">
+      <div style="flex:1;min-width:220px">
+        <div style="font-weight:700">${ER.escapeHtml(t.subject)}</div>
+        <div class="er-dim" style="font-size:12.5px">${ER.escapeHtml(t.user_name || 'anônimo')} · ${ER.fmt.dt(t.created_at)}</div>
+      </div>
+      <span class="er-badge er-badge-${t.priority==='critica'?'danger':t.priority==='alta'?'warn':'info'}">${t.priority}</span>
+      <span class="er-badge er-badge-${t.status==='resolvido'?'success':'neutral'}">${t.status}</span>
+    </div>`).join('') || '<div class="er-dim">Sem tickets.</div>';
+}
+
+async function loadRules() {
+  const list = await ER.api('/admin/commission-rules');
+  document.getElementById('rules-list').innerHTML = list.map(r => `
+    <div class="er-list-row">
+      <div style="flex:1">
+        <div style="font-weight:600">${r.pct}% ${r.category ? '· ' + ER.escapeHtml(r.category) : '(qualquer categoria)'} ${r.level ? '· ' + r.level : '(qualquer nível)'}</div>
+        <div class="er-dim" style="font-size:12px">Prioridade ${r.priority} · ${r.active ? 'ativa' : 'inativa'}</div>
+      </div>
+      <button class="er-btn er-btn-ghost" onclick="ER.api('/admin/commission-rules/${r.id}',{method:'DELETE'}).then(loadRules)">Remover</button>
+    </div>`).join('');
+}
+
+async function addRule(e) {
+  e.preventDefault();
+  const f = e.target;
+  await ER.api('/admin/commission-rules', { method: 'POST', body: {
+    category: f.category.value || null,
+    level: f.level.value || null,
+    pct: parseFloat(f.pct.value),
+    priority: parseInt(f.priority.value) || 0,
+    active: 1,
+  }});
+  f.reset(); loadRules(); ER.toast.success('Regra adicionada');
+}
+
+async function loadAudit() {
+  const list = await ER.api('/admin/audit');
+  document.getElementById('audit-list').innerHTML = `<div class="er-card"><table style="width:100%;font-size:12.5px"><thead><tr>
+    <th style="text-align:left;padding:6px">Quando</th><th style="text-align:left;padding:6px">Usuário</th>
+    <th style="text-align:left;padding:6px">Ação</th><th style="text-align:left;padding:6px">Entidade</th></tr></thead><tbody>${
+    list.map(l => `<tr>
+      <td style="padding:6px">${ER.fmt.dt(l.created_at)}</td>
+      <td style="padding:6px">${ER.escapeHtml(l.user_name || '—')}</td>
+      <td style="padding:6px">${ER.escapeHtml(l.action)}</td>
+      <td style="padding:6px">${ER.escapeHtml(l.entity_type || '')} ${l.entity_id || ''}</td>
+    </tr>`).join('')
+  }</tbody></table></div>`;
+}
+</script>
+</body>
+</html>

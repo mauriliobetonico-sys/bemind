@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="EU RESOLVO — Marketplace de instalação e manutenção de comunicação visual. A instalação certa, no profissional certo.">
+  <title>EU RESOLVO — Marketplace de instalação e manutenção de comunicação visual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <style>
+    .hero { padding: 100px 32px 60px; text-align: center; }
+    .hero h1 { font-size: clamp(36px, 6vw, 60px); font-weight: 800; margin: 0 0 18px; letter-spacing: -.02em; }
+    .hero p { font-size: 18px; color: var(--dim); max-width: 640px; margin: 0 auto 24px; }
+    .hero-cta { display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; max-width: 900px; margin: 60px auto 0; text-align: center; }
+    .stat-val { font-size: 32px; font-weight: 800; color: var(--accent); }
+    .section { padding: 60px 32px; max-width: 1200px; margin: 0 auto; }
+    .section h2 { font-size: clamp(24px, 3vw, 36px); text-align: center; margin: 0 0 14px; font-weight: 800; }
+    .section p.sub { text-align: center; color: var(--dim); max-width: 640px; margin: 0 auto 40px; }
+    .cats { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 40px; }
+    .step-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .step-card { padding: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); }
+    .step-num { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; margin-bottom: 12px; }
+    .trust-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    footer { padding: 40px 32px; background: var(--surface); border-top: 1px solid var(--border); text-align: center; font-size: 13px; color: var(--dim); }
+    footer a { color: var(--text); margin: 0 12px; }
+    nav.site { position: sticky; top: 0; z-index: 40; background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 32px; display: flex; justify-content: space-between; align-items: center; }
+    .toggle-form { display: flex; gap: 6px; background: var(--surface-2); padding: 4px; border-radius: var(--r-pill); width: fit-content; margin: 0 auto 24px; }
+    @media (max-width: 800px) {
+      .stats, .step-cards, .trust-row { grid-template-columns: 1fr 1fr; }
+      .hero { padding: 60px 20px 40px; }
+    }
+    @media (max-width: 480px) {
+      .stats, .step-cards, .trust-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site">
+    <div class="er-logo">
+      <div class="er-logo-mark">ER</div>
+      <div><div class="er-logo-name">EU RESOLVO</div><div class="er-logo-slogan">A instalação certa, no profissional certo.</div></div>
+    </div>
+    <div class="er-flex er-gap-12">
+      <a href="#como-funciona" class="er-btn er-btn-ghost">Como funciona</a>
+      <a href="/portal/login" class="er-btn er-btn-primary">Entrar</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>A instalação certa,<br>no profissional certo.</h1>
+    <p>Publique uma ordem de serviço em minutos, receba propostas de instaladores próximos e acompanhe o serviço em tempo real. Pagamento seguro, retido até a conclusão.</p>
+    <div class="hero-cta">
+      <a href="#cadastro" class="er-btn er-btn-primary">Sou uma empresa</a>
+      <a href="#cadastro" class="er-btn er-btn-ghost">Sou instalador</a>
+    </div>
+    <div class="stats">
+      <div><div class="stat-val">10k+</div><div class="er-dim">serviços concluídos</div></div>
+      <div><div class="stat-val">2.500</div><div class="er-dim">instaladores parceiros</div></div>
+      <div><div class="stat-val">4.8★</div><div class="er-dim">nota média</div></div>
+      <div><div class="stat-val">98%</div><div class="er-dim">pagamento seguro</div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Categorias atendidas</h2>
+    <p class="sub">Fachadas, letreiros, adesivos, ACM, totens, envelopamento e manutenção geral.</p>
+    <div class="cats">
+      <span class="er-chip active">ACM</span><span class="er-chip active">Fachadas</span>
+      <span class="er-chip active">Letreiros</span><span class="er-chip active">Totens</span>
+      <span class="er-chip active">Adesivos</span><span class="er-chip active">Envelopamento</span>
+      <span class="er-chip active">Backlight</span><span class="er-chip active">Placas</span>
+      <span class="er-chip active">Manutenção</span>
+    </div>
+  </section>
+
+  <section class="section" id="como-funciona">
+    <h2>Como funciona</h2>
+    <p class="sub">Escolha o seu perfil abaixo.</p>
+    <div class="toggle-form">
+      <button class="er-tab active" data-flow="empresa">Empresa</button>
+      <button class="er-tab" data-flow="instalador">Instalador</button>
+    </div>
+
+    <div id="flow-empresa" class="step-cards">
+      <div class="step-card"><div class="step-num">1</div><div style="font-weight:700">Publique a OS</div><div class="er-dim er-mt-8">Preencha o brief com fotos, endereço, urgência e valor.</div></div>
+      <div class="step-card"><div class="step-num">2</div><div style="font-weight:700">Match inteligente</div><div class="er-dim er-mt-8">O sistema busca o instalador ideal por proximidade, nota e especialidade.</div></div>
+      <div class="step-card"><div class="step-num">3</div><div style="font-weight:700">Acompanhe em tempo real</div><div class="er-dim er-mt-8">Rastreio ao vivo, chat, timeline e pagamento retido em escrow.</div></div>
+    </div>
+    <div id="flow-instalador" class="step-cards er-hidden">
+      <div class="step-card"><div class="step-num">1</div><div style="font-weight:700">Cadastre-se</div><div class="er-dim er-mt-8">Envie documentos, cadastre sua área de cobertura e ferramentas.</div></div>
+      <div class="step-card"><div class="step-num">2</div><div style="font-weight:700">Aceite ofertas</div><div class="er-dim er-mt-8">Receba ofertas próximas com valor já definido. Aceite, recuse ou negocie.</div></div>
+      <div class="step-card"><div class="step-num">3</div><div style="font-weight:700">Receba via PIX</div><div class="er-dim er-mt-8">Pagamento liberado na conclusão. Saque quando quiser.</div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Por que confiar</h2>
+    <div class="trust-row">
+      <div class="er-card"><div class="er-h3">🔒 Escrow seguro</div><div class="er-dim">O valor fica retido até a conclusão confirmada com foto e assinatura.</div></div>
+      <div class="er-card"><div class="er-h3">✅ Instaladores verificados</div><div class="er-dim">CPF/CNPJ, documentos e histórico de avaliações checados.</div></div>
+      <div class="er-card"><div class="er-h3">📍 Rastreio ao vivo</div><div class="er-dim">Veja o instalador chegando, com timeline auditável de cada etapa.</div></div>
+      <div class="er-card"><div class="er-h3">⚖️ LGPD</div><div class="er-dim">Seus dados protegidos e sob seu controle, conforme a LGPD.</div></div>
+    </div>
+  </section>
+
+  <section class="section" id="cadastro">
+    <h2>Quero começar</h2>
+    <p class="sub">Deixe seus dados que retornamos em até 24h úteis.</p>
+    <div class="toggle-form">
+      <button class="er-tab active" data-lead="empresa">Sou empresa</button>
+      <button class="er-tab" data-lead="instalador">Sou instalador</button>
+    </div>
+    <form id="lead-form" class="er-card" style="max-width:640px;margin:0 auto">
+      <input type="hidden" name="kind" value="empresa">
+      <div class="er-form-row">
+        <div class="er-field"><div class="er-field-label">Nome</div><input class="er-input" name="name" required minlength="3"></div>
+        <div class="er-field"><div class="er-field-label">E-mail</div><input class="er-input" type="email" name="email" required></div>
+      </div>
+      <div class="er-form-row">
+        <div class="er-field"><div class="er-field-label">Telefone</div><input class="er-input" name="phone" required></div>
+        <div class="er-field" id="doc-wrap"><div class="er-field-label" id="doc-label">CNPJ</div><input class="er-input" name="document"></div>
+      </div>
+      <div class="er-form-row">
+        <div class="er-field"><div class="er-field-label">Cidade</div><input class="er-input" name="city"></div>
+        <div class="er-field"><div class="er-field-label">UF</div><input class="er-input" name="state" maxlength="2"></div>
+      </div>
+      <div class="er-field er-hidden" id="company-wrap"><div class="er-field-label">Nome da empresa</div><input class="er-input" name="company_name"></div>
+      <div class="er-field"><div class="er-field-label">Mensagem</div><textarea class="er-textarea" name="message"></textarea></div>
+      <button class="er-btn er-btn-primary er-btn-block" type="submit">Enviar</button>
+    </form>
+    <div id="lead-success" class="er-hidden er-card er-mt-16" style="max-width:640px;margin:0 auto;text-align:center">
+      <div class="er-h2">Obrigado!</div>
+      <div class="er-dim">Recebemos seu contato. Nossa equipe retornará em até 24h úteis.</div>
+    </div>
+  </section>
+
+  <footer>
+    <div>© EU RESOLVO — Todos os direitos reservados.</div>
+    <div class="er-mt-16">
+      <a href="/sobre">Sobre</a><a href="/carreiras">Carreiras</a><a href="/imprensa">Imprensa</a>
+      <a href="/termos-de-uso">Termos</a><a href="/privacidade">Privacidade</a><a href="/lgpd">LGPD</a>
+    </div>
+  </footer>
+
+<script src="/assets/js/app.js"></script>
+<script>
+  document.querySelectorAll('[data-flow]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-flow]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('flow-empresa').classList.toggle('er-hidden', b.dataset.flow !== 'empresa');
+    document.getElementById('flow-instalador').classList.toggle('er-hidden', b.dataset.flow !== 'instalador');
+  }));
+
+  document.querySelectorAll('[data-lead]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-lead]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    const kind = b.dataset.lead;
+    document.querySelector('[name=kind]').value = kind;
+    document.getElementById('doc-label').textContent = kind === 'empresa' ? 'CNPJ' : 'CPF';
+    document.getElementById('company-wrap').classList.toggle('er-hidden', kind !== 'empresa');
+  }));
+
+  document.getElementById('lead-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
+    try {
+      const fd = new FormData(e.target);
+      const body = Object.fromEntries(fd.entries());
+      await ER.api('/leads', { method: 'POST', body });
+      e.target.classList.add('er-hidden');
+      document.getElementById('lead-success').classList.remove('er-hidden');
+      window.scrollTo({ top: document.getElementById('lead-success').offsetTop - 80, behavior: 'smooth' });
+    } catch (err) { ER.toast.error(err.message); }
+    finally { btn.disabled = false; }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+Options -Indexes
+Options -MultiViews
+
+DirectoryIndex index.html index.php
+
+<FilesMatch "\.(env|sql|log|sh|md|json|lock)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(self), microphone=(), camera=(self)"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css              "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png             "access plus 1 month"
+    ExpiresByType image/jpeg            "access plus 1 month"
+    ExpiresByType image/webp            "access plus 1 month"
+    ExpiresByType image/svg+xml         "access plus 1 month"
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Passa arquivos e diretórios reais direto (uploads, css, js)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # API v1
+    RewriteRule ^api/(.*)$ index.php [QSA,L]
+
+    # Portais autenticados servem SPA por área
+    RewriteRule ^portal/empresa(/.*)?$      portals/empresa.html      [L]
+    RewriteRule ^portal/instalador(/.*)?$   portals/instalador.html   [L]
+    RewriteRule ^portal/admin(/.*)?$        portals/admin.html        [L]
+
+    # Legal
+    RewriteRule ^termos-de-uso$       legal/termos.html       [L]
+    RewriteRule ^privacidade$         legal/privacidade.html  [L]
+    RewriteRule ^lgpd$                legal/lgpd.html         [L]
+    RewriteRule ^sobre$               legal/sobre.html        [L]
+    RewriteRule ^carreiras$           legal/carreiras.html    [L]
+    RewriteRule ^imprensa$            legal/imprensa.html     [L]
+
+    # Landing/site institucional na raiz
+    RewriteRule ^$ site/index.html [L]
+
+    # WebSocket upgrade
+    RewriteCond %{HTTP:Upgrade} websocket [NC]
+    RewriteCond %{HTTP:Connection} upgrade [NC]
+    RewriteRule .* - [L]
+
+    # Fallback SPA
+    RewriteRule ^ site/index.html [L]
+</IfModule>
