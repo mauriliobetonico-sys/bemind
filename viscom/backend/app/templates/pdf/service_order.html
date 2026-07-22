@@ -22,8 +22,6 @@
     <div class="section-title">Dados da OS</div>
     <div class="info-item"><span class="info-label">Vendedor:</span> {{ os.created_by.name if os.created_by else '-' }}</div>
     <div class="info-item"><span class="info-label">Status:</span> {{ os.status.replace('_', ' ').title() }}</div>
-    <div class="info-item"><span class="info-label">Pagamento:</span> {{ os.payment_method or '-' }}</div>
-    <div class="info-item"><span class="info-label">Condições:</span> {{ os.payment_conditions or '-' }}</div>
   </div>
 </div>
 
@@ -39,8 +37,6 @@
         <th class="text-center">L×A (m)</th>
         <th class="text-center">Área (m²)</th>
         <th class="text-center">Qtd</th>
-        <th class="text-right">Vlr Unit.</th>
-        <th class="text-right">Subtotal</th>
       </tr>
     </thead>
     <tbody>
@@ -55,13 +51,10 @@
         </td>
         <td class="text-center">{{ '%.4f'|format(it.area_m2) if it.area_m2 else '-' }}</td>
         <td class="text-center">{{ it.quantity }}</td>
-        <td class="text-right">R$ {{ '%.2f'|format(it.unit_price)|replace('.', ',') }}</td>
-        <td class="text-right">R$ {{ '%.2f'|format(it.subtotal)|replace('.', ',') }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
-  <div class="total-box">TOTAL: R$ {{ '%.2f'|format(os.total_value)|replace('.', ',') }}</div>
 </div>
 
 {% if os.production_notes %}
