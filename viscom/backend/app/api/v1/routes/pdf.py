@@ -195,8 +195,7 @@ def os_html(os_id: str, db: Session = Depends(get_db)):
         rows += f"""<tr><td>{it.product.name if it.product else ""}</td>
           <td>{it.material_type or "-"}</td><td>{it.installation_type or "-"}</td>
           <td>{it.finishing or "-"}</td><td class="tc">{wh}</td><td class="tc">{area}</td>
-          <td class="tc">{it.quantity}</td><td class="tr">{_fmt_currency(it.unit_price)}</td>
-          <td class="tr">{_fmt_currency(it.subtotal)}</td></tr>"""
+          <td class="tc">{it.quantity}</td></tr>"""
     html = f"""<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>OS {str(os_obj.number).zfill(5)}</title>{BASE_CSS}</head><body>
     {header}
     <div class="info-grid" style="margin-bottom:14px">
@@ -208,15 +207,12 @@ def os_html(os_id: str, db: Session = Depends(get_db)):
       <div class="section" style="margin:0"><div class="section-title">Dados da OS</div>
         <div><span class="lbl">Vendedor:</span> {os_obj.created_by.name if os_obj.created_by else "-"}</div>
         <div><span class="lbl">Status:</span> {os_obj.status.replace("_", " ").title()}</div>
-        <div><span class="lbl">Pagamento:</span> {os_obj.payment_method or "-"}</div>
-        <div><span class="lbl">Condições:</span> {os_obj.payment_conditions or "-"}</div>
       </div>
     </div>
     <div class="section"><div class="section-title">Itens de Produção</div>
     <table><thead><tr><th>Produto</th><th>Material</th><th>Instalação</th><th>Acabamento</th>
       <th class="tc">L×A</th><th class="tc">Área(m²)</th><th class="tc">Qtd</th>
-      <th class="tr">Vlr Unit.</th><th class="tr">Subtotal</th></tr></thead><tbody>{rows}</tbody></table>
-    <div class="total-box">TOTAL: {_fmt_currency(os_obj.total_value)}</div></div>
+      </tr></thead><tbody>{rows}</tbody></table></div>
     {"<div class='section'><div class='section-title'>Obs. Produção</div><div class='notes'>" + os_obj.production_notes + "</div></div>" if os_obj.production_notes else ""}
     {"<div class='section'><div class='section-title'>Obs. Instalação</div><div class='notes'>" + os_obj.installation_notes + "</div></div>" if os_obj.installation_notes else ""}
     <div class="sig"><div><div class="sig-line">Responsável pela Empresa</div></div>
