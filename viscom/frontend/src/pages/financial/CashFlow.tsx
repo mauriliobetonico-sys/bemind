@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from '@/hooks/use-toast'
-import { Plus, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
+import { Plus, TrendingUp, TrendingDown, DollarSign, Trash2 } from 'lucide-react'
 import type { CashFlow as CashFlowType } from '@/types'
 
 export function CashFlow() {
@@ -26,6 +26,12 @@ export function CashFlow() {
   const { data = [], isLoading } = useQuery<CashFlowType[]>({
     queryKey: ['cashflow', dateFrom, dateTo],
     queryFn: async () => (await api.get('/financial/cash-flow', { params: { date_from: dateFrom, date_to: dateTo, limit: 200 } })).data,
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/financial/cash-flow/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cashflow'] }); toast({ title: 'Lançamento excluído!' }) },
+    onError: () => toast({ title: 'Erro ao excluir', variant: 'destructive' }),
   })
 
   const createMutation = useMutation({
@@ -65,11 +71,12 @@ export function CashFlow() {
               <TableHead>Categoria</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead className="text-right">Valor</TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {!data.length ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhum lançamento no período</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhum lançamento no período</TableCell></TableRow>
             ) : data.map((c) => (
               <TableRow key={c.id}>
                 <TableCell>{formatDate(c.date)}</TableCell>
@@ -78,6 +85,12 @@ export function CashFlow() {
                 <TableCell>{c.description}</TableCell>
                 <TableCell className={`text-right font-medium ${c.type === 'entrada' ? 'text-green-600' : 'text-red-600'}`}>
                   {c.type === 'saida' ? '- ' : ''}{formatCurrency(c.amount)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => { if (confirm('Excluir este lançamento?')) deleteMutation.mutate(c.id) }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

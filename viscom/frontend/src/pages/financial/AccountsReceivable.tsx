@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from '@/hooks/use-toast'
-import { DollarSign } from 'lucide-react'
+import { DollarSign, Trash2 } from 'lucide-react'
 import type { Receivable, ConfigList } from '@/types'
 
 export function AccountsReceivable() {
@@ -21,9 +21,16 @@ export function AccountsReceivable() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [payingId, setPayingId] = useState<string | null>(null)
+  const [paymentsDialogId, setPaymentsDialogId] = useState<string | null>(null)
   const [payAmount, setPayAmount] = useState('')
   const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10))
   const [payMethod, setPayMethod] = useState('')
+
+  const { data: paymentsData = [] } = useQuery({
+    queryKey: ['payments', paymentsDialogId],
+    queryFn: async () => paymentsDialogId ? (await api.get(`/financial/payments/${paymentsDialogId}`)).data : [],
+    enabled: !!paymentsDialogId,
+  })
 
   const { data: paymentMethods = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'payment_method'], queryFn: async () => (await api.get('/config', { params: { category: 'payment_method' } })).data })
 
@@ -37,6 +44,18 @@ export function AccountsReceivable() {
 
   const payingReceivable = data?.find((r) => r.id === payingId)
   const maxPay = payingReceivable ? Number(payingReceivable.total_value) - Number(payingReceivable.paid_amount) : 0
+
+  const deleteReceivableMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/financial/receivables/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['receivables'] }); toast({ title: 'Conta excluída!' }) },
+    onError: () => toast({ title: 'Erro ao excluir', variant: 'destructive' }),
+  })
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/financial/payments/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['receivables'] }); toast({ title: 'Pagamento excluído!' }) },
+    onError: () => toast({ title: 'Erro ao excluir pagamento', variant: 'destructive' }),
+  })
 
   const payMutation = useMutation({
     mutationFn: () => api.post('/financial/payments', { receivable_id: payingId,
@@ -103,7 +122,7 @@ export function AccountsReceivable() {
               <TableHead className="text-right">Saldo</TableHead>
               <TableHead>Vencimento</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Ação</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -120,17 +139,59 @@ export function AccountsReceivable() {
                 <TableCell className={new Date(r.due_date) < new Date() && r.status !== 'paid' ? 'text-red-600 font-medium' : ''}>{formatDate(r.due_date)}</TableCell>
                 <TableCell><ReceivableStatusBadge status={r.status} /></TableCell>
                 <TableCell className="text-right">
-                  {r.status !== 'paid' && (
-                    <Button size="sm" variant="outline" onClick={() => { setPayingId(r.id); setPayAmount(String(Number(r.total_value) - Number(r.paid_amount))) }}>
-                      <DollarSign className="mr-1 h-3 w-3" />Pagar
+                  <div className="flex gap-1 justify-end">
+                    {r.status !== 'paid' && (
+                      <Button size="sm" variant="outline" onClick={() => { setPayingId(r.id); setPayAmount(String(Number(r.total_value) - Number(r.paid_amount))) }}>
+                        <DollarSign className="mr-1 h-3 w-3" />Pagar
+                      </Button>
+                    )}
+                    {Number(r.paid_amount) > 0 && (
+                      <Button size="sm" variant="outline" onClick={() => setPaymentsDialogId(r.id)}>
+                        Pgtos
+                      </Button>
+                    )}
+                    <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => { if (confirm('Excluir esta conta a receber?')) deleteReceivableMutation.mutate(r.id) }}>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!paymentsDialogId} onOpenChange={() => setPaymentsDialogId(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Pagamentos Registrados</DialogTitle></DialogHeader>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Data</TableHead><TableHead>Forma</TableHead><TableHead className="text-right">Valor</TableHead><TableHead />
+            </TableRow></TableHeader>
+            <TableBody>
+              {paymentsData.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhum pagamento</TableCell></TableRow>
+              ) : paymentsData.map((p: any) => (
+                <TableRow key={p.id}>
+                  <TableCell>{formatDate(p.payment_date)}</TableCell>
+                  <TableCell>{p.payment_method}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(p.amount)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => { if (confirm('Excluir este pagamento?')) deletePaymentMutation.mutate(p.id) }}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPaymentsDialogId(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!payingId} onOpenChange={() => setPayingId(null)}>
         <DialogContent>

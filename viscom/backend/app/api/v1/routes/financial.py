@@ -132,6 +132,31 @@ def create_cash_flow(body: CashFlowCreate, db: Session = Depends(get_db), curren
     return cf
 
 
+@router.delete("/cash-flow/{cf_id}", status_code=204)
+def delete_cash_flow(cf_id: str, db: Session = Depends(get_db), _=Depends(require_admin)):
+    cf = db.query(CashFlow).filter(CashFlow.id == cf_id).first()
+    if not cf:
+        raise HTTPException(status_code=404, detail="Lançamento não encontrado")
+    db.delete(cf)
+    db.commit()
+
+
+@router.delete("/payments/{payment_id}", status_code=204)
+def delete_payment(payment_id: str, db: Session = Depends(get_db), _=Depends(require_admin)):
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Pagamento não encontrado")
+    # Reverte o valor pago na conta a receber
+    rec = db.query(Receivable).filter(Receivable.id == payment.receivable_id).first()
+    if rec:
+        new_paid = max(Decimal("0"), Decimal(str(rec.paid_amount)) - Decimal(str(payment.amount)))
+        rec.paid_amount = new_paid
+        total = Decimal(str(rec.total_value))
+        rec.status = "paid" if new_paid >= total else ("partial" if new_paid > 0 else "pending")
+    db.delete(payment)
+    db.commit()
+
+
 @router.get("/client-debt/{client_id}", response_model=ClientDebtResponse)
 def get_client_debt(client_id: str, db: Session = Depends(get_db), _=Depends(get_current_active_user)):
     client = db.query(Client).filter(Client.id == client_id, Client.is_deleted == False).first()
