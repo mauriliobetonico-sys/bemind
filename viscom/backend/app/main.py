@@ -120,42 +120,26 @@ def startup_event():
     finally:
         db.close()
 
-    # Seed default config values if table is empty
+    # Seed default config values per category (independent checks so existing data is preserved)
     db = SessionLocal()
     try:
         from app.models.product import ConfigList
         import uuid as _uuid
-        if not db.query(ConfigList).first():
-            defaults = [
-                ("material_type", "Lona"),
-                ("material_type", "Adesivo Vinil"),
-                ("material_type", "Adesivo Perfurado"),
-                ("material_type", "Papel Fotográfico"),
-                ("material_type", "Canvas"),
-                ("material_type", "Backlight"),
-                ("material_type", "Frontlight"),
-                ("material_type", "Banner"),
-                ("installation_type", "Com instalação"),
-                ("installation_type", "Sem instalação"),
-                ("installation_type", "Instalação externa"),
-                ("installation_type", "Instalação interna"),
-                ("finishing", "Ilhós"),
-                ("finishing", "Moldura"),
-                ("finishing", "Bastidor"),
-                ("finishing", "Dobra e cola"),
-                ("finishing", "Laminação fosca"),
-                ("finishing", "Laminação brilho"),
-                ("finishing", "Sem acabamento"),
-                ("payment_method", "Dinheiro"),
-                ("payment_method", "PIX"),
-                ("payment_method", "Cartão de Crédito"),
-                ("payment_method", "Cartão de Débito"),
-                ("payment_method", "Boleto"),
-                ("payment_method", "Transferência Bancária"),
-            ]
-            for cat, val in defaults:
-                db.add(ConfigList(id=str(_uuid.uuid4()), category=cat, value=val, is_active=True))
-            db.commit()
+
+        category_defaults = {
+            "material_type": ["Lona", "Adesivo Vinil", "Adesivo Perfurado", "Papel Fotográfico",
+                               "Canvas", "Backlight", "Frontlight", "Banner"],
+            "installation_type": ["Com instalação", "Sem instalação", "Instalação externa", "Instalação interna"],
+            "finishing": ["Ilhós", "Moldura", "Bastidor", "Dobra e cola",
+                          "Laminação fosca", "Laminação brilho", "Sem acabamento"],
+            "payment_method": ["Dinheiro", "PIX", "Cartão de Crédito", "Cartão de Débito",
+                                "Boleto", "Transferência Bancária"],
+        }
+        for category, values in category_defaults.items():
+            if not db.query(ConfigList).filter(ConfigList.category == category).first():
+                for val in values:
+                    db.add(ConfigList(id=str(_uuid.uuid4()), category=category, value=val, is_active=True))
+        db.commit()
     except Exception:
         db.rollback()
     finally:

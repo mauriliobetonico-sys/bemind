@@ -113,10 +113,15 @@ export function ReceiptForm() {
           </div>
           <div className="space-y-2">
             <Label>Forma de Pagamento *</Label>
-            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...form.register('payment_method')} disabled={isEditing}>
-              <option value="">Selecione...</option>
-              {paymentMethods.map((m) => <option key={m.id} value={m.value}>{m.value}</option>)}
-            </select>
+            {paymentMethods.length > 0 ? (
+              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...form.register('payment_method')} disabled={isEditing}>
+                <option value="">Selecione...</option>
+                {paymentMethods.map((m) => <option key={m.id} value={m.value}>{m.value}</option>)}
+              </select>
+            ) : (
+              <Input readOnly={isEditing} {...form.register('payment_method')} placeholder="Ex: PIX, Dinheiro, Cartão..." />
+            )}
+            {form.formState.errors.payment_method && <p className="text-sm text-destructive">{form.formState.errors.payment_method.message}</p>}
           </div>
           <div className="space-y-2">
             <Label>Data do Recibo *</Label>
