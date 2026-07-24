@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import {
-  LayoutDashboard, Users, UserCheck, Package, FileText, ClipboardList,
+  LayoutDashboard, Users, UserCheck, FileText, ClipboardList,
   Receipt, DollarSign, BarChart3, Settings, LogOut, Menu, X, ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -20,7 +20,6 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
   { label: 'Clientes', href: '/clientes', icon: Users },
   { label: 'Revendedores', href: '/revendedores', icon: UserCheck },
-  { label: 'Produtos', href: '/produtos', icon: Package },
   { label: 'Orçamentos', href: '/orcamentos', icon: FileText },
   { label: 'Ordens de Serviço', href: '/ordens-de-servico', icon: ClipboardList },
   { label: 'Recibos', href: '/recibos', icon: Receipt },
