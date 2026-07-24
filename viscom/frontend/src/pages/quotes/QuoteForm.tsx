@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { Plus, Trash2, FileDown, ArrowRight, Save } from 'lucide-react'
-import type { Client, Product } from '@/types'
+import type { Client, Product, ConfigList } from '@/types'
 
 export function QuoteForm() {
   const { id } = useParams()
@@ -24,6 +24,9 @@ export function QuoteForm() {
 
   const { data: clients = [] } = useQuery<Client[]>({ queryKey: ['clients-all'], queryFn: async () => (await api.get('/clients', { params: { limit: 200 } })).data })
   const { data: products = [] } = useQuery<Product[]>({ queryKey: ['products-all'], queryFn: async () => (await api.get('/products', { params: { limit: 200, active_only: false } })).data })
+  const { data: materialTypes = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'material_type'], queryFn: async () => (await api.get('/config', { params: { category: 'material_type' } })).data })
+  const { data: installTypes = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'installation_type'], queryFn: async () => (await api.get('/config', { params: { category: 'installation_type' } })).data })
+  const { data: finishings = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'finishing'], queryFn: async () => (await api.get('/config', { params: { category: 'finishing' } })).data })
 
   const { data: quote } = useQuery({
     queryKey: ['quote', id],
@@ -51,6 +54,9 @@ export function QuoteForm() {
         status: quote.status,
         items: quote.items.map((i: any) => ({
           product_id: i.product_id,
+          material_type: i.material_type ?? '',
+          installation_type: i.installation_type ?? '',
+          finishing: i.finishing ?? '',
           width_m: i.width_m ? Number(i.width_m) : undefined,
           height_m: i.height_m ? Number(i.height_m) : undefined,
           quantity: i.quantity,
@@ -93,6 +99,9 @@ export function QuoteForm() {
         notes: clean(data.notes),
         items: data.items.map((item, idx) => ({
           product_id: item.product_id,
+          material_type: item.material_type || undefined,
+          installation_type: item.installation_type || undefined,
+          finishing: item.finishing || undefined,
           width_m: item.width_m || undefined,
           height_m: item.height_m || undefined,
           area_m2: item.width_m && item.height_m ? item.width_m * item.height_m : undefined,
@@ -201,6 +210,9 @@ export function QuoteForm() {
               <table className="w-full text-sm">
                 <thead><tr className="border-b">
                   <th className="text-left p-2">Produto</th>
+                  <th className="p-2">Material</th>
+                  <th className="p-2">Instalação</th>
+                  <th className="p-2">Acabamento</th>
                   <th className="p-2 w-24">Larg.(m)</th>
                   <th className="p-2 w-24">Alt.(m)</th>
                   <th className="p-2 w-24">Área(m²)</th>
@@ -227,6 +239,24 @@ export function QuoteForm() {
                             }}>
                             <option value="">Selecione...</option>
                             {products.filter(p => p.is_active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          </select>
+                        </td>
+                        <td className="p-2">
+                          <select className="w-full border rounded px-2 py-1 text-sm" {...form.register(`items.${idx}.material_type`)}>
+                            <option value="">-</option>
+                            {materialTypes.filter(m => m.is_active).map((m) => <option key={m.id} value={m.value}>{m.value}</option>)}
+                          </select>
+                        </td>
+                        <td className="p-2">
+                          <select className="w-full border rounded px-2 py-1 text-sm" {...form.register(`items.${idx}.installation_type`)}>
+                            <option value="">-</option>
+                            {installTypes.filter(m => m.is_active).map((m) => <option key={m.id} value={m.value}>{m.value}</option>)}
+                          </select>
+                        </td>
+                        <td className="p-2">
+                          <select className="w-full border rounded px-2 py-1 text-sm" {...form.register(`items.${idx}.finishing`)}>
+                            <option value="">-</option>
+                            {finishings.filter(m => m.is_active).map((m) => <option key={m.id} value={m.value}>{m.value}</option>)}
                           </select>
                         </td>
                         <td className="p-2"><Input type="number" step="0.01" className="h-8" {...form.register(`items.${idx}.width_m`, { valueAsNumber: true })} /></td>

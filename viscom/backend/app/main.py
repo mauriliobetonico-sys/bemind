@@ -89,6 +89,10 @@ def startup_event():
         "ALTER TABLE receipts ADD COLUMN IF NOT EXISTS amount_words VARCHAR(500) DEFAULT ''",
         # quotes: prazo de instalação
         "ALTER TABLE quotes ADD COLUMN IF NOT EXISTS installation_deadline DATE",
+        # quote_items: campos de material/instalação/acabamento
+        "ALTER TABLE quote_items ADD COLUMN IF NOT EXISTS material_type VARCHAR(100)",
+        "ALTER TABLE quote_items ADD COLUMN IF NOT EXISTS installation_type VARCHAR(100)",
+        "ALTER TABLE quote_items ADD COLUMN IF NOT EXISTS finishing VARCHAR(100)",
         # receivables columns
         "ALTER TABLE receivables ADD COLUMN IF NOT EXISTS interest_rate NUMERIC(5,2) DEFAULT 0",
         "ALTER TABLE receivables ADD COLUMN IF NOT EXISTS fine_rate NUMERIC(5,2) DEFAULT 0",

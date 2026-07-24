@@ -9,6 +9,9 @@ from app.schemas.product import ProductResponse
 
 class QuoteItemCreate(BaseModel):
     product_id: str
+    material_type: Optional[str] = None
+    installation_type: Optional[str] = None
+    finishing: Optional[str] = None
     width_m: Optional[Decimal] = None
     height_m: Optional[Decimal] = None
     quantity: int = 1
@@ -33,6 +36,9 @@ class QuoteItemResponse(BaseModel):
     id: str
     product_id: str
     product: Optional[ProductResponse] = None
+    material_type: Optional[str] = None
+    installation_type: Optional[str] = None
+    finishing: Optional[str] = None
     width_m: Optional[Decimal]
     height_m: Optional[Decimal]
     area_m2: Optional[Decimal]

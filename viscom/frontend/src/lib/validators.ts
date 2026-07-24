@@ -75,6 +75,9 @@ export const productSchema = z.object({
 
 export const quoteItemSchema = z.object({
   product_id: z.string().min(1, 'Selecione um produto'),
+  material_type: z.string().optional(),
+  installation_type: z.string().optional(),
+  finishing: z.string().optional(),
   width_m: optionalNum,
   height_m: optionalNum,
   quantity: requiredNum(1, 1),
