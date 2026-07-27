@@ -8,7 +8,7 @@ from app.schemas.product import ProductResponse
 
 
 class QuoteItemCreate(BaseModel):
-    product_id: str
+    product_id: Optional[str] = None
     material_type: Optional[str] = None
     installation_type: Optional[str] = None
     finishing: Optional[str] = None
@@ -34,7 +34,7 @@ class QuoteItemCreate(BaseModel):
 class QuoteItemResponse(BaseModel):
     model_config = {"from_attributes": True}
     id: str
-    product_id: str
+    product_id: Optional[str] = None
     product: Optional[ProductResponse] = None
     material_type: Optional[str] = None
     installation_type: Optional[str] = None

@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
 import { Plus, Trash2, FileDown, Receipt, Save } from 'lucide-react'
-import type { Client, Product, ConfigList, ServiceOrder } from '@/types'
+import type { Client, ConfigList, ServiceOrder } from '@/types'
 
 const OS_STATUSES = ['aberta', 'em_producao', 'pronta', 'instalada', 'finalizada']
 
@@ -28,7 +28,6 @@ export function ServiceOrderForm() {
   const [statusNotes, setStatusNotes] = useState('')
 
   const { data: clients = [] } = useQuery<Client[]>({ queryKey: ['clients-all'], queryFn: async () => (await api.get('/clients', { params: { limit: 200 } })).data })
-  const { data: products = [] } = useQuery<Product[]>({ queryKey: ['products-all'], queryFn: async () => (await api.get('/products', { params: { limit: 200, active_only: false } })).data })
   const { data: materialTypes = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'material_type'], queryFn: async () => (await api.get('/config', { params: { category: 'material_type' } })).data })
   const { data: installTypes = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'installation_type'], queryFn: async () => (await api.get('/config', { params: { category: 'installation_type' } })).data })
   const { data: finishings = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'finishing'], queryFn: async () => (await api.get('/config', { params: { category: 'finishing' } })).data })
@@ -46,9 +45,6 @@ export function ServiceOrderForm() {
   })
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'items' })
   const watchItems = form.watch('items')
-  const watchClientId = form.watch('client_id')
-  const selectedClient = clients.find((c) => c.id === watchClientId)
-
   useEffect(() => {
     if (os) {
       form.reset({
@@ -73,12 +69,6 @@ export function ServiceOrderForm() {
     }
   }, [os])
 
-  function getUnitPrice(productId: string) {
-    const p = products.find((pr) => pr.id === productId)
-    if (!p) return 0
-    return selectedClient?.is_reseller ? Number(p.price_reseller) : Number(p.price_client)
-  }
-
   function calcSubtotal(idx: number) {
     const item = watchItems[idx]
     if (!item) return 0
@@ -102,7 +92,6 @@ export function ServiceOrderForm() {
         payment_method: clean(data.payment_method),
         payment_conditions: clean(data.payment_conditions),
         items: data.items.map((item, idx) => ({
-          product_id: item.product_id,
           material_type: clean(item.material_type),
           installation_type: clean(item.installation_type),
           finishing: clean(item.finishing),
@@ -148,9 +137,8 @@ export function ServiceOrderForm() {
           {isEditing && <Button variant="outline" onClick={openPdf}><FileDown className="mr-2 h-4 w-4" />PDF</Button>}
           {isEditing && <Button variant="outline" onClick={() => navigate(`/recibos/novo?os_id=${id}`)}><Receipt className="mr-2 h-4 w-4" />Recibo</Button>}
           <Button onClick={form.handleSubmit((d) => {
-            const validItems = d.items.filter(i => i.product_id && i.product_id !== '')
-            if (!validItems.length) { toast({ title: 'Adicione ao menos um item com produto selecionado', variant: 'destructive' }); return }
-            mutation.mutate({ ...d, items: validItems })
+            if (!d.items.length) { toast({ title: 'Adicione ao menos um item', variant: 'destructive' }); return }
+            mutation.mutate(d)
           })} disabled={mutation.isPending}>
             <Save className="mr-2 h-4 w-4" />{mutation.isPending ? 'Salvando...' : 'Salvar'}
           </Button>
@@ -194,7 +182,7 @@ export function ServiceOrderForm() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Itens de Produção</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', quantity: 1, unit_price: 0 })}>
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ quantity: 1, unit_price: 0 })}>
               <Plus className="mr-2 h-4 w-4" />Adicionar Item
             </Button>
           </CardHeader>
@@ -202,7 +190,6 @@ export function ServiceOrderForm() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b">
-                  <th className="text-left p-2">Produto</th>
                   <th className="p-2">Material</th>
                   <th className="p-2">Instalação</th>
                   <th className="p-2">Acabamento</th>
@@ -219,16 +206,8 @@ export function ServiceOrderForm() {
                     const w = Number(form.watch(`items.${idx}.width_m`)) || 0
                     const h = Number(form.watch(`items.${idx}.height_m`)) || 0
                     const area = w > 0 && h > 0 ? (w * h).toFixed(2) : '-'
-                    const noProduct = !form.watch(`items.${idx}.product_id`)
                     return (
-                      <tr key={field.id} className={`border-b ${noProduct ? 'bg-red-50 dark:bg-red-950/20' : ''}`}>
-                        <td className="p-1">
-                          <select className="w-full border rounded px-2 py-1 text-xs" {...form.register(`items.${idx}.product_id`)}
-                            onChange={(e) => { form.setValue(`items.${idx}.product_id`, e.target.value); form.setValue(`items.${idx}.unit_price`, getUnitPrice(e.target.value)) }}>
-                            <option value="">Selecione</option>
-                            {products.filter(p => p.is_active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                          </select>
-                        </td>
+                      <tr key={field.id} className="border-b">
                         <td className="p-1"><select className="w-full border rounded px-2 py-1 text-xs" {...form.register(`items.${idx}.material_type`)}>
                           <option value="">-</option>{materialTypes.map((m) => <option key={m.id} value={m.value}>{m.value}</option>)}
                         </select></td>
@@ -248,7 +227,7 @@ export function ServiceOrderForm() {
                       </tr>
                     )
                   })}
-                  {!fields.length && <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Nenhum item adicionado</td></tr>}
+                  {!fields.length && <tr><td colSpan={10} className="p-4 text-center text-muted-foreground">Nenhum item adicionado</td></tr>}
                 </tbody>
               </table>
             </div>

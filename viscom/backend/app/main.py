@@ -93,6 +93,9 @@ def startup_event():
         "ALTER TABLE quote_items ADD COLUMN IF NOT EXISTS material_type VARCHAR(100)",
         "ALTER TABLE quote_items ADD COLUMN IF NOT EXISTS installation_type VARCHAR(100)",
         "ALTER TABLE quote_items ADD COLUMN IF NOT EXISTS finishing VARCHAR(100)",
+        # product_id agora é opcional (nullable)
+        "ALTER TABLE quote_items ALTER COLUMN product_id DROP NOT NULL",
+        "ALTER TABLE service_order_items ALTER COLUMN product_id DROP NOT NULL",
         # receivables columns
         "ALTER TABLE receivables ADD COLUMN IF NOT EXISTS interest_rate NUMERIC(5,2) DEFAULT 0",
         "ALTER TABLE receivables ADD COLUMN IF NOT EXISTS fine_rate NUMERIC(5,2) DEFAULT 0",

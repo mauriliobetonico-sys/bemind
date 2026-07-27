@@ -8,7 +8,7 @@ from app.schemas.product import ProductResponse
 
 
 class ServiceOrderItemCreate(BaseModel):
-    product_id: str
+    product_id: Optional[str] = None
     material_type: Optional[str] = None
     installation_type: Optional[str] = None
     finishing: Optional[str] = None
@@ -33,7 +33,7 @@ class ServiceOrderItemCreate(BaseModel):
 class ServiceOrderItemResponse(BaseModel):
     model_config = {"from_attributes": True}
     id: str
-    product_id: str
+    product_id: Optional[str] = None
     product: Optional[ProductResponse] = None
     material_type: Optional[str]
     installation_type: Optional[str]

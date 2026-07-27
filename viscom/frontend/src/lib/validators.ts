@@ -74,7 +74,7 @@ export const productSchema = z.object({
 })
 
 export const quoteItemSchema = z.object({
-  product_id: z.string().min(1, 'Selecione um produto'),
+  product_id: z.string().optional(),
   material_type: z.string().optional(),
   installation_type: z.string().optional(),
   finishing: z.string().optional(),
@@ -102,7 +102,7 @@ export const quoteSchema = z.object({
 })
 
 export const serviceOrderItemSchema = z.object({
-  product_id: z.string().min(1, 'Selecione um produto'),
+  product_id: z.string().optional(),
   material_type: z.string().optional(),
   installation_type: z.string().optional(),
   finishing: z.string().optional(),

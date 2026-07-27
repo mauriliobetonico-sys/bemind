@@ -40,7 +40,7 @@ class ServiceOrderItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     os_id: Mapped[str] = mapped_column(String(36), ForeignKey("service_orders.id"), nullable=False, index=True)
-    product_id: Mapped[str] = mapped_column(String(36), ForeignKey("products.id"), nullable=False)
+    product_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("products.id"), nullable=True)
     material_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     installation_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     finishing: Mapped[str | None] = mapped_column(String(100), nullable=True)

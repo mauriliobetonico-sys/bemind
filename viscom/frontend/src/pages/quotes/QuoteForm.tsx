@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { Plus, Trash2, FileDown, ArrowRight, Save } from 'lucide-react'
-import type { Client, Product, ConfigList } from '@/types'
+import type { Client, ConfigList } from '@/types'
 
 export function QuoteForm() {
   const { id } = useParams()
@@ -23,7 +23,6 @@ export function QuoteForm() {
   const isEditing = !!id
 
   const { data: clients = [] } = useQuery<Client[]>({ queryKey: ['clients-all'], queryFn: async () => (await api.get('/clients', { params: { limit: 200 } })).data })
-  const { data: products = [] } = useQuery<Product[]>({ queryKey: ['products-all'], queryFn: async () => (await api.get('/products', { params: { limit: 200, active_only: false } })).data })
   const { data: materialTypes = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'material_type'], queryFn: async () => (await api.get('/config', { params: { category: 'material_type' } })).data })
   const { data: installTypes = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'installation_type'], queryFn: async () => (await api.get('/config', { params: { category: 'installation_type' } })).data })
   const { data: finishings = [] } = useQuery<ConfigList[]>({ queryKey: ['config', 'finishing'], queryFn: async () => (await api.get('/config', { params: { category: 'finishing' } })).data })
@@ -41,7 +40,6 @@ export function QuoteForm() {
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'items' })
   const watchItems = form.watch('items')
   const watchDiscount = form.watch('discount_general')
-  const watchClientId = form.watch('client_id')
 
   useEffect(() => {
     if (quote) {
@@ -66,14 +64,6 @@ export function QuoteForm() {
       })
     }
   }, [quote])
-
-  const selectedClient = clients.find((c) => c.id === watchClientId)
-
-  function getUnitPrice(productId: string) {
-    const p = products.find((pr) => pr.id === productId)
-    if (!p) return 0
-    return selectedClient?.is_reseller ? Number(p.price_reseller) : Number(p.price_client)
-  }
 
   function calcSubtotal(idx: number) {
     const item = watchItems[idx]
@@ -209,7 +199,6 @@ export function QuoteForm() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b">
-                  <th className="text-left p-2">Produto</th>
                   <th className="p-2">Material</th>
                   <th className="p-2">Instalação</th>
                   <th className="p-2">Acabamento</th>
@@ -227,20 +216,8 @@ export function QuoteForm() {
                     const w = Number(form.watch(`items.${idx}.width_m`)) || 0
                     const h = Number(form.watch(`items.${idx}.height_m`)) || 0
                     const area = w > 0 && h > 0 ? (w * h).toFixed(4) : '-'
-                    const noProduct = !form.watch(`items.${idx}.product_id`)
                     return (
-                      <tr key={field.id} className={`border-b ${noProduct ? 'bg-red-50 dark:bg-red-950/20' : ''}`}>
-                        <td className="p-2">
-                          <select className="w-full border rounded px-2 py-1" {...form.register(`items.${idx}.product_id`)}
-                            onChange={(e) => {
-                              form.setValue(`items.${idx}.product_id`, e.target.value)
-                              const price = getUnitPrice(e.target.value)
-                              form.setValue(`items.${idx}.unit_price`, price)
-                            }}>
-                            <option value="">Selecione...</option>
-                            {products.filter(p => p.is_active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                          </select>
-                        </td>
+                      <tr key={field.id} className="border-b">
                         <td className="p-2">
                           <select className="w-full border rounded px-2 py-1 text-sm" {...form.register(`items.${idx}.material_type`)}>
                             <option value="">-</option>
