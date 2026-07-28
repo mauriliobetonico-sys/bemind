@@ -139,9 +139,8 @@ export function QuoteForm() {
             </Button>
           )}
           <Button onClick={form.handleSubmit((d) => {
-            const validItems = d.items.filter(i => i.product_id && i.product_id !== '')
-            if (!validItems.length) { toast({ title: 'Adicione ao menos um item com produto selecionado', variant: 'destructive' }); return }
-            mutation.mutate({ ...d, items: validItems })
+            if (!d.items.length) { toast({ title: 'Adicione ao menos um item', variant: 'destructive' }); return }
+            mutation.mutate(d)
           })} disabled={mutation.isPending}>
             <Save className="mr-2 h-4 w-4" />{mutation.isPending ? 'Salvando...' : 'Salvar'}
           </Button>
@@ -188,7 +187,7 @@ export function QuoteForm() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Itens do Orçamento</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', quantity: 1, unit_price: 0, discount_pct: 0 })}>
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ quantity: 1, unit_price: 0, discount_pct: 0 })}>
               <Plus className="mr-2 h-4 w-4" />Adicionar Item
             </Button>
           </CardHeader>
