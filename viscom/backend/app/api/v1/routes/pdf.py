@@ -121,7 +121,7 @@ def quote_html(quote_id: str, db: Session = Depends(get_db)):
         w = f"{float(it.width_m):.2f}" if it.width_m else "-"
         h = f"{float(it.height_m):.2f}" if it.height_m else "-"
         area = f"{float(it.area_m2):.4f}" if it.area_m2 else "-"
-        rows += f"""<tr><td>{it.product.name if it.product else ""}</td>
+        rows += f"""<tr><td>{it.material_type or "-"}</td><td>{it.installation_type or "-"}</td><td>{it.finishing or "-"}</td>
           <td class="tc">{w}</td><td class="tc">{h}</td><td class="tc">{area}</td>
           <td class="tc">{it.quantity}</td><td class="tr">{_fmt_currency(it.unit_price)}</td>
           <td class="tc">{it.discount_pct}%</td><td class="tr">{_fmt_currency(it.subtotal)}</td></tr>"""
@@ -139,7 +139,7 @@ def quote_html(quote_id: str, db: Session = Depends(get_db)):
       <div><span class="lbl">E-mail:</span> {(quote.client.email or "-") if quote.client else "-"}</div>
     </div></div>
     <div class="section"><div class="section-title">Itens do Orçamento</div>
-    <table><thead><tr><th>Produto</th><th class="tc">Larg.(m)</th><th class="tc">Alt.(m)</th>
+    <table><thead><tr><th>Material</th><th>Instalação</th><th>Acabamento</th><th class="tc">Larg.(m)</th><th class="tc">Alt.(m)</th>
       <th class="tc">Área(m²)</th><th class="tc">Qtd</th><th class="tr">Preço Unit.</th>
       <th class="tc">Desc.%</th><th class="tr">Subtotal</th></tr></thead><tbody>{rows}</tbody></table></div>
     <div style="text-align:right"><table style="width:280px;margin-left:auto">
