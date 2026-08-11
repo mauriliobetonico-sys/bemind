@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EFEDE9;font-family:Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#E85C51;text-decoration:none}a:hover{color:#C74A40}
+@keyframes bmIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes bmPop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+@keyframes bmFade{from{opacity:0}to{opacity:1}}
+</style></helmet>
+
+<div style="padding:44px 48px 72px;display:flex;flex-direction:column;gap:34px">
+
+  <div style="display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap">
+    <img src="assets/bemind-logo.png" alt="Be Mind Marketing" style="width:76px;height:auto;display:block">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font:800 26px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#2B2E35">BE MIND <span style="color:#FB6D62">PROPOSALS</span></div>
+      <div style="font:500 14px/1.4 Manrope,sans-serif;color:#7C8189">Propostas que transformam oportunidades em negócios. · App mobile, iOS e Android</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;max-width:1180px">
+    <sc-for list="{{ jumps }}" as="j" hint-placeholder-count="12">
+      <div onClick="{{ j.go }}" style="cursor:pointer;padding:8px 14px;border-radius:999px;font:600 12.5px/1 Manrope,sans-serif;border:1px solid {{ j.bd }};background:{{ j.bg }};color:{{ j.fg }};transition:all .18s" style-hover="border-color:#FB6D62;color:#E85C51">{{ j.n }}</div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;gap:56px;align-items:flex-start;flex-wrap:wrap">
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div style="font:700 13px/1 'Plus Jakarta Sans',sans-serif;color:#2B2E35">App interno · iOS</div>
+        <div style="font:500 12px/1 Manrope,sans-serif;color:#9AA0A7">{{ title }}</div>
+      </div>
+
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+        <div style="height:100%;display:flex;flex-direction:column;background:#F6F4F1;font-family:Manrope,system-ui,sans-serif;color:#2B2E35">
+
+          <div style="flex:none;padding:58px 18px 12px;display:flex;align-items:center;gap:12px;background:#F6F4F1;border-bottom:1px solid #EAE7E2">
+            <sc-if value="{{ canBack }}">
+              <div onClick="{{ back }}" style="cursor:pointer;width:34px;height:34px;border-radius:12px;background:#fff;border:1px solid #E8E5E0;display:flex;align-items:center;justify-content:center">
+                <svg width="9" height="16" viewBox="0 0 9 16" fill="none"><path d="M7.5 1L1.5 8l6 7" stroke="#2B2E35" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </div>
+            </sc-if>
+            <sc-if value="{{ atRoot }}" hint-placeholder-val="{{ true }}">
+              <img src="assets/bemind-logo.png" alt="Be Mind" style="width:30px;height:auto;display:block">
+            </sc-if>
+            <div style="flex:1;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em">{{ title }}</div>
+            <div onClick="{{ goNotifs }}" style="cursor:pointer;position:relative;width:34px;height:34px;border-radius:12px;background:#fff;border:1px solid #E8E5E0;display:flex;align-items:center;justify-content:center">
+              <svg width="15" height="16" viewBox="0 0 15 16" fill="none"><path d="M7.5 1.6a4.3 4.3 0 0 0-4.3 4.3v2.5L1.9 11.2h11.2l-1.3-2.8V5.9A4.3 4.3 0 0 0 7.5 1.6Z" stroke="#2B2E35" stroke-width="1.4" stroke-linejoin="round"></path><path d="M5.8 13a1.8 1.8 0 0 0 3.4 0" stroke="#2B2E35" stroke-width="1.4" stroke-linecap="round"></path></svg>
+              <div style="position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:99px;background:#FB6D62;border:1.5px solid #fff"></div>
+            </div>
+          </div>
+
+          <div style="flex:1;overflow:auto;padding:18px 18px 108px">
+
+            <sc-if value="{{ vDash }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:16px;animation:bmIn .3s ease both">
+                <div>
+                  <div style="font:800 26px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-.025em">Olá, Maurílio 👋</div>
+                  <div style="font:500 13.5px/1.5 Manrope,sans-serif;color:#7C8189;margin-top:6px;text-wrap:pretty">Vamos criar uma proposta que impressione seu próximo cliente.</div>
+                </div>
+
+                <div style="border-radius:22px;padding:20px;background:linear-gradient(135deg,#FB6D62 0%,#E85C51 100%);box-shadow:0 12px 26px rgba(232,92,81,.28)">
+                  <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.14em;color:rgba(255,255,255,.78)">MENOS DE 1 MINUTO</div>
+                  <div style="font:800 20px/1.2 'Plus Jakarta Sans',sans-serif;color:#fff;margin-top:10px;letter-spacing:-.02em">Proposta Express</div>
+                  <div style="font:500 13px/1.5 Manrope,sans-serif;color:rgba(255,255,255,.85);margin-top:6px">Cliente, serviço, valor, validade. Pronto.</div>
+                  <div style="display:flex;gap:10px;margin-top:16px">
+                    <div onClick="{{ goExpress }}" style="cursor:pointer;flex:1;text-align:center;padding:13px;border-radius:14px;background:#fff;color:#E85C51;font:700 14px/1 Manrope,sans-serif">Criar agora</div>
+                    <div onClick="{{ goWizard }}" style="cursor:pointer;padding:13px 16px;border-radius:14px;background:rgba(255,255,255,.18);color:#fff;font:600 14px/1 Manrope,sans-serif;border:1px solid rgba(255,255,255,.35)">Completa</div>
+                  </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="6">
+                    <div style="background:#fff;border:1px solid #EAE7E2;border-radius:18px;padding:14px 15px">
+                      <div style="font:700 24px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:{{ k.c }}">{{ k.v }}</div>
+                      <div style="font:600 11.5px/1.3 Manrope,sans-serif;color:#8A9098;margin-top:6px">{{ k.n }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <div style="background:#2B2E35;border-radius:22px;padding:20px">
+                  <div style="font:600 11.5px/1 Manrope,sans-serif;letter-spacing:.1em;color:rgba(255,255,255,.5)">VALOR APROVADO EM 2026</div>
+                  <div style="font:800 32px/1.1 'Plus Jakarta Sans',sans-serif;color:#fff;letter-spacing:-.03em;margin-top:10px;font-variant-numeric:tabular-nums">{{ approvedTotal }}</div>
+                  <div style="font:500 12.5px/1 Manrope,sans-serif;color:#FB6D62;margin-top:8px">12 propostas aprovadas · ticket médio {{ ticket }}</div>
+                </div>
+
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:22px;padding:18px">
+                  <div style="font:700 14px/1 'Plus Jakarta Sans',sans-serif">Desempenho das propostas</div>
+                  <div style="display:flex;flex-direction:column;gap:11px;margin-top:16px">
+                    <sc-for list="{{ chart }}" as="b" hint-placeholder-count="5">
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <div style="width:86px;font:600 12px/1 Manrope,sans-serif;color:#7C8189">{{ b.n }}</div>
+                        <div style="flex:1;height:9px;border-radius:99px;background:#F1EEE9;overflow:hidden">
+                          <div style="height:100%;border-radius:99px;width:{{ b.w }};background:{{ b.c }}"></div>
+                        </div>
+                        <div style="width:22px;text-align:right;font:700 12.5px/1 Manrope,sans-serif;font-variant-numeric:tabular-nums">{{ b.v }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:22px;padding:18px">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between">
+                    <div style="font:700 14px/1 'Plus Jakarta Sans',sans-serif">Atividade</div>
+                    <div onClick="{{ goNotifs }}" style="cursor:pointer;font:600 12px/1 Manrope,sans-serif;color:#E85C51">Ver tudo</div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">
+                    <sc-for list="{{ activity }}" as="a" hint-placeholder-count="3">
+                      <div style="display:flex;gap:11px;align-items:flex-start">
+                        <div style="width:8px;height:8px;border-radius:99px;margin-top:5px;flex:none;background:{{ a.c }}"></div>
+                        <div style="flex:1">
+                          <div style="font:600 13px/1.4 Manrope,sans-serif;text-wrap:pretty">{{ a.t }}</div>
+                          <div style="font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:4px">{{ a.s }}</div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vExpress }}">
+              <div style="display:flex;flex-direction:column;gap:18px;animation:bmIn .3s ease both">
+                <div style="font:500 13px/1.5 Manrope,sans-serif;color:#7C8189">Quatro toques e a proposta está pronta para enviar.</div>
+
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:16px">
+                  <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#9AA0A7">1 · CLIENTE</div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                    <sc-for list="{{ exClients }}" as="c" hint-placeholder-count="4">
+                      <div onClick="{{ c.pick }}" style="cursor:pointer;padding:9px 13px;border-radius:12px;font:600 12.5px/1 Manrope,sans-serif;border:1px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:16px">
+                  <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#9AA0A7">2 · SERVIÇO</div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                    <sc-for list="{{ exServices }}" as="s" hint-placeholder-count="5">
+                      <div onClick="{{ s.pick }}" style="cursor:pointer;padding:9px 13px;border-radius:12px;font:600 12.5px/1 Manrope,sans-serif;border:1px solid {{ s.bd }};background:{{ s.bg }};color:{{ s.fg }}">{{ s.n }}</div>
+                    </sc-for>
+                  </div>
+                  <div style="font:500 11.5px/1.5 Manrope,sans-serif;color:#9AA0A7;margin-top:12px">Descrição, entregáveis e prazo são preenchidos automaticamente pela biblioteca — e continuam editáveis.</div>
+                </div>
+
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:16px">
+                  <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#9AA0A7">3 · VALOR</div>
+                  <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+                    <div onClick="{{ exMinus }}" style="cursor:pointer;width:42px;height:42px;border-radius:14px;border:1px solid #E8E5E0;display:flex;align-items:center;justify-content:center;font:700 20px/1 Manrope,sans-serif;color:#7C8189">−</div>
+                    <div style="flex:1;text-align:center;font:800 26px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ exValue }}</div>
+                    <div onClick="{{ exPlus }}" style="cursor:pointer;width:42px;height:42px;border-radius:14px;border:1px solid #E8E5E0;display:flex;align-items:center;justify-content:center;font:700 20px/1 Manrope,sans-serif;color:#7C8189">+</div>
+                  </div>
+                  <div style="display:flex;gap:8px;margin-top:14px">
+                    <sc-for list="{{ exPresets }}" as="p" hint-placeholder-count="4">
+                      <div onClick="{{ p.pick }}" style="cursor:pointer;flex:1;text-align:center;padding:9px 0;border-radius:12px;font:600 12px/1 Manrope,sans-serif;border:1px solid #EAE7E2;background:#FAF9F7;color:#6B7078">{{ p.n }}</div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:16px">
+                  <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#9AA0A7">4 · VALIDADE E CONDIÇÕES</div>
+                  <div style="display:flex;gap:8px;margin-top:12px">
+                    <sc-for list="{{ exValidity }}" as="v" hint-placeholder-count="4">
+                      <div onClick="{{ v.pick }}" style="cursor:pointer;flex:1;text-align:center;padding:10px 0;border-radius:12px;font:600 12.5px/1 Manrope,sans-serif;border:1px solid {{ v.bd }};background:{{ v.bg }};color:{{ v.fg }}">{{ v.n }}</div>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+                    <sc-for list="{{ exConds }}" as="c" hint-placeholder-count="3">
+                      <div onClick="{{ c.pick }}" style="cursor:pointer;padding:9px 13px;border-radius:12px;font:600 12px/1 Manrope,sans-serif;border:1px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="background:#2B2E35;border-radius:20px;padding:18px">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline">
+                    <div style="font:600 12px/1 Manrope,sans-serif;color:rgba(255,255,255,.55)">{{ exClient }}</div>
+                    <div style="font:600 11.5px/1 Manrope,sans-serif;color:rgba(255,255,255,.4)">{{ exNumber }}</div>
+                  </div>
+                  <div style="font:700 15px/1.3 'Plus Jakarta Sans',sans-serif;color:#fff;margin-top:10px">{{ exService }}</div>
+                  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12)">
+                    <div style="font:500 12px/1 Manrope,sans-serif;color:rgba(255,255,255,.55)">Total · validade {{ exValid }}</div>
+                    <div style="font:800 22px/1 'Plus Jakarta Sans',sans-serif;color:#FB6D62;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ exValue }}</div>
+                  </div>
+                </div>
+
+                <div onClick="{{ exGenerate }}" style="cursor:pointer;text-align:center;padding:17px;border-radius:16px;background:#FB6D62;color:#fff;font:800 14.5px/1 Manrope,sans-serif;letter-spacing:.02em;box-shadow:0 10px 22px rgba(251,109,98,.32)">GERAR PROPOSTA</div>
+                <div style="text-align:center;font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7">Salvo automaticamente · Salvo agora</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vDone }}">
+              <div style="display:flex;flex-direction:column;gap:18px;align-items:center;padding-top:26px;animation:bmPop .32s ease both">
+                <div style="width:70px;height:70px;border-radius:99px;background:#E7F6EC;display:flex;align-items:center;justify-content:center">
+                  <svg width="30" height="24" viewBox="0 0 30 24" fill="none"><path d="M2 12.5 10.5 21 28 3" stroke="#1E7A45" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </div>
+                <div style="text-align:center">
+                  <div style="font:800 21px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em">Proposta gerada</div>
+                  <div style="font:500 13px/1.5 Manrope,sans-serif;color:#7C8189;margin-top:8px">{{ exNumber }} · {{ exClient }}</div>
+                </div>
+                <div style="width:100%;background:#fff;border:1px solid #EAE7E2;border-radius:18px;padding:15px">
+                  <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.12em;color:#9AA0A7">LINK SEGURO DO CLIENTE</div>
+                  <div style="font:600 12.5px/1.4 ui-monospace,Menlo,monospace;color:#2B2E35;margin-top:10px;word-break:break-all">bemindmarketing.com.br/p/8f3c1a9d</div>
+                </div>
+                <div style="width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <sc-for list="{{ shareActions }}" as="a" hint-placeholder-count="4">
+                    <div style="background:#fff;border:1px solid #EAE7E2;border-radius:16px;padding:15px;cursor:pointer;text-align:center;font:600 12.5px/1 Manrope,sans-serif;color:#2B2E35" style-hover="border-color:#FB6D62;color:#E85C51">{{ a }}</div>
+                  </sc-for>
+                </div>
+                <div onClick="{{ goDash }}" style="cursor:pointer;font:600 13px/1 Manrope,sans-serif;color:#E85C51;padding:8px">Voltar ao dashboard</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vWizard }}">
+              <div style="display:flex;flex-direction:column;gap:16px;animation:bmIn .3s ease both">
+                <div style="display:flex;gap:6px">
+                  <sc-for list="{{ wSteps }}" as="s" hint-placeholder-count="4">
+                    <div style="flex:1;display:flex;flex-direction:column;gap:7px">
+                      <div style="height:4px;border-radius:99px;background:{{ s.c }}"></div>
+                      <div style="font:600 10.5px/1 Manrope,sans-serif;color:{{ s.fg }}">{{ s.n }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <sc-if value="{{ w0 }}">
+                  <div style="display:flex;flex-direction:column;gap:10px">
+                    <div style="background:#fff;border:1px solid #EAE7E2;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px">
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.6" stroke="#9AA0A7" stroke-width="1.5"></circle><path d="M9.6 9.6 13 13" stroke="#9AA0A7" stroke-width="1.5" stroke-linecap="round"></path></svg>
+                      <div style="font:500 13px/1 Manrope,sans-serif;color:#9AA0A7">Buscar cliente ou CNPJ</div>
+                    </div>
+                    <sc-for list="{{ wClients }}" as="c" hint-placeholder-count="5">
+                      <div onClick="{{ c.pick }}" style="cursor:pointer;background:#fff;border:1px solid {{ c.bd }};border-radius:16px;padding:14px 15px;display:flex;align-items:center;gap:12px">
+                        <div style="width:36px;height:36px;border-radius:12px;background:{{ c.avbg }};color:{{ c.avfg }};display:flex;align-items:center;justify-content:center;font:800 13px/1 'Plus Jakarta Sans',sans-serif">{{ c.i }}</div>
+                        <div style="flex:1">
+                          <div style="font:700 13.5px/1.2 Manrope,sans-serif">{{ c.n }}</div>
+                          <div style="font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:5px">{{ c.s }}</div>
+                        </div>
+                        <sc-if value="{{ c.on }}">
+                          <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M1.5 7.5 6.5 12.5 16.5 2" stroke="#FB6D62" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                    <div style="cursor:pointer;border:1.5px dashed #DAD6D0;border-radius:16px;padding:14px;text-align:center;font:600 13px/1 Manrope,sans-serif;color:#7C8189">+ Cadastrar novo cliente</div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ w1 }}">
+                  <div style="display:flex;flex-direction:column;gap:14px">
+                    <div style="display:flex;gap:7px;overflow:auto;padding-bottom:2px">
+                      <sc-for list="{{ cats }}" as="c" hint-placeholder-count="5">
+                        <div onClick="{{ c.pick }}" style="cursor:pointer;white-space:nowrap;padding:9px 13px;border-radius:999px;font:700 11px/1 Manrope,sans-serif;letter-spacing:.06em;border:1px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</div>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-for list="{{ catServices }}" as="s" hint-placeholder-count="5">
+                        <div onClick="{{ s.add }}" style="cursor:pointer;background:#fff;border:1px solid #EAE7E2;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:12px" style-hover="border-color:#FB6D62">
+                          <div style="flex:1">
+                            <div style="font:600 13px/1.2 Manrope,sans-serif">{{ s.n }}</div>
+                            <div style="font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:5px">{{ s.price }} · {{ s.per }}</div>
+                          </div>
+                          <div style="width:28px;height:28px;border-radius:9px;background:#FFF1EF;color:#E85C51;display:flex;align-items:center;justify-content:center;font:700 16px/1 Manrope,sans-serif">+</div>
+                        </div>
+                      </sc-for>
+                    </div>
+
+                    <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:16px">
+                      <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#9AA0A7">ESCOPO DA PROPOSTA · {{ itemCount }}</div>
+                      <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
+                        <sc-for list="{{ items }}" as="it" hint-placeholder-count="2">
+                          <div style="display:flex;flex-direction:column;gap:9px;padding-bottom:12px;border-bottom:1px solid #F1EEE9">
+                            <div style="display:flex;align-items:flex-start;gap:10px">
+                              <div style="flex:1;font:600 13px/1.3 Manrope,sans-serif">{{ it.n }}</div>
+                              <div onClick="{{ it.remove }}" style="cursor:pointer;font:600 11.5px/1 Manrope,sans-serif;color:#B23A2E">remover</div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px">
+                              <div onClick="{{ it.dec }}" style="cursor:pointer;width:30px;height:30px;border-radius:10px;border:1px solid #E8E5E0;display:flex;align-items:center;justify-content:center;font:700 14px/1 Manrope,sans-serif;color:#7C8189">−</div>
+                              <div style="width:26px;text-align:center;font:700 13px/1 Manrope,sans-serif;font-variant-numeric:tabular-nums">{{ it.q }}</div>
+                              <div onClick="{{ it.inc }}" style="cursor:pointer;width:30px;height:30px;border-radius:10px;border:1px solid #E8E5E0;display:flex;align-items:center;justify-content:center;font:700 14px/1 Manrope,sans-serif;color:#7C8189">+</div>
+                              <div style="flex:1"></div>
+                              <div onClick="{{ it.less }}" style="cursor:pointer;padding:7px 9px;border-radius:9px;border:1px solid #E8E5E0;font:600 11px/1 Manrope,sans-serif;color:#7C8189">−50</div>
+                              <div style="font:700 13.5px/1 Manrope,sans-serif;font-variant-numeric:tabular-nums;min-width:82px;text-align:right">{{ it.total }}</div>
+                              <div onClick="{{ it.more }}" style="cursor:pointer;padding:7px 9px;border-radius:9px;border:1px solid #E8E5E0;font:600 11px/1 Manrope,sans-serif;color:#7C8189">+50</div>
+                            </div>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:14px">
+                        <div style="font:600 12.5px/1 Manrope,sans-serif;color:#7C8189">Mensal recorrente</div>
+                        <div style="font:800 17px/1 'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums">{{ monthly }}</div>
+                      </div>
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:8px">
+                        <div style="font:600 12.5px/1 Manrope,sans-serif;color:#7C8189">Investimento único</div>
+                        <div style="font:800 17px/1 'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums">{{ once }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ w2 }}">
+                  <div style="display:flex;flex-direction:column;gap:14px">
+                    <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:18px">
+                      <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#9AA0A7">DESCONTO GERAL</div>
+                      <div style="display:flex;gap:8px;margin-top:12px">
+                        <sc-for list="{{ discOpts }}" as="d" hint-placeholder-count="4">
+                          <div onClick="{{ d.pick }}" style="cursor:pointer;flex:1;text-align:center;padding:11px 0;border-radius:12px;font:700 12.5px/1 Manrope,sans-serif;border:1px solid {{ d.bd }};background:{{ d.bg }};color:{{ d.fg }}">{{ d.n }}</div>
+                        </sc-for>
+                      </div>
+                    </div>
+                    <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px">
+                      <sc-for list="{{ invRows }}" as="r" hint-placeholder-count="4">
+                        <div style="display:flex;justify-content:space-between;align-items:baseline">
+                          <div style="font:600 13px/1 Manrope,sans-serif;color:{{ r.fg }}">{{ r.n }}</div>
+                          <div style="font:700 14px/1 Manrope,sans-serif;font-variant-numeric:tabular-nums;color:{{ r.fg }}">{{ r.v }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <div style="background:#2B2E35;border-radius:20px;padding:20px">
+                      <div style="font:600 11.5px/1 Manrope,sans-serif;letter-spacing:.1em;color:rgba(255,255,255,.5)">INVESTIMENTO MENSAL</div>
+                      <div style="font:800 34px/1.05 'Plus Jakarta Sans',sans-serif;color:#fff;letter-spacing:-.035em;margin-top:10px;font-variant-numeric:tabular-nums">{{ monthlyNet }}</div>
+                      <div style="font:500 12.5px/1 Manrope,sans-serif;color:#FB6D62;margin-top:8px">Anual {{ annual }} · único {{ onceNet }}</div>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ w3 }}">
+                  <div style="display:flex;flex-direction:column;gap:14px">
+                    <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:16px">
+                      <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#9AA0A7">FORMA DE PAGAMENTO</div>
+                      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                        <sc-for list="{{ payOpts }}" as="p" hint-placeholder-count="3">
+                          <div onClick="{{ p.pick }}" style="cursor:pointer;padding:9px 13px;border-radius:12px;font:600 12.5px/1 Manrope,sans-serif;border:1px solid {{ p.bd }};background:{{ p.bg }};color:{{ p.fg }}">{{ p.n }}</div>
+                        </sc-for>
+                      </div>
+                    </div>
+                    <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:16px">
+                      <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#9AA0A7">VALIDADE DA PROPOSTA</div>
+                      <div style="display:flex;gap:8px;margin-top:12px">
+                        <sc-for list="{{ exValidity }}" as="v" hint-placeholder-count="4">
+                          <div onClick="{{ v.pick }}" style="cursor:pointer;flex:1;text-align:center;padding:10px 0;border-radius:12px;font:600 12.5px/1 Manrope,sans-serif;border:1px solid {{ v.bd }};background:{{ v.bg }};color:{{ v.fg }}">{{ v.n }}</div>
+                      </sc-for>
+                      </div>
+                    </div>
+                    <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:16px">
+                      <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#9AA0A7">OBSERVAÇÕES</div>
+                      <div style="font:500 13px/1.6 Manrope,sans-serif;color:#4E535A;margin-top:10px;text-wrap:pretty">Reajuste anual pelo IPCA. Cancelamento com aviso prévio de 30 dias. Materiais e acessos de responsabilidade do cliente.</div>
+                      <div style="display:flex;gap:8px;margin-top:12px">
+                        <div style="padding:7px 10px;border-radius:9px;background:#FAF9F7;border:1px solid #EAE7E2;font:700 11.5px/1 Manrope,sans-serif;color:#7C8189">B</div>
+                        <div style="padding:7px 10px;border-radius:9px;background:#FAF9F7;border:1px solid #EAE7E2;font:600 11.5px/1 Manrope,sans-serif;font-style:italic;color:#7C8189">I</div>
+                        <div style="padding:7px 10px;border-radius:9px;background:#FAF9F7;border:1px solid #EAE7E2;font:600 11.5px/1 Manrope,sans-serif;color:#7C8189">Lista</div>
+                        <div style="padding:7px 10px;border-radius:9px;background:#FAF9F7;border:1px solid #EAE7E2;font:600 11.5px/1 Manrope,sans-serif;color:#7C8189">Link</div>
+                      </div>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <div style="display:flex;gap:10px;margin-top:4px">
+                  <sc-if value="{{ wCanBack }}">
+                    <div onClick="{{ wBack }}" style="cursor:pointer;padding:16px 20px;border-radius:16px;border:1px solid #E8E5E0;background:#fff;font:700 13.5px/1 Manrope,sans-serif;color:#7C8189">Voltar</div>
+                  </sc-if>
+                  <div onClick="{{ wNext }}" style="cursor:pointer;flex:1;text-align:center;padding:16px;border-radius:16px;background:#FB6D62;color:#fff;font:800 13.5px/1 Manrope,sans-serif;letter-spacing:.02em;box-shadow:0 10px 20px rgba(251,109,98,.3)">{{ wNextLabel }}</div>
+                </div>
+                <div style="text-align:center;font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7">Salvo agora</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vProps }}">
+              <div style="display:flex;flex-direction:column;gap:12px;animation:bmIn .3s ease both">
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.6" stroke="#9AA0A7" stroke-width="1.5"></circle><path d="M9.6 9.6 13 13" stroke="#9AA0A7" stroke-width="1.5" stroke-linecap="round"></path></svg>
+                  <div style="font:500 13px/1 Manrope,sans-serif;color:#9AA0A7">Buscar por cliente, número ou serviço</div>
+                </div>
+                <div style="display:flex;gap:7px;overflow:auto;padding-bottom:2px">
+                  <sc-for list="{{ statusFilters }}" as="f" hint-placeholder-count="6">
+                    <div onClick="{{ f.pick }}" style="cursor:pointer;white-space:nowrap;padding:9px 13px;border-radius:999px;font:600 12px/1 Manrope,sans-serif;border:1px solid {{ f.bd }};background:{{ f.bg }};color:{{ f.fg }}">{{ f.n }}</div>
+                  </sc-for>
+                </div>
+                <sc-for list="{{ proposals }}" as="p" hint-placeholder-count="5">
+                  <div onClick="{{ p.open }}" style="cursor:pointer;background:#fff;border:1px solid #EAE7E2;border-radius:18px;padding:16px" style-hover="border-color:#FB6D62">
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <div style="font:600 10.5px/1 ui-monospace,Menlo,monospace;color:#9AA0A7">{{ p.num }}</div>
+                      <div style="flex:1"></div>
+                      <div style="padding:5px 9px;border-radius:8px;font:700 10px/1 Manrope,sans-serif;letter-spacing:.06em;background:{{ p.sbg }};color:{{ p.sfg }}">{{ p.st }}</div>
+                    </div>
+                    <div style="font:700 15px/1.25 'Plus Jakarta Sans',sans-serif;margin-top:10px;letter-spacing:-.01em">{{ p.cli }}</div>
+                    <div style="font:500 12.5px/1.4 Manrope,sans-serif;color:#7C8189;margin-top:5px">{{ p.proj }}</div>
+                    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:14px">
+                      <div style="font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7">{{ p.when }}</div>
+                      <div style="font:800 17px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{ p.val }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vProp }}">
+              <div style="display:flex;flex-direction:column;gap:14px;animation:bmIn .3s ease both">
+                <div style="background:#2B2E35;border-radius:22px;padding:20px">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div style="padding:5px 9px;border-radius:8px;font:700 10px/1 Manrope,sans-serif;letter-spacing:.06em;background:#FFF3E0;color:#A15C00">VISUALIZADA</div>
+                    <div style="font:600 10.5px/1 ui-monospace,Menlo,monospace;color:rgba(255,255,255,.45)">BEMIND-2026-0021</div>
+                  </div>
+                  <div style="font:800 20px/1.2 'Plus Jakarta Sans',sans-serif;color:#fff;margin-top:14px;letter-spacing:-.02em">Studio Vitória Odonto</div>
+                  <div style="font:500 12.5px/1.4 Manrope,sans-serif;color:rgba(255,255,255,.6);margin-top:6px">Gestão de Redes Sociais · 12 meses</div>
+                  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12)">
+                    <div style="font:500 12px/1 Manrope,sans-serif;color:rgba(255,255,255,.55)">Investimento mensal</div>
+                    <div style="font:800 24px/1 'Plus Jakarta Sans',sans-serif;color:#FB6D62;letter-spacing:-.03em;font-variant-numeric:tabular-nums">R$ 2.150,00</div>
+                  </div>
+                </div>
+
+                <div style="background:#FFF3E0;border:1px solid #F6E3C4;border-radius:16px;padding:14px;display:flex;gap:10px;align-items:center">
+                  <div style="width:8px;height:8px;border-radius:99px;background:#E8A33D;flex:none"></div>
+                  <div style="font:600 12.5px/1.4 Manrope,sans-serif;color:#7A5218;text-wrap:pretty">Cliente visualizou sua proposta há 12 minutos.</div>
+                </div>
+
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:18px">
+                  <div style="font:700 14px/1 'Plus Jakarta Sans',sans-serif">Rastreamento</div>
+                  <div style="display:flex;flex-direction:column;gap:0;margin-top:14px">
+                    <sc-for list="{{ tracking }}" as="t" hint-placeholder-count="5">
+                      <div style="display:flex;gap:12px">
+                        <div style="display:flex;flex-direction:column;align-items:center;width:10px">
+                          <div style="width:10px;height:10px;border-radius:99px;background:{{ t.c }};margin-top:4px;flex:none"></div>
+                          <div style="flex:1;width:1.5px;background:#EFECE7"></div>
+                        </div>
+                        <div style="flex:1;padding-bottom:16px">
+                          <div style="font:600 13px/1.3 Manrope,sans-serif">{{ t.n }}</div>
+                          <div style="font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:5px">{{ t.s }}</div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;gap:22px;padding-top:6px;border-top:1px solid #F1EEE9">
+                    <div style="margin-top:14px">
+                      <div style="font:800 18px/1 'Plus Jakarta Sans',sans-serif">7</div>
+                      <div style="font:500 11px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:5px">visualizações</div>
+                    </div>
+                    <div style="margin-top:14px">
+                      <div style="font:800 18px/1 'Plus Jakarta Sans',sans-serif">iPhone</div>
+                      <div style="font:500 11px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:5px">dispositivo</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <sc-for list="{{ propActions }}" as="a" hint-placeholder-count="6">
+                    <div style="cursor:pointer;background:#fff;border:1px solid #EAE7E2;border-radius:16px;padding:15px;text-align:center;font:600 12.5px/1 Manrope,sans-serif" style-hover="border-color:#FB6D62;color:#E85C51">{{ a }}</div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vClients }}">
+              <div style="display:flex;flex-direction:column;gap:10px;animation:bmIn .3s ease both">
+                <sc-for list="{{ clientList }}" as="c" hint-placeholder-count="5">
+                  <div onClick="{{ c.open }}" style="cursor:pointer;background:#fff;border:1px solid #EAE7E2;border-radius:18px;padding:15px;display:flex;align-items:center;gap:12px" style-hover="border-color:#FB6D62">
+                    <div style="width:40px;height:40px;border-radius:13px;background:{{ c.avbg }};color:{{ c.avfg }};display:flex;align-items:center;justify-content:center;font:800 14px/1 'Plus Jakarta Sans',sans-serif">{{ c.i }}</div>
+                    <div style="flex:1">
+                      <div style="font:700 14px/1.2 Manrope,sans-serif">{{ c.n }}</div>
+                      <div style="font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:5px">{{ c.s }}</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="font:700 13px/1 Manrope,sans-serif;font-variant-numeric:tabular-nums">{{ c.v }}</div>
+                      <div style="font:500 11px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:5px">contratado</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vClient }}">
+              <div style="display:flex;flex-direction:column;gap:14px;animation:bmIn .3s ease both">
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:22px;padding:20px">
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <div style="width:46px;height:46px;border-radius:15px;background:#FFF1EF;color:#E85C51;display:flex;align-items:center;justify-content:center;font:800 16px/1 'Plus Jakarta Sans',sans-serif">SV</div>
+                    <div>
+                      <div style="font:800 17px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em">Studio Vitória Odonto</div>
+                      <div style="font:500 12px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:6px">CNPJ 41.882.507/0001-19</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:9px;margin-top:18px;padding-top:16px;border-top:1px solid #F1EEE9">
+                    <sc-for list="{{ clientFields }}" as="f" hint-placeholder-count="6">
+                      <div style="display:flex;justify-content:space-between;gap:14px">
+                        <div style="font:500 12.5px/1.4 Manrope,sans-serif;color:#9AA0A7">{{ f.k }}</div>
+                        <div style="font:600 12.5px/1.4 Manrope,sans-serif;text-align:right">{{ f.v }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+                  <sc-for list="{{ clientStats }}" as="s" hint-placeholder-count="3">
+                    <div style="background:#fff;border:1px solid #EAE7E2;border-radius:16px;padding:14px">
+                      <div style="font:800 20px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;color:{{ s.c }}">{{ s.v }}</div>
+                      <div style="font:600 10.5px/1.3 Manrope,sans-serif;color:#9AA0A7;margin-top:6px">{{ s.n }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="background:#2B2E35;border-radius:18px;padding:18px;display:flex;justify-content:space-between;align-items:center">
+                  <div>
+                    <div style="font:600 11px/1 Manrope,sans-serif;letter-spacing:.1em;color:rgba(255,255,255,.5)">TOTAL CONTRATADO</div>
+                    <div style="font:800 22px/1 'Plus Jakarta Sans',sans-serif;color:#fff;margin-top:9px;letter-spacing:-.03em">R$ 32.400,00</div>
+                  </div>
+                </div>
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:18px">
+                  <div style="font:700 14px/1 'Plus Jakarta Sans',sans-serif">Propostas</div>
+                  <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
+                    <sc-for list="{{ clientProps }}" as="p" hint-placeholder-count="3">
+                      <div onClick="{{ p.open }}" style="cursor:pointer;display:flex;align-items:center;gap:10px">
+                        <div style="flex:1">
+                          <div style="font:600 12.5px/1.3 Manrope,sans-serif">{{ p.proj }}</div>
+                          <div style="font:500 10.5px/1 ui-monospace,Menlo,monospace;color:#9AA0A7;margin-top:5px">{{ p.num }}</div>
+                        </div>
+                        <div style="padding:4px 8px;border-radius:7px;font:700 9.5px/1 Manrope,sans-serif;letter-spacing:.06em;background:{{ p.sbg }};color:{{ p.sfg }}">{{ p.st }}</div>
+                        <div style="font:700 12.5px/1 Manrope,sans-serif;font-variant-numeric:tabular-nums">{{ p.val }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div onClick="{{ goWizard }}" style="cursor:pointer;text-align:center;padding:16px;border-radius:16px;background:#FB6D62;color:#fff;font:800 13.5px/1 Manrope,sans-serif;box-shadow:0 10px 20px rgba(251,109,98,.3)">Nova proposta para este cliente</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vServices }}">
+              <div style="display:flex;flex-direction:column;gap:14px;animation:bmIn .3s ease both">
+                <div style="font:500 13px/1.5 Manrope,sans-serif;color:#7C8189">Preços padrão puxados para cada proposta e editáveis a qualquer momento.</div>
+                <div style="display:flex;gap:7px;overflow:auto;padding-bottom:2px">
+                  <sc-for list="{{ cats }}" as="c" hint-placeholder-count="5">
+                    <div onClick="{{ c.pick }}" style="cursor:pointer;white-space:nowrap;padding:9px 13px;border-radius:999px;font:700 11px/1 Manrope,sans-serif;letter-spacing:.06em;border:1px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</div>
+                  </sc-for>
+                </div>
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:6px 16px">
+                  <sc-for list="{{ catServices }}" as="s" hint-placeholder-count="5">
+                    <div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #F5F2ED">
+                      <div style="flex:1">
+                        <div style="font:600 13px/1.3 Manrope,sans-serif">{{ s.n }}</div>
+                        <div style="font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:5px">{{ s.per }} · ativo</div>
+                      </div>
+                      <div style="font:700 13.5px/1 Manrope,sans-serif;font-variant-numeric:tabular-nums">{{ s.price }}</div>
+                      <div style="font:600 11.5px/1 Manrope,sans-serif;color:#E85C51;cursor:pointer">editar</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="cursor:pointer;border:1.5px dashed #DAD6D0;border-radius:16px;padding:15px;text-align:center;font:600 13px/1 Manrope,sans-serif;color:#7C8189">+ Novo serviço na biblioteca</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vCloud }}">
+              <div style="display:flex;flex-direction:column;gap:14px;animation:bmIn .3s ease both">
+                <div style="border-radius:22px;padding:22px;background:linear-gradient(140deg,#2B2E35 0%,#3C4149 100%)">
+                  <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.16em;color:#FB6D62">BE MIND CLOUD</div>
+                  <div style="font:500 13.5px/1.6 Manrope,sans-serif;color:rgba(255,255,255,.78);margin-top:12px;text-wrap:pretty">Hospedagem profissional para empresas que precisam de velocidade, estabilidade e segurança.</div>
+                  <div style="margin-top:18px">
+                    <div style="font:500 11.5px/1 Manrope,sans-serif;color:rgba(255,255,255,.5)">A partir de</div>
+                    <div style="font:800 30px/1 'Plus Jakarta Sans',sans-serif;color:#fff;letter-spacing:-.035em;margin-top:8px">R$ 150,00<span style="font:600 14px/1 Manrope,sans-serif;color:rgba(255,255,255,.55)">/mês</span></div>
+                  </div>
+                </div>
+                <div style="background:#FFF1EF;border:1px solid #FBD8D3;border-radius:14px;padding:13px;font:600 12px/1.4 Manrope,sans-serif;color:#B7483C;text-wrap:pretty">R$ 150,00 é o piso configurado. Você pode alterar qualquer valor manualmente na proposta.</div>
+                <sc-for list="{{ plans }}" as="p" hint-placeholder-count="4">
+                  <div style="background:#fff;border:1px solid {{ p.bd }};border-radius:20px;padding:18px">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between">
+                      <div style="font:800 15px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em">{{ p.n }}</div>
+                      <div style="font:800 16px/1 'Plus Jakarta Sans',sans-serif;color:#E85C51;font-variant-numeric:tabular-nums">{{ p.price }}</div>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px">
+                      <sc-for list="{{ p.specs }}" as="s" hint-placeholder-count="4">
+                        <div style="padding:6px 10px;border-radius:8px;background:#FAF9F7;border:1px solid #EFECE7;font:600 11px/1 Manrope,sans-serif;color:#6B7078">{{ s }}</div>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid #F5F2ED">
+                      <div style="font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7">Anual {{ p.annual }}</div>
+                      <div style="font:600 11.5px/1 Manrope,sans-serif;color:#E85C51;cursor:pointer">editar plano</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vReports }}">
+              <div style="display:flex;flex-direction:column;gap:14px;animation:bmIn .3s ease both">
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:22px;padding:20px">
+                  <div style="font:600 11.5px/1 Manrope,sans-serif;letter-spacing:.1em;color:#9AA0A7">TAXA DE APROVAÇÃO</div>
+                  <div style="display:flex;align-items:baseline;gap:10px;margin-top:12px">
+                    <div style="font:800 40px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.04em">57%</div>
+                    <div style="font:600 12.5px/1 Manrope,sans-serif;color:#1E7A45">+9 p.p. vs. trimestre anterior</div>
+                  </div>
+                  <div style="height:10px;border-radius:99px;background:#F1EEE9;margin-top:16px;overflow:hidden">
+                    <div style="width:57%;height:100%;border-radius:99px;background:#FB6D62"></div>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <sc-for list="{{ reportCards }}" as="r" hint-placeholder-count="4">
+                    <div style="background:#fff;border:1px solid #EAE7E2;border-radius:18px;padding:15px">
+                      <div style="font:800 18px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.025em;font-variant-numeric:tabular-nums">{{ r.v }}</div>
+                      <div style="font:600 11px/1.3 Manrope,sans-serif;color:#9AA0A7;margin-top:7px">{{ r.n }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:18px">
+                  <div style="font:700 14px/1 'Plus Jakarta Sans',sans-serif">Serviços mais vendidos</div>
+                  <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px">
+                    <sc-for list="{{ topServices }}" as="t" hint-placeholder-count="4">
+                      <div>
+                        <div style="display:flex;justify-content:space-between;align-items:baseline">
+                          <div style="font:600 12.5px/1 Manrope,sans-serif">{{ t.n }}</div>
+                          <div style="font:700 12px/1 Manrope,sans-serif;color:#7C8189;font-variant-numeric:tabular-nums">{{ t.v }}</div>
+                        </div>
+                        <div style="height:7px;border-radius:99px;background:#F1EEE9;margin-top:8px;overflow:hidden">
+                          <div style="height:100%;border-radius:99px;width:{{ t.w }};background:#2B2E35"></div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vNotifs }}">
+              <div style="display:flex;flex-direction:column;gap:10px;animation:bmIn .3s ease both">
+                <sc-for list="{{ notifs }}" as="n" hint-placeholder-count="5">
+                  <div style="background:{{ n.bg }};border:1px solid {{ n.bd }};border-radius:18px;padding:15px;display:flex;gap:12px;align-items:flex-start">
+                    <div style="width:34px;height:34px;border-radius:11px;background:#fff;border:1px solid {{ n.bd }};display:flex;align-items:center;justify-content:center;font:700 13px/1 Manrope,sans-serif;color:{{ n.c }};flex:none">{{ n.i }}</div>
+                    <div style="flex:1">
+                      <div style="font:600 13px/1.45 Manrope,sans-serif;text-wrap:pretty">{{ n.t }}</div>
+                      <div style="font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:6px">{{ n.s }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vMore }}">
+              <div style="display:flex;flex-direction:column;gap:10px;animation:bmIn .3s ease both">
+                <sc-for list="{{ menu }}" as="m" hint-placeholder-count="8">
+                  <div onClick="{{ m.go }}" style="cursor:pointer;background:#fff;border:1px solid #EAE7E2;border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px" style-hover="border-color:#FB6D62">
+                    <div style="flex:1">
+                      <div style="font:700 13.5px/1.2 Manrope,sans-serif">{{ m.n }}</div>
+                      <div style="font:500 11.5px/1.3 Manrope,sans-serif;color:#9AA0A7;margin-top:5px">{{ m.s }}</div>
+                    </div>
+                    <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1l6 6-6 6" stroke="#C7C3BC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vSettings }}">
+              <div style="display:flex;flex-direction:column;gap:14px;animation:bmIn .3s ease both">
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:18px">
+                  <div style="display:flex;align-items:center;gap:14px">
+                    <img src="assets/bemind-logo.png" alt="Be Mind" style="width:48px;height:auto;display:block">
+                    <div>
+                      <div style="font:700 14px/1.2 Manrope,sans-serif">Be Mind Marketing</div>
+                      <div style="font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:6px">Logo, cores e dados da empresa</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px;padding-top:14px;border-top:1px solid #F1EEE9">
+                    <sc-for list="{{ companyFields }}" as="f" hint-placeholder-count="5">
+                      <div style="display:flex;justify-content:space-between;gap:14px">
+                        <div style="font:500 12.5px/1.4 Manrope,sans-serif;color:#9AA0A7">{{ f.k }}</div>
+                        <div style="font:600 12.5px/1.4 Manrope,sans-serif;text-align:right">{{ f.v }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:18px">
+                  <div style="font:700 14px/1 'Plus Jakarta Sans',sans-serif">PIX nas propostas</div>
+                  <div style="display:flex;flex-direction:column;gap:9px;margin-top:14px">
+                    <sc-for list="{{ pixFields }}" as="f" hint-placeholder-count="4">
+                      <div style="display:flex;justify-content:space-between;gap:14px">
+                        <div style="font:500 12.5px/1.4 Manrope,sans-serif;color:#9AA0A7">{{ f.k }}</div>
+                        <div style="font:600 12.5px/1.4 Manrope,sans-serif;text-align:right">{{ f.v }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:6px 18px">
+                  <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:12px;padding:15px 0;border-bottom:1px solid #F5F2ED">
+                      <div style="flex:1;font:600 13px/1.3 Manrope,sans-serif">{{ t.n }}</div>
+                      <div style="width:44px;height:26px;border-radius:99px;padding:3px;background:{{ t.bg }};display:flex;justify-content:{{ t.j }}">
+                        <div style="width:20px;height:20px;border-radius:99px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:18px">
+                  <div style="font:700 14px/1 'Plus Jakarta Sans',sans-serif">Equipe</div>
+                  <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
+                    <sc-for list="{{ team }}" as="u" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;gap:11px">
+                        <div style="width:32px;height:32px;border-radius:99px;background:#F1EEE9;display:flex;align-items:center;justify-content:center;font:700 11.5px/1 Manrope,sans-serif;color:#6B7078">{{ u.i }}</div>
+                        <div style="flex:1;font:600 12.5px/1 Manrope,sans-serif">{{ u.n }}</div>
+                        <div style="font:600 11px/1 Manrope,sans-serif;color:#9AA0A7">{{ u.r }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vBriefs }}">
+              <div style="display:flex;flex-direction:column;gap:12px;animation:bmIn .3s ease both">
+                <div style="border-radius:20px;padding:18px;background:linear-gradient(135deg,#FB6D62 0%,#E85C51 100%);box-shadow:0 10px 22px rgba(232,92,81,.26)">
+                  <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.14em;color:rgba(255,255,255,.78)">ANTES DA PROPOSTA</div>
+                  <div style="font:800 18px/1.2 'Plus Jakarta Sans',sans-serif;color:#fff;margin-top:10px;letter-spacing:-.02em">Enviar briefing</div>
+                  <div style="font:500 12.5px/1.5 Manrope,sans-serif;color:rgba(255,255,255,.85);margin-top:6px;text-wrap:pretty">O cliente responde 12 perguntas por link. As respostas viram escopo, objetivos e valores na proposta.</div>
+                  <div onClick="{{ goPubBrief }}" style="cursor:pointer;text-align:center;padding:12px;border-radius:13px;background:#fff;color:#E85C51;font:700 13px/1 Manrope,sans-serif;margin-top:15px">Novo briefing</div>
+                </div>
+                <div style="display:flex;gap:7px;overflow:auto;padding-bottom:2px">
+                  <sc-for list="{{ briefFilters }}" as="f" hint-placeholder-count="4">
+                    <div onClick="{{ f.pick }}" style="cursor:pointer;white-space:nowrap;padding:9px 13px;border-radius:999px;font:600 12px/1 Manrope,sans-serif;border:1px solid {{ f.bd }};background:{{ f.bg }};color:{{ f.fg }}">{{ f.n }}</div>
+                  </sc-for>
+                </div>
+                <sc-for list="{{ briefs }}" as="b" hint-placeholder-count="4">
+                  <div onClick="{{ b.open }}" style="cursor:pointer;background:#fff;border:1px solid #EAE7E2;border-radius:18px;padding:16px" style-hover="border-color:#FB6D62">
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <div style="font:600 10.5px/1 ui-monospace,Menlo,monospace;color:#9AA0A7">{{ b.num }}</div>
+                      <div style="flex:1"></div>
+                      <div style="padding:5px 9px;border-radius:8px;font:700 10px/1 Manrope,sans-serif;letter-spacing:.06em;background:{{ b.sbg }};color:{{ b.sfg }}">{{ b.st }}</div>
+                    </div>
+                    <div style="font:700 14.5px/1.25 'Plus Jakarta Sans',sans-serif;margin-top:10px;letter-spacing:-.01em">{{ b.cli }}</div>
+                    <div style="font:500 12.5px/1.4 Manrope,sans-serif;color:#7C8189;margin-top:5px">{{ b.kind }}</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px">
+                      <div style="font:500 11.5px/1 Manrope,sans-serif;color:#9AA0A7">{{ b.when }}</div>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <div style="width:64px;height:6px;border-radius:99px;background:#F1EEE9;overflow:hidden">
+                          <div style="height:100%;border-radius:99px;width:{{ b.w }};background:{{ b.pc }}"></div>
+                        </div>
+                        <div style="font:700 11.5px/1 Manrope,sans-serif;color:#6B7078;font-variant-numeric:tabular-nums">{{ b.answers }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vBrief }}">
+              <div style="display:flex;flex-direction:column;gap:14px;animation:bmIn .3s ease both">
+                <div style="background:#2B2E35;border-radius:22px;padding:20px">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div style="padding:5px 9px;border-radius:8px;font:700 10px/1 Manrope,sans-serif;letter-spacing:.06em;background:#E7F6EC;color:#1E7A45">RESPONDIDO</div>
+                    <div style="font:600 10.5px/1 ui-monospace,Menlo,monospace;color:rgba(255,255,255,.45)">BRIEF-2026-0014</div>
+                  </div>
+                  <div style="font:800 19px/1.2 'Plus Jakarta Sans',sans-serif;color:#fff;margin-top:14px;letter-spacing:-.02em">Studio Vitória Odonto</div>
+                  <div style="font:500 12.5px/1.4 Manrope,sans-serif;color:rgba(255,255,255,.6);margin-top:6px">Briefing de Marketing Digital · respondido em 04/08/2026, 4h após o envio</div>
+                  <div style="display:flex;gap:26px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12)">
+                    <div>
+                      <div style="font:800 18px/1 'Plus Jakarta Sans',sans-serif;color:#fff">12/12</div>
+                      <div style="font:500 11px/1 Manrope,sans-serif;color:rgba(255,255,255,.5);margin-top:6px">respostas</div>
+                    </div>
+                    <div>
+                      <div style="font:800 15px/1.15 'Plus Jakarta Sans',sans-serif;color:#FB6D62;white-space:nowrap">R$ 1.500–3.000</div>
+                      <div style="font:500 11px/1 Manrope,sans-serif;color:rgba(255,255,255,.5);margin-top:6px">verba informada</div>
+                    </div>
+                  </div>
+                </div>
+
+                <sc-for list="{{ briefAnswers }}" as="g" hint-placeholder-count="4">
+                  <div style="background:#fff;border:1px solid #EAE7E2;border-radius:20px;padding:18px">
+                    <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.14em;color:#9AA0A7">{{ g.sec }}</div>
+                    <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+                      <sc-for list="{{ g.qa }}" as="q" hint-placeholder-count="3">
+                        <div>
+                          <div style="font:600 12px/1.4 Manrope,sans-serif;color:#9AA0A7;text-wrap:pretty">{{ q.q }}</div>
+                          <div style="font:600 13.5px/1.55 Manrope,sans-serif;color:#2B2E35;margin-top:6px;text-wrap:pretty">{{ q.a }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+
+                <div style="background:#FFF1EF;border:1px solid #FBD8D3;border-radius:18px;padding:16px">
+                  <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.14em;color:#C74A40">SUGERIDO PELO BRIEFING</div>
+                  <div style="display:flex;flex-direction:column;gap:9px;margin-top:13px">
+                    <sc-for list="{{ briefSuggest }}" as="s" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <div style="flex:1;font:600 12.5px/1.3 Manrope,sans-serif;color:#7A3A32">{{ s.n }}</div>
+                        <div style="font:700 12.5px/1 Manrope,sans-serif;color:#7A3A32;font-variant-numeric:tabular-nums">{{ s.v }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div onClick="{{ briefToProposal }}" style="cursor:pointer;text-align:center;padding:15px;border-radius:14px;background:#FB6D62;color:#fff;font:800 13.5px/1 Manrope,sans-serif;margin-top:16px;box-shadow:0 8px 18px rgba(251,109,98,.3)">Gerar proposta a partir do briefing</div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <sc-for list="{{ briefActions }}" as="a" hint-placeholder-count="4">
+                    <div style="cursor:pointer;background:#fff;border:1px solid #EAE7E2;border-radius:16px;padding:15px;text-align:center;font:600 12.5px/1 Manrope,sans-serif" style-hover="border-color:#FB6D62;color:#E85C51">{{ a }}</div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+          </div>
+
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 30px;background:rgba(246,244,241,.92);backdrop-filter:blur(14px);border-top:1px solid #EAE7E2;display:flex;align-items:center;gap:4px">
+            <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+              <div onClick="{{ t.go }}" style="cursor:pointer;flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 0">
+                <div style="width:20px;height:20px;border-radius:6px;border:2px solid {{ t.c }};background:{{ t.fill }}"></div>
+                <div style="font:600 10.5px/1 Manrope,sans-serif;color:{{ t.c }}">{{ t.n }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div style="font:700 13px/1 'Plus Jakarta Sans',sans-serif;color:#2B2E35">Links do cliente · Android</div>
+        <div style="font:500 12px/1 Manrope,sans-serif;color:#9AA0A7">{{ pubUrl }}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <sc-for list="{{ pubTabs }}" as="t" hint-placeholder-count="2">
+          <div onClick="{{ t.pick }}" style="cursor:pointer;padding:8px 14px;border-radius:999px;font:600 12.5px/1 Manrope,sans-serif;border:1px solid {{ t.bd }};background:{{ t.bg }};color:{{ t.fg }}">{{ t.n }}</div>
+        </sc-for>
+      </div>
+
+      <x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" hint-size="412px,892px">
+        <div style="height:100%;position:relative;background:#fff;font-family:Manrope,system-ui,sans-serif;color:#2B2E35">
+          <div style="height:100%;box-sizing:border-box;padding-bottom:104px;overflow:{{ pubScroll }}">
+
+            <div style="background:#2B2E35;padding:48px 24px 32px">
+              <div style="display:inline-flex;background:#fff;border-radius:14px;padding:11px 13px"><img src="assets/bemind-logo.png" alt="Be Mind Marketing" style="width:58px;height:auto;display:block"></div>
+              <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.2em;color:#FB6D62;margin-top:26px">PROPOSTA COMERCIAL</div>
+              <div style="font:800 30px/1.12 'Plus Jakarta Sans',sans-serif;color:#fff;letter-spacing:-.03em;margin-top:14px;text-wrap:pretty">Gestão de Redes Sociais</div>
+              <div style="font:500 14px/1.5 Manrope,sans-serif;color:rgba(255,255,255,.68);margin-top:12px">Preparada para <span style="color:#fff;font-weight:700">Studio Vitória Odonto</span></div>
+              <div style="display:flex;gap:24px;margin-top:26px;padding-top:20px;border-top:1px solid rgba(255,255,255,.14)">
+                <div>
+                  <div style="font:500 10.5px/1 Manrope,sans-serif;letter-spacing:.1em;color:rgba(255,255,255,.45)">Nº</div>
+                  <div style="font:600 12px/1 ui-monospace,Menlo,monospace;color:#fff;margin-top:7px">BEMIND-2026-0021</div>
+                </div>
+                <div>
+                  <div style="font:500 10.5px/1 Manrope,sans-serif;letter-spacing:.1em;color:rgba(255,255,255,.45)">DATA</div>
+                  <div style="font:600 12px/1 Manrope,sans-serif;color:#fff;margin-top:7px">11/08/2026</div>
+                </div>
+                <div>
+                  <div style="font:500 10.5px/1 Manrope,sans-serif;letter-spacing:.1em;color:rgba(255,255,255,.45)">VÁLIDA ATÉ</div>
+                  <div style="font:600 12px/1 Manrope,sans-serif;color:#fff;margin-top:7px">26/08/2026</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="padding:34px 24px;display:flex;flex-direction:column;gap:34px">
+
+              <div>
+                <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.16em;color:#FB6D62">OLÁ, DRA. VITÓRIA</div>
+                <div style="font:500 15px/1.65 Manrope,sans-serif;color:#4E535A;margin-top:14px;text-wrap:pretty">Preparamos esta proposta especialmente para o Studio Vitória Odonto. Nossa proposta é assumir a presença digital da clínica com produção contínua, ritmo de publicação previsível e acompanhamento de resultados mês a mês.</div>
+              </div>
+
+              <div style="height:1px;background:#EFECE7"></div>
+
+              <div>
+                <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.16em;color:#9AA0A7">ESCOPO</div>
+                <div style="display:flex;flex-direction:column;gap:14px;margin-top:18px">
+                  <sc-for list="{{ pubScope }}" as="s" hint-placeholder-count="3">
+                    <div style="border:1px solid #EAE7E2;border-radius:20px;padding:18px">
+                      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                        <div style="font:800 15px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em">{{ s.n }}</div>
+                        <div style="font:700 14px/1 Manrope,sans-serif;white-space:nowrap;font-variant-numeric:tabular-nums">{{ s.v }}</div>
+                      </div>
+                      <div style="font:500 13.5px/1.6 Manrope,sans-serif;color:#5A6068;margin-top:10px;text-wrap:pretty">{{ s.d }}</div>
+                      <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #F3F0EB">
+                        <sc-for list="{{ s.items }}" as="d" hint-placeholder-count="2">
+                          <div style="display:flex;gap:9px;align-items:flex-start">
+                            <div style="width:5px;height:5px;border-radius:99px;background:#FB6D62;margin-top:7px;flex:none"></div>
+                            <div style="flex:1;font:500 12.5px/1.55 Manrope,sans-serif;color:#5A6068;text-wrap:pretty">{{ d }}</div>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="border-radius:24px;background:#2B2E35;padding:24px">
+                <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.16em;color:#FB6D62">INVESTIMENTO</div>
+                <div style="font:800 40px/1 'Plus Jakarta Sans',sans-serif;color:#fff;letter-spacing:-.04em;margin-top:16px">R$ 2.150,00<span style="font:600 16px/1 Manrope,sans-serif;color:rgba(255,255,255,.5)">/mês</span></div>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.14)">
+                  <sc-for list="{{ pubInvest }}" as="r" hint-placeholder-count="4">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline">
+                      <div style="font:500 12.5px/1 Manrope,sans-serif;color:rgba(255,255,255,.6)">{{ r.n }}</div>
+                      <div style="font:600 13px/1 Manrope,sans-serif;color:{{ r.c }};font-variant-numeric:tabular-nums">{{ r.v }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div>
+                <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.16em;color:#9AA0A7">CRONOGRAMA</div>
+                <div style="display:flex;flex-direction:column;margin-top:18px">
+                  <sc-for list="{{ pubSchedule }}" as="e" hint-placeholder-count="4">
+                    <div style="display:flex;gap:14px">
+                      <div style="display:flex;flex-direction:column;align-items:center;width:26px;flex:none">
+                        <div style="width:26px;height:26px;border-radius:99px;border:1.5px solid #FBD8D3;background:#FFF1EF;color:#E85C51;display:flex;align-items:center;justify-content:center;font:800 11px/1 'Plus Jakarta Sans',sans-serif">{{ e.i }}</div>
+                        <div style="flex:1;width:1.5px;background:#EFECE7"></div>
+                      </div>
+                      <div style="flex:1;padding-bottom:20px">
+                        <div style="font:700 13.5px/1.2 Manrope,sans-serif">{{ e.n }}</div>
+                        <div style="font:500 12px/1.5 Manrope,sans-serif;color:#8A9098;margin-top:6px">{{ e.s }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div>
+                <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.16em;color:#9AA0A7">POR QUE A BE MIND</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px">
+                  <sc-for list="{{ pubDiff }}" as="d" hint-placeholder-count="4">
+                    <div style="border:1px solid #EAE7E2;border-radius:18px;padding:16px">
+                      <div style="font:800 20px/1 'Plus Jakarta Sans',sans-serif;color:#FB6D62;letter-spacing:-.03em">{{ d.v }}</div>
+                      <div style="font:600 12px/1.45 Manrope,sans-serif;color:#5A6068;margin-top:9px;text-wrap:pretty">{{ d.n }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div>
+                <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.16em;color:#9AA0A7">CONDIÇÕES COMERCIAIS</div>
+                <div style="display:flex;flex-direction:column;gap:11px;margin-top:16px">
+                  <sc-for list="{{ pubTerms }}" as="t" hint-placeholder-count="5">
+                    <div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:11px;border-bottom:1px solid #F3F0EB">
+                      <div style="font:500 12.5px/1.4 Manrope,sans-serif;color:#9AA0A7;flex:none">{{ t.k }}</div>
+                      <div style="font:600 12.5px/1.4 Manrope,sans-serif;text-align:right">{{ t.v }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="text-align:center;padding:8px 0 4px">
+                <div style="font:800 24px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;text-wrap:pretty">Vamos começar este projeto?</div>
+                <div style="font:500 13.5px/1.6 Manrope,sans-serif;color:#7C8189;margin-top:12px">Ao aceitar, nossa equipe entra em contato em até 1 dia útil para iniciar o planejamento.</div>
+                <div style="display:flex;flex-direction:column;gap:9px;margin-top:20px">
+                  <div style="cursor:pointer;padding:12px;border-radius:14px;border:1px solid #EAE7E2;font:600 13px/1 Manrope,sans-serif;color:#6B7078">Solicitar alteração</div>
+                  <div style="cursor:pointer;padding:12px;border-radius:14px;font:600 13px/1 Manrope,sans-serif;color:#9AA0A7">Recusar proposta</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:14px 20px 34px;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-top:1px solid #EFECE7">
+            <div onClick="{{ openAceite }}" style="cursor:pointer;text-align:center;padding:17px;border-radius:16px;background:#FB6D62;color:#fff;font:800 14.5px/1 Manrope,sans-serif;letter-spacing:.04em;box-shadow:0 10px 24px rgba(251,109,98,.34)">ACEITAR PROPOSTA</div>
+          </div>
+
+          <sc-if value="{{ vPubBrief }}">
+            <div style="position:absolute;inset:0;box-sizing:border-box;overflow:auto;background:#fff;padding-bottom:112px;animation:bmFade .26s ease both">
+              <div style="background:#2B2E35;padding:48px 24px 30px">
+                <div style="display:inline-flex;background:#fff;border-radius:14px;padding:11px 13px"><img src="assets/bemind-logo.png" alt="Be Mind Marketing" style="width:52px;height:auto;display:block"></div>
+                <div style="font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.2em;color:#FB6D62;margin-top:24px">BRIEFING</div>
+                <div style="font:800 26px/1.15 'Plus Jakarta Sans',sans-serif;color:#fff;letter-spacing:-.03em;margin-top:13px;text-wrap:pretty">Conte sobre o seu projeto</div>
+                <div style="font:500 13.5px/1.55 Manrope,sans-serif;color:rgba(255,255,255,.65);margin-top:11px;text-wrap:pretty">12 perguntas, cerca de 5 minutos. Suas respostas montam a proposta — nada aqui é definitivo.</div>
+              </div>
+
+              <div style="padding:22px 24px 0;display:flex;gap:6px">
+                <sc-for list="{{ bSteps }}" as="st" hint-placeholder-count="4">
+                  <div style="flex:1;display:flex;flex-direction:column;gap:7px">
+                    <div style="height:4px;border-radius:99px;background:{{ st.c }}"></div>
+                    <div style="font:600 10.5px/1 Manrope,sans-serif;color:{{ st.fg }}">{{ st.n }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="padding:26px 24px 0;display:flex;flex-direction:column;gap:24px">
+                <sc-for list="{{ bFields }}" as="f" hint-placeholder-count="4">
+                  <div>
+                    <div style="font:700 13.5px/1.4 Manrope,sans-serif;text-wrap:pretty">{{ f.q }}</div>
+                    <sc-if value="{{ f.hint }}">
+                      <div style="font:500 12px/1.5 Manrope,sans-serif;color:#9AA0A7;margin-top:5px;text-wrap:pretty">{{ f.hint }}</div>
+                    </sc-if>
+
+                    <sc-if value="{{ f.isText }}">
+                      <div style="border:1px solid #E4E0DA;border-radius:14px;padding:14px;margin-top:11px;background:#FCFBFA">
+                        <div style="font:500 13px/1.6 Manrope,sans-serif;color:{{ f.tc }};text-wrap:pretty">{{ f.value }}</div>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ f.isChips }}">
+                      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+                        <sc-for list="{{ f.opts }}" as="o" hint-placeholder-count="4">
+                          <div onClick="{{ o.pick }}" style="cursor:pointer;padding:10px 13px;border-radius:12px;font:600 12.5px/1 Manrope,sans-serif;border:1px solid {{ o.bd }};background:{{ o.bg }};color:{{ o.fg }}">{{ o.n }}</div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:12px 20px 32px;background:rgba(255,255,255,.95);backdrop-filter:blur(14px);border-top:1px solid #EFECE7;display:flex;align-items:center;gap:12px">
+              <sc-if value="{{ bCanBack }}">
+                <div onClick="{{ bBack }}" style="cursor:pointer;padding:15px 17px;border-radius:15px;border:1px solid #E8E5E0;font:700 13px/1 Manrope,sans-serif;color:#7C8189">Voltar</div>
+              </sc-if>
+              <div style="flex:1">
+                <div onClick="{{ bNext }}" style="cursor:pointer;text-align:center;padding:16px;border-radius:15px;background:#FB6D62;color:#fff;font:800 14px/1 Manrope,sans-serif;letter-spacing:.03em;box-shadow:0 10px 22px rgba(251,109,98,.3)">{{ bNextLabel }}</div>
+                <div style="text-align:center;font:500 11px/1 Manrope,sans-serif;color:#9AA0A7;margin-top:9px">{{ bProgress }}</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ bDone }}">
+            <div style="position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;animation:bmFade .34s ease both">
+              <div style="width:78px;height:78px;border-radius:99px;background:#FFF1EF;display:flex;align-items:center;justify-content:center">
+                <svg width="34" height="26" viewBox="0 0 30 24" fill="none"><path d="M2 12.5 10.5 21 28 3" stroke="#E85C51" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </div>
+              <div style="font:800 23px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;margin-top:24px;text-align:center;text-wrap:pretty">Briefing recebido</div>
+              <div style="font:500 13.5px/1.6 Manrope,sans-serif;color:#7C8189;margin-top:12px;text-align:center;text-wrap:pretty">Obrigado, Vitória. A Be Mind Marketing vai montar a proposta com base nas suas respostas e enviar o link em até 2 dias úteis.</div>
+              <div onClick="{{ bReset }}" style="cursor:pointer;font:600 13px/1 Manrope,sans-serif;color:#E85C51;margin-top:26px;padding:8px">Revisar respostas</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ aceiteOpen }}">
+            <div style="position:absolute;inset:0;background:rgba(28,30,35,.55);display:flex;align-items:flex-end;animation:bmFade .22s ease both">
+              <div style="width:100%;background:#fff;border-radius:28px 28px 0 0;padding:24px 22px 36px;animation:bmIn .3s ease both">
+                <div style="width:40px;height:4px;border-radius:99px;background:#E4E0DA;margin:0 auto 20px"></div>
+                <div style="font:800 19px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em">Você está de acordo com esta proposta?</div>
+                <div style="font:500 13px/1.5 Manrope,sans-serif;color:#7C8189;margin-top:10px">BEMIND-2026-0021 · R$ 2.150,00/mês</div>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px">
+                  <sc-for list="{{ aceiteFields }}" as="f" hint-placeholder-count="3">
+                    <div style="border:1px solid #EAE7E2;border-radius:14px;padding:13px 14px">
+                      <div style="font:600 10px/1 Manrope,sans-serif;letter-spacing:.1em;color:#9AA0A7">{{ f.k }}</div>
+                      <div style="font:600 13.5px/1 Manrope,sans-serif;margin-top:7px">{{ f.v }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div onClick="{{ toggleTerms }}" style="cursor:pointer;display:flex;gap:11px;align-items:flex-start;margin-top:18px">
+                  <div style="width:22px;height:22px;border-radius:7px;border:1.5px solid {{ termsBd }};background:{{ termsBg }};flex:none;display:flex;align-items:center;justify-content:center">
+                    <sc-if value="{{ terms }}">
+                      <svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4.5 4.2 7.8 11 1" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    </sc-if>
+                  </div>
+                  <div style="flex:1;font:500 12.5px/1.5 Manrope,sans-serif;color:#5A6068">Li e concordo com os termos desta proposta.</div>
+                </div>
+                <div onClick="{{ confirmAceite }}" style="cursor:pointer;text-align:center;padding:17px;border-radius:16px;margin-top:20px;background:{{ confirmBg }};color:#fff;font:800 14px/1 Manrope,sans-serif;letter-spacing:.03em">ACEITAR PROPOSTA</div>
+                <div onClick="{{ closeAceite }}" style="cursor:pointer;text-align:center;padding:14px;font:600 13px/1 Manrope,sans-serif;color:#9AA0A7">Voltar à proposta</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ aceiteDone }}">
+            <div style="position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;animation:bmFade .34s ease both">
+              <div style="width:78px;height:78px;border-radius:99px;background:#E7F6EC;display:flex;align-items:center;justify-content:center">
+                <svg width="34" height="26" viewBox="0 0 30 24" fill="none"><path d="M2 12.5 10.5 21 28 3" stroke="#1E7A45" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </div>
+              <div style="font:800 24px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;margin-top:24px;text-align:center">Proposta aprovada</div>
+              <div style="font:500 13.5px/1.6 Manrope,sans-serif;color:#7C8189;margin-top:12px;text-align:center;text-wrap:pretty">Obrigado, Vitória. A Be Mind Marketing recebeu seu aceite e entrará em contato em até 1 dia útil.</div>
+              <div style="width:100%;border:1px solid #EAE7E2;border-radius:20px;padding:18px;margin-top:28px;display:flex;flex-direction:column;gap:10px">
+                <div style="font:700 10px/1 Manrope,sans-serif;letter-spacing:.14em;color:#9AA0A7">REGISTRO DO ACEITE</div>
+                <sc-for list="{{ aceiteRecord }}" as="r" hint-placeholder-count="5">
+                  <div style="display:flex;justify-content:space-between;gap:14px">
+                    <div style="font:500 12px/1.4 Manrope,sans-serif;color:#9AA0A7">{{ r.k }}</div>
+                    <div style="font:600 12px/1.4 Manrope,sans-serif;text-align:right">{{ r.v }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div onClick="{{ resetAceite }}" style="cursor:pointer;font:600 13px/1 Manrope,sans-serif;color:#E85C51;margin-top:26px;padding:8px">Rever a proposta</div>
+            </div>
+          </sc-if>
+
+        </div>
+      </x-import>
+    </div>
+
+    <div style="width:270px;display:flex;flex-direction:column;gap:22px;padding-top:34px">
+      <div>
+        <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.14em;color:#9AA0A7">DIREÇÃO</div>
+        <div style="font:500 13px/1.65 Manrope,sans-serif;color:#5A6068;margin-top:12px;text-wrap:pretty">Coral da marca reservado para ação e valor; cinza-carvão para os blocos de investimento. Fundo quente, cards brancos, muito respiro. Plus Jakarta Sans nos títulos, Manrope nos dados.</div>
+      </div>
+      <div>
+        <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.14em;color:#9AA0A7">O QUE ESTÁ INTERATIVO</div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:12px">
+          <sc-for list="{{ notes }}" as="n" hint-placeholder-count="6">
+            <div style="font:500 12.5px/1.5 Manrope,sans-serif;color:#5A6068;text-wrap:pretty">· {{ n }}</div>
+          </sc-for>
+        </div>
+      </div>
+      <div>
+        <div style="font:700 11px/1 Manrope,sans-serif;letter-spacing:.14em;color:#9AA0A7">PRÓXIMOS PASSOS</div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:12px">
+          <sc-for list="{{ next }}" as="n" hint-placeholder-count="3">
+            <div style="font:500 12.5px/1.5 Manrope,sans-serif;color:#8A9098;text-wrap:pretty">· {{ n }}</div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1560,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  state = {
+    view: 'dash',
+    exCli: 'Studio Vitória Odonto', exSvc: 'Criação de Logo', exVal: 800, exValid: '15 dias', exCond: '50% entrada + 50% na entrega',
+    wStep: 0, wCli: 'Padaria São José', cat: 'MARKETING',
+    items: [{ id: 'ig', n: 'Gestão de Instagram', p: 800, q: 1, per: 'mês' }, { id: 'cont', n: 'Criação de conteúdo', p: 500, q: 1, per: 'mês' }],
+    disc: 0, pay: 'Mensal via PIX', filter: 'Todas',
+    aceite: 0, terms: false,
+    bFilter: 'Todos', pubTab: 'proposta', bStep: 0, bDone: false,
+    bSeg: 'Saúde e estética', bTime: '3 a 10 anos', bAge: '25 a 44',
+    bObj: ['Vender mais', 'Ganhar seguidores'], bChan: ['Instagram'],
+    bSvc: ['Redes sociais', 'Vídeo'], bBudget: 'R$ 1.500 – R$ 3.000', bPrazo: 'Começar em 15 dias'
+  };
+
+  BRIEF_STEPS = ['Empresa', 'Público', 'Objetivos', 'Projeto'];
+
+  CAT = ['MARKETING', 'DESIGN', 'WEB', 'COM. VISUAL', 'BE MIND CLOUD'];
+
+  CATALOG = {
+    'MARKETING': [['Gestão de Instagram', 800, 'mês'], ['Criação de conteúdo', 500, 'mês'], ['Tráfego Pago', 700, 'mês'], ['Google Ads', 650, 'mês'], ['Copywriting', 400, 'mês']],
+    'DESIGN': [['Identidade Visual', 2800, 'projeto'], ['Criação de Logo', 800, 'projeto'], ['Manual de Marca', 1200, 'projeto'], ['Social Media', 900, 'mês']],
+    'WEB': [['Landing Page', 1900, 'projeto'], ['Site Institucional', 3500, 'projeto'], ['E-commerce', 7800, 'projeto'], ['Manutenção de Site', 350, 'mês']],
+    'COM. VISUAL': [['Fachada', 2400, 'projeto'], ['Adesivação', 900, 'projeto'], ['Banner impresso', 180, 'unidade']],
+    'BE MIND CLOUD': [['Be Mind Cloud', 150, 'mês']]
+  };
+
+  fmt(n) { return 'R$ ' + Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  go(v) { return () => this.setState({ view: v }); }
+  chip(on) { return on ? { bd: '#FB6D62', bg: '#FFF1EF', fg: '#C74A40' } : { bd: '#EAE7E2', bg: '#fff', fg: '#6B7078' }; }
+
+  titleFor(v) {
+    return ({ dash: 'BE MIND PROPOSALS', express: 'Proposta Express', done: 'Proposta Express', wizard: 'Nova proposta completa', props: 'Propostas', prop: 'BEMIND-2026-0021', clients: 'Clientes', client: 'Cliente', services: 'Biblioteca de serviços', cloud: 'Be Mind Cloud', reports: 'Relatórios', notifs: 'Notificações', more: 'Mais', settings: 'Configurações', briefs: 'Briefings', brief: 'BRIEF-2026-0014' })[v] || 'BE MIND PROPOSALS';
+  }
+
+  totals() {
+    const m = this.state.items.filter(i => i.per === 'mês').reduce((s, i) => s + i.p * i.q, 0);
+    const o = this.state.items.filter(i => i.per !== 'mês').reduce((s, i) => s + i.p * i.q, 0);
+    const d = this.state.disc / 100;
+    return { m, o, mNet: m * (1 - d), oNet: o * (1 - d), dv: (m + o) * d };
+  }
+
+  briefFields(s) {
+    const single = (key, opts) => opts.map(n => ({ n, pick: () => this.setState({ [key]: n }), ...this.chip(s[key] === n) }));
+    const multi = (key, opts) => opts.map(n => ({
+      n, pick: () => { const c = s[key]; this.setState({ [key]: c.includes(n) ? c.filter(x => x !== n) : c.concat([n]) }); },
+      ...this.chip(s[key].includes(n))
+    }));
+    const txt = (q, value, hint) => ({ q, value, hint: hint || '', isText: true, isChips: false, tc: '#3C4149' });
+    const chips = (q, opts, hint) => ({ q, opts, hint: hint || '', isChips: true, isText: false });
+    return [
+      [
+        txt('Nome da empresa e responsável', 'Studio Vitória Odonto · Vitória Camargo'),
+        chips('Qual é o segmento?', single('bSeg', ['Saúde e estética', 'Alimentação', 'Varejo', 'Serviços', 'Indústria'])),
+        chips('Há quanto tempo no mercado?', single('bTime', ['Menos de 1 ano', '1 a 3 anos', '3 a 10 anos', 'Mais de 10 anos'])),
+        txt('O que a empresa faz, em uma frase?', 'Clínica odontológica com foco em estética e implantes, atendimento particular.', 'Escreva do seu jeito, sem formalidade.')
+      ],
+      [
+        txt('Quem é o seu cliente ideal?', 'Mulheres de 30 a 45 anos, classe B, que buscam harmonização e clareamento.'),
+        chips('Faixa de idade principal', single('bAge', ['18 a 24', '25 a 44', '45 a 60', '60+'])),
+        chips('Onde vocês já estão presentes?', multi('bChan', ['Instagram', 'Facebook', 'Google', 'TikTok', 'WhatsApp', 'Nenhum']), 'Pode marcar mais de um.')
+      ],
+      [
+        chips('O que você quer alcançar?', multi('bObj', ['Vender mais', 'Ganhar seguidores', 'Reposicionar a marca', 'Lançar um produto', 'Ser encontrado no Google']), 'Pode marcar mais de um.'),
+        txt('O que já tentaram antes?', 'Impulsionamento de posts sem estratégia, sem retorno claro.'),
+        txt('Concorrentes ou marcas de referência', 'Duas clínicas do centro e um consultório de Cuiabá.')
+      ],
+      [
+        chips('Serviços de interesse', multi('bSvc', ['Redes sociais', 'Vídeo', 'Identidade visual', 'Site', 'Tráfego pago', 'Hospedagem'])),
+        chips('Investimento previsto por mês', single('bBudget', ['Até R$ 1.500', 'R$ 1.500 – R$ 3.000', 'R$ 3.000 – R$ 6.000', 'Acima de R$ 6.000']), 'Serve para calibrar o escopo, não é compromisso.'),
+        chips('Quando pretende começar?', single('bPrazo', ['Imediato', 'Começar em 15 dias', 'Próximo mês', 'Ainda avaliando'])),
+        txt('Links de referência e observações', 'instagram.com/studiovitoria — gostamos do tom mais clean.')
+      ]
+    ][s.bStep];
+  }
+
+  renderVals() {
+    const s = this.state, F = n => this.fmt(n), T = this.totals();
+    const roots = ['dash', 'props', 'clients', 'more'];
+    const jumpDefs = [['Dashboard', 'dash'], ['Proposta Express', 'express'], ['Proposta gerada', 'done'], ['Wizard completo', 'wizard'], ['Propostas', 'props'], ['Detalhe + tracking', 'prop'], ['Clientes', 'clients'], ['Ficha do cliente', 'client'], ['Serviços', 'services'], ['Be Mind Cloud', 'cloud'], ['Relatórios', 'reports'], ['Notificações', 'notifs'], ['Configurações', 'settings'], ['Briefings', 'briefs'], ['Briefing respondido', 'brief']];
+
+    const st = k => ({
+      Rascunho: { sbg: '#EFEDE9', sfg: '#6B7078' }, Enviada: { sbg: '#E8F0FE', sfg: '#2A5DB0' },
+      Visualizada: { sbg: '#FFF3E0', sfg: '#A15C00' }, Aprovada: { sbg: '#E7F6EC', sfg: '#1E7A45' },
+      Recusada: { sbg: '#FDEAE8', sfg: '#B23A2E' }, Alteração: { sbg: '#F3EAFD', sfg: '#6B3FA0' }
+    })[k];
+
+    const props = [
+      { num: 'BEMIND-2026-0021', cli: 'Studio Vitória Odonto', proj: 'Gestão de Redes Sociais', val: 'R$ 2.150,00', st: 'Visualizada', when: 'Vista há 12 min · 7 visualizações' },
+      { num: 'BEMIND-2026-0020', cli: 'Padaria São José', proj: 'Identidade Visual + Papelaria', val: 'R$ 4.000,00', st: 'Aprovada', when: 'Aceita em 08/08/2026' },
+      { num: 'BEMIND-2026-0019', cli: 'Auto Center Ferreira', proj: 'Site Institucional + Be Mind Cloud', val: 'R$ 3.650,00', st: 'Alteração', when: 'Alteração solicitada há 2 dias' },
+      { num: 'BEMIND-2026-0018', cli: 'Móveis Bento', proj: 'Tráfego Pago + Conteúdo', val: 'R$ 1.900,00', st: 'Enviada', when: 'Enviada há 3 dias' },
+      { num: 'BEMIND-2026-0017', cli: 'Academia Pulse', proj: 'Fachada + Adesivação', val: 'R$ 3.300,00', st: 'Recusada', when: 'Recusada em 02/08/2026' }
+    ].map(p => ({ ...p, ...st(p.st), st: p.st.toUpperCase(), open: this.go('prop') }));
+
+    const clients = [
+      ['SV', 'Studio Vitória Odonto', 'Odontologia · Rondonópolis', 'R$ 32.400,00', '#FFF1EF', '#E85C51'],
+      ['PS', 'Padaria São José', 'Alimentação · 4 propostas', 'R$ 18.900,00', '#EEF3FB', '#2A5DB0'],
+      ['AF', 'Auto Center Ferreira', 'Automotivo · 2 propostas', 'R$ 9.700,00', '#F2F7EF', '#3B7A2E'],
+      ['MB', 'Móveis Bento', 'Varejo · 3 propostas', 'R$ 22.100,00', '#FBF3E6', '#A15C00'],
+      ['AP', 'Academia Pulse', 'Fitness · 1 proposta', 'R$ 0,00', '#F3F1F7', '#5B4E8C']
+    ].map(c => ({ i: c[0], n: c[1], s: c[2], v: c[3], avbg: c[4], avfg: c[5], open: this.go('client'), pick: () => this.setState({ wCli: c[1] }), on: s.wCli === c[1], bd: s.wCli === c[1] ? '#FB6D62' : '#EAE7E2' }));
+
+    return {
+      title: this.titleFor(s.view),
+      canBack: !roots.includes(s.view),
+      atRoot: roots.includes(s.view),
+      back: this.go(roots.includes(s.view) ? 'dash' : (s.view === 'prop' ? 'props' : s.view === 'client' ? 'clients' : s.view === 'brief' ? 'briefs' : ['services', 'cloud', 'reports', 'settings', 'briefs'].includes(s.view) ? 'more' : 'dash')),
+      goDash: this.go('dash'), goExpress: this.go('express'), goWizard: this.go('wizard'), goNotifs: this.go('notifs'),
+
+      jumps: jumpDefs.map(j => ({ n: j[0], go: this.go(j[1]), ...(s.view === j[1] ? { bd: '#FB6D62', bg: '#FFF1EF', fg: '#C74A40' } : { bd: '#E2DED8', bg: '#fff', fg: '#6B7078' }) })),
+
+      vDash: s.view === 'dash', vExpress: s.view === 'express', vDone: s.view === 'done', vWizard: s.view === 'wizard',
+      vProps: s.view === 'props', vProp: s.view === 'prop', vClients: s.view === 'clients', vClient: s.view === 'client',
+      vServices: s.view === 'services', vCloud: s.view === 'cloud', vReports: s.view === 'reports',
+      vNotifs: s.view === 'notifs', vMore: s.view === 'more', vSettings: s.view === 'settings',
+
+      tabs: [['Início', 'dash'], ['Propostas', 'props'], ['Clientes', 'clients'], ['Mais', 'more']].map(t => {
+        const on = s.view === t[1] || (t[1] === 'props' && s.view === 'prop') || (t[1] === 'clients' && s.view === 'client') || (t[1] === 'more' && ['services', 'cloud', 'reports', 'settings', 'briefs', 'brief'].includes(s.view));
+        return { n: t[0], go: this.go(t[1]), c: on ? '#E85C51' : '#A8ADB4', fill: on ? '#FB6D62' : 'transparent' };
+      }),
+
+      kpis: [['Criadas', '34', '#2B2E35'], ['Enviadas', '28', '#2B2E35'], ['Visualizadas', '21', '#A15C00'], ['Aprovadas', '12', '#1E7A45'], ['Pendentes', '7', '#2A5DB0'], ['Recusadas', '4', '#B23A2E']].map(k => ({ n: k[0], v: k[1], c: k[2] })),
+      approvedTotal: F(148700), ticket: F(12391.66),
+      chart: [['Criadas', 34, '#2B2E35'], ['Enviadas', 28, '#4E535A'], ['Visualizadas', 21, '#E8A33D'], ['Aprovadas', 12, '#1E7A45'], ['Recusadas', 4, '#B23A2E']].map(b => ({ n: b[0], v: b[1], w: Math.round(b[1] / 34 * 100) + '%', c: b[2] })),
+      activity: [
+        { t: 'Studio Vitória Odonto visualizou a proposta BEMIND-2026-0021.', s: 'há 12 minutos · iPhone', c: '#E8A33D' },
+        { t: 'Padaria São José aprovou a proposta BEMIND-2026-0020.', s: 'há 3 dias · R$ 4.000,00', c: '#1E7A45' },
+        { t: 'Auto Center Ferreira solicitou alteração: retirar tráfego pago.', s: 'há 2 dias', c: '#6B3FA0' }
+      ],
+
+      exClients: ['Studio Vitória Odonto', 'Padaria São José', 'Auto Center Ferreira', 'Novo cliente'].map(n => ({ n, pick: () => this.setState({ exCli: n }), ...this.chip(s.exCli === n) })),
+      exServices: ['Criação de Logo', 'Landing Page', 'Identidade Visual', 'Be Mind Cloud', 'Banner impresso'].map(n => ({ n, pick: () => this.setState({ exSvc: n, exVal: (Object.values(this.CATALOG).flat().find(x => x[0] === n) || [0, 800])[1] }), ...this.chip(s.exSvc === n) })),
+      exPresets: [500, 800, 1200, 1900].map(v => ({ n: F(v).replace('R$ ', '').replace(',00', ''), pick: () => this.setState({ exVal: v }) })),
+      exMinus: () => this.setState({ exVal: Math.max(50, s.exVal - 50) }),
+      exPlus: () => this.setState({ exVal: s.exVal + 50 }),
+      exValue: F(s.exVal), exClient: s.exCli, exService: s.exSvc, exValid: s.exValid, exNumber: 'BEMIND-2026-0034',
+      exValidity: ['7 dias', '15 dias', '30 dias', 'Custom'].map(n => ({ n, pick: () => this.setState({ exValid: n }), ...this.chip(s.exValid === n) })),
+      exConds: ['50% entrada + 50% na entrega', 'À vista com 5% off', 'PIX em 2x'].map(n => ({ n, pick: () => this.setState({ exCond: n }), ...this.chip(s.exCond === n) })),
+      exGenerate: this.go('done'),
+      shareActions: ['Enviar no WhatsApp', 'Enviar por e-mail', 'Baixar PDF', 'Copiar link'],
+
+      wSteps: ['Cliente', 'Escopo', 'Investimento', 'Condições'].map((n, i) => ({ n, c: i <= s.wStep ? '#FB6D62' : '#E4E0DA', fg: i === s.wStep ? '#2B2E35' : '#A8ADB4' })),
+      w0: s.wStep === 0, w1: s.wStep === 1, w2: s.wStep === 2, w3: s.wStep === 3,
+      wCanBack: s.wStep > 0,
+      wBack: () => this.setState({ wStep: Math.max(0, s.wStep - 1) }),
+      wNext: () => s.wStep < 3 ? this.setState({ wStep: s.wStep + 1 }) : this.setState({ view: 'prop' }),
+      wNextLabel: s.wStep < 3 ? 'Continuar' : 'Revisar e gerar proposta',
+      wClients: clients,
+
+      cats: this.CAT.map(n => ({ n, pick: () => this.setState({ cat: n }), ...this.chip(s.cat === n) })),
+      catServices: (this.CATALOG[s.cat] || []).map(x => ({ n: x[0], price: F(x[1]), per: x[2] === 'mês' ? 'mensal' : x[2], add: () => this.setState({ items: [...s.items, { id: x[0] + Math.random(), n: x[0], p: x[1], q: 1, per: x[2] }] }) })),
+      itemCount: s.items.length + (s.items.length === 1 ? ' item' : ' itens'),
+      items: s.items.map((it, i) => ({
+        n: it.n, q: it.q, total: F(it.p * it.q),
+        inc: () => this.setState({ items: s.items.map((o, j) => j === i ? { ...o, q: o.q + 1 } : o) }),
+        dec: () => this.setState({ items: s.items.map((o, j) => j === i ? { ...o, q: Math.max(1, o.q - 1) } : o) }),
+        more: () => this.setState({ items: s.items.map((o, j) => j === i ? { ...o, p: o.p + 50 } : o) }),
+        less: () => this.setState({ items: s.items.map((o, j) => j === i ? { ...o, p: Math.max(50, o.p - 50) } : o) }),
+        remove: () => this.setState({ items: s.items.filter((o, j) => j !== i) })
+      })),
+      monthly: F(T.m), once: F(T.o), monthlyNet: F(T.mNet), onceNet: F(T.oNet), annual: F(T.mNet * 12),
+      discOpts: [0, 5, 10, 15].map(d => ({ n: d === 0 ? 'Sem' : d + '%', pick: () => this.setState({ disc: d }), ...this.chip(s.disc === d) })),
+      invRows: [
+        { n: 'Mensal recorrente', v: F(T.m), fg: '#4E535A' },
+        { n: 'Investimento único', v: F(T.o), fg: '#4E535A' },
+        { n: 'Desconto (' + s.disc + '%)', v: '− ' + F(T.dv), fg: '#B23A2E' },
+        { n: 'Total no primeiro mês', v: F(T.mNet + T.oNet), fg: '#2B2E35' }
+      ],
+      payOpts: ['Mensal via PIX', 'Boleto mensal', 'Cartão recorrente', '50/50'].map(n => ({ n, pick: () => this.setState({ pay: n }), ...this.chip(s.pay === n) })),
+
+      statusFilters: ['Todas', 'Rascunho', 'Enviada', 'Visualizada', 'Aprovada', 'Recusada'].map(n => ({ n, pick: () => this.setState({ filter: n }), ...this.chip(s.filter === n) })),
+      proposals: s.filter === 'Todas' ? props : props.filter(p => p.st === s.filter.toUpperCase()),
+
+      tracking: [
+        { n: 'Proposta criada', s: '05/08/2026 · 14:22', c: '#C7C3BC' },
+        { n: 'Enviada por WhatsApp', s: '05/08/2026 · 14:31', c: '#C7C3BC' },
+        { n: 'Primeira visualização', s: '05/08/2026 · 19:04 · iPhone', c: '#E8A33D' },
+        { n: 'Última visualização', s: 'há 12 minutos · iPhone', c: '#E8A33D' },
+        { n: 'Aguardando aceite', s: 'válida até 26/08/2026', c: '#EFECE7' }
+      ],
+      propActions: ['Enviar no WhatsApp', 'Enviar por e-mail', 'Baixar PDF', 'Copiar link', 'Duplicar', 'Arquivar'],
+
+      clientList: clients,
+      clientFields: [
+        { k: 'Responsável', v: 'Vitória Camargo' }, { k: 'E-mail', v: 'contato@studiovitoria.com.br' },
+        { k: 'WhatsApp', v: '(66) 99912-4408' }, { k: 'Cidade', v: 'Rondonópolis / MT' },
+        { k: 'Cliente desde', v: 'Março de 2024' }
+      ],
+      clientStats: [{ n: 'Propostas', v: '5', c: '#2B2E35' }, { n: 'Aprovadas', v: '3', c: '#1E7A45' }, { n: 'Recusadas', v: '1', c: '#B23A2E' }],
+      clientProps: props.slice(0, 3),
+
+      plans: [
+        { n: 'Plano Básico', price: F(150), annual: F(1620), bd: '#FB6D62', specs: ['10 GB SSD', '1 site', '10 e-mails', 'SSL grátis', 'Backup semanal'] },
+        { n: 'Plano Profissional', price: F(280), annual: F(3024), bd: '#EAE7E2', specs: ['30 GB SSD', '3 sites', '50 e-mails', 'SSL grátis', 'Backup diário'] },
+        { n: 'Plano Empresarial', price: F(480), annual: F(5184), bd: '#EAE7E2', specs: ['80 GB SSD', '10 sites', 'Ilimitado', 'Migração grátis', 'Suporte prioritário'] },
+        { n: 'Plano personalizado', price: 'sob medida', annual: 'a definir', bd: '#EAE7E2', specs: ['Recursos livres', 'Preço manual'] }
+      ],
+
+      reportCards: [{ n: 'Valor enviado', v: F(261400) }, { n: 'Valor aprovado', v: F(148700) }, { n: 'Valor perdido', v: F(41200) }, { n: 'Ticket médio', v: F(12391) }],
+      topServices: [['Gestão de Instagram', '14 vendas', '100%'], ['Identidade Visual', '9 vendas', '64%'], ['Be Mind Cloud', '8 vendas', '57%'], ['Landing Page', '5 vendas', '36%']].map(t => ({ n: t[0], v: t[1], w: t[2] })),
+
+      notifs: [
+        { i: '👁', t: 'Studio Vitória Odonto visualizou a proposta BEMIND-2026-0021.', s: 'há 12 minutos', bg: '#FFFBF4', bd: '#F6E3C4', c: '#A15C00' },
+        { i: '✓', t: 'Proposta BEMIND-2026-0020 aprovada por Padaria São José.', s: 'há 3 dias · R$ 4.000,00', bg: '#F4FBF6', bd: '#CFEBD8', c: '#1E7A45' },
+        { i: '↺', t: 'Auto Center Ferreira solicitou alteração na BEMIND-2026-0019.', s: 'há 2 dias', bg: '#FAF7FE', bd: '#E4D9F7', c: '#6B3FA0' },
+        { i: '→', t: 'BEMIND-2026-0018 enviada para Móveis Bento.', s: 'há 3 dias', bg: '#fff', bd: '#EAE7E2', c: '#2A5DB0' },
+        { i: '!', t: 'BEMIND-2026-0016 expira amanhã.', s: 'válida até 12/08/2026', bg: '#fff', bd: '#EAE7E2', c: '#B23A2E' }
+      ],
+
+      menu: [
+        { n: 'Briefings', s: '2 respondidos · 1 aguardando', go: this.go('briefs') },
+        { n: 'Serviços', s: 'Biblioteca e preços padrão', go: this.go('services') },
+        { n: 'Be Mind Cloud', s: 'Planos de hospedagem', go: this.go('cloud') },
+        { n: 'Modelos de proposta', s: '7 templates salvos', go: this.go('wizard') },
+        { n: 'Relatórios', s: 'Aprovação, ticket médio, ranking', go: this.go('reports') },
+        { n: 'Notificações', s: '3 não lidas', go: this.go('notifs') },
+        { n: 'Configurações', s: 'Empresa, PIX, equipe, tema', go: this.go('settings') }
+      ],
+      companyFields: [
+        { k: 'CNPJ', v: '48.310.774/0001-05' }, { k: 'WhatsApp', v: '(66) 99600-1122' },
+        { k: 'E-mail', v: 'contato@bemindmarketing.com.br' }, { k: 'Site', v: 'bemindmarketing.com.br' },
+        { k: 'Prefixo das propostas', v: 'BEMIND-2026-' }
+      ],
+      pixFields: [{ k: 'Tipo de chave', v: 'CNPJ' }, { k: 'Chave', v: '48.310.774/0001-05' }, { k: 'Favorecido', v: 'Be Mind Marketing ME' }, { k: 'Banco', v: 'Sicredi' }],
+      toggles: [{ n: 'Mostrar PIX nas propostas', bg: '#FB6D62', j: 'flex-end' }, { n: 'Salvamento automático', bg: '#FB6D62', j: 'flex-end' }, { n: 'Modo escuro', bg: '#E4E0DA', j: 'flex-start' }],
+      team: [{ i: 'MC', n: 'Maurílio Camargo', r: 'Administrador' }, { i: 'JL', n: 'Juliana Lima', r: 'Comercial' }, { i: 'RT', n: 'Rafael Teixeira', r: 'Editor' }],
+
+      pubScope: [
+        { n: 'Banner do site', v: F(400), d: 'Atualização mensal do banner principal com material próprio.', items: ['Banner Site: 1 vídeo + 2 fotos por mês (edição)'] },
+        { n: 'Abertura do Instagram', v: F(1250), d: 'Pacote de lançamento do perfil, com acervo suficiente para o primeiro mês inteiro.', items: ['Para abertura do Instagram: 12 vídeos pequenos dia a dia (edição) + 30 fotos (mostrando o modelo)'] },
+        { n: 'Operação mensal', v: F(500), d: 'Produção e publicação contínua a partir do segundo mês.', items: ['Para mês corrente: 12 vídeos (pequenos) dia a dia + 12 fotos (mostrando o modelo)'] }
+      ],
+      pubInvest: [
+        { n: 'Subtotal mensal', v: F(2150), c: 'rgba(255,255,255,.85)' },
+        { n: 'Desconto', v: '—', c: 'rgba(255,255,255,.85)' },
+        { n: 'Anual (12 meses)', v: F(25800), c: 'rgba(255,255,255,.85)' },
+        { n: 'Investimento único', v: '—', c: '#FB6D62' }
+      ],
+      pubSchedule: [
+        { i: '1', n: 'Planejamento', s: 'Semana 1 · briefing, linha editorial e cronograma de gravação' },
+        { i: '2', n: 'Criação', s: 'Semanas 2 e 3 · gravação, edição e primeiros posts' },
+        { i: '3', n: 'Aprovação', s: 'Semana 3 · revisão do cliente em até 2 rodadas' },
+        { i: '4', n: 'Publicação contínua', s: 'A partir da semana 4 · calendário diário ativo' }
+      ],
+      pubDiff: [
+        { v: '12 anos', n: 'de marcas construídas em Rondonópolis' },
+        { v: '48h', n: 'de prazo médio para ajustes de material' },
+        { v: '1 time', n: 'design, tráfego, web e vídeo na mesma casa' },
+        { v: 'Cloud', n: 'hospedagem própria com suporte direto' }
+      ],
+      pubTerms: [
+        { k: 'Forma de pagamento', v: 'Mensal via PIX, dia 10' },
+        { k: 'Prazo do contrato', v: '12 meses' },
+        { k: 'Validade da proposta', v: '26/08/2026' },
+        { k: 'Reajuste', v: 'IPCA anual' },
+        { k: 'Cancelamento', v: 'Aviso prévio de 30 dias' }
+      ],
+
+      aceiteOpen: s.aceite === 1, aceiteDone: s.aceite === 2,
+      openAceite: () => this.setState({ aceite: 1 }),
+      closeAceite: () => this.setState({ aceite: 0, terms: false }),
+      resetAceite: () => this.setState({ aceite: 0, terms: false }),
+      toggleTerms: () => this.setState({ terms: !s.terms }),
+      confirmAceite: () => s.terms && this.setState({ aceite: 2 }),
+      terms: s.terms,
+      termsBd: s.terms ? '#FB6D62' : '#D8D4CE', termsBg: s.terms ? '#FB6D62' : '#fff',
+      confirmBg: s.terms ? '#FB6D62' : '#DFDBD5',
+      aceiteFields: [{ k: 'NOME COMPLETO', v: 'Vitória Camargo' }, { k: 'E-MAIL', v: 'contato@studiovitoria.com.br' }, { k: 'CPF / CNPJ', v: '41.882.507/0001-19' }],
+      aceiteRecord: [{ k: 'Proposta', v: 'BEMIND-2026-0021' }, { k: 'Nome', v: 'Vitória Camargo' }, { k: 'E-mail', v: 'contato@studiovitoria.com.br' }, { k: 'Data e hora', v: '11/08/2026 · 15:47' }, { k: 'IP', v: '177.92.184.63' }],
+
+      vBriefs: s.view === 'briefs', vBrief: s.view === 'brief',
+      briefFilters: ['Todos', 'Aguardando', 'Respondido', 'Rascunho'].map(n => ({ n, pick: () => this.setState({ bFilter: n }), ...this.chip(s.bFilter === n) })),
+      briefs: [
+        { num: 'BRIEF-2026-0014', cli: 'Studio Vitória Odonto', kind: 'Marketing Digital', st: 'Respondido', when: 'Respondido em 04/08', answers: '12/12', w: '100%', pc: '#1E7A45', sbg: '#E7F6EC', sfg: '#1E7A45' },
+        { num: 'BRIEF-2026-0013', cli: 'Móveis Bento', kind: 'Identidade Visual + Site', st: 'Aguardando', when: 'Enviado há 2 dias · visto 1 vez', answers: '5/12', w: '42%', pc: '#E8A33D', sbg: '#FFF3E0', sfg: '#A15C00' },
+        { num: 'BRIEF-2026-0012', cli: 'Academia Pulse', kind: 'Comunicação Visual', st: 'Respondido', when: 'Respondido em 28/07', answers: '12/12', w: '100%', pc: '#1E7A45', sbg: '#E7F6EC', sfg: '#1E7A45' },
+        { num: 'BRIEF-2026-0011', cli: 'Novo cliente sem nome', kind: 'Briefing genérico', st: 'Rascunho', when: 'Criado há 5 dias', answers: '0/12', w: '0%', pc: '#C7C3BC', sbg: '#EFEDE9', sfg: '#6B7078' }
+      ].map(b => ({ ...b, open: this.go('brief'), st: b.st.toUpperCase() })).filter(b => s.bFilter === 'Todos' || b.st === s.bFilter.toUpperCase()),
+      briefAnswers: [
+        { sec: 'EMPRESA', qa: [{ q: 'Nome da empresa e responsável', a: 'Studio Vitória Odonto · Vitória Camargo' }, { q: 'Segmento', a: 'Saúde e estética' }, { q: 'Tempo de mercado', a: '3 a 10 anos' }, { q: 'O que a empresa faz', a: 'Clínica odontológica com foco em estética e implantes, atendimento particular.' }] },
+        { sec: 'PÚBLICO', qa: [{ q: 'Cliente ideal', a: 'Mulheres de 30 a 45 anos, classe B, que buscam harmonização e clareamento.' }, { q: 'Faixa de idade principal', a: '25 a 44 anos' }, { q: 'Onde já estão presentes', a: 'Instagram e WhatsApp' }] },
+        { sec: 'OBJETIVOS', qa: [{ q: 'O que quer alcançar', a: 'Vender mais e ganhar seguidores' }, { q: 'O que já tentaram', a: 'Impulsionamento de posts sem estratégia, sem retorno claro.' }, { q: 'Concorrentes de referência', a: 'Duas clínicas do centro e um consultório de Cuiabá.' }] },
+        { sec: 'PROJETO', qa: [{ q: 'Serviços de interesse', a: 'Redes sociais, vídeo e tráfego pago' }, { q: 'Investimento previsto', a: 'R$ 1.500 a R$ 3.000 por mês' }, { q: 'Quando pretende começar', a: 'Em até 15 dias' }] }
+      ],
+      briefSuggest: [
+        { n: 'Gestão de Instagram', v: F(800) }, { n: 'Criação de conteúdo', v: F(500) },
+        { n: 'Tráfego Pago', v: F(700) }, { n: 'Total sugerido / mês', v: F(2000) }
+      ],
+      briefActions: ['Enviar no WhatsApp', 'Baixar PDF do briefing', 'Pedir complemento', 'Arquivar'],
+      briefToProposal: () => this.setState({ view: 'wizard', wStep: 1, wCli: 'Studio Vitória Odonto', items: [{ id: 'b1', n: 'Gestão de Instagram', p: 800, q: 1, per: 'mês' }, { id: 'b2', n: 'Criação de conteúdo', p: 500, q: 1, per: 'mês' }, { id: 'b3', n: 'Tráfego Pago', p: 700, q: 1, per: 'mês' }] }),
+      goPubBrief: () => this.setState({ pubTab: 'briefing', bStep: 0, bDone: false }),
+
+      pubScroll: s.pubTab === 'briefing' ? 'hidden' : 'auto',
+      pubUrl: s.pubTab === 'briefing' ? 'bemindmarketing.com.br/b/2c7de41f' : 'bemindmarketing.com.br/p/8f3c1a9d',
+      pubTabs: [['Proposta', 'proposta'], ['Briefing', 'briefing']].map(t => ({ n: t[0], pick: () => this.setState({ pubTab: t[1] }), ...this.chip(s.pubTab === t[1]) })),
+      vPubBrief: s.pubTab === 'briefing' && !s.bDone,
+      bDone: s.pubTab === 'briefing' && s.bDone,
+      bSteps: this.BRIEF_STEPS.map((n, i) => ({ n, c: i <= s.bStep ? '#FB6D62' : '#E4E0DA', fg: i === s.bStep ? '#2B2E35' : '#A8ADB4' })),
+      bCanBack: s.bStep > 0,
+      bBack: () => this.setState({ bStep: Math.max(0, s.bStep - 1) }),
+      bNext: () => s.bStep < 3 ? this.setState({ bStep: s.bStep + 1 }) : this.setState({ bDone: true }),
+      bNextLabel: s.bStep < 3 ? 'Continuar' : 'Enviar briefing',
+      bProgress: 'Passo ' + (s.bStep + 1) + ' de 4 · respostas salvas automaticamente',
+      bReset: () => this.setState({ bDone: false, bStep: 0 }),
+      bFields: this.briefFields(s),
+
+      notes: [
+        'Express: trocar cliente, serviço, valor (± R$ 50 ou preset), validade e condições — o resumo escuro recalcula na hora.',
+        'Wizard: os 4 passos avançam de verdade; no escopo você adiciona serviços da biblioteca, muda quantidade e preço, e o desconto refaz mensal, anual e único.',
+        'Propostas: os filtros de status filtram a lista; qualquer card abre o detalhe com rastreamento.',
+        'Briefing: a lista filtra por status; o briefing respondido mostra as 12 respostas e o botão leva direto ao escopo já preenchido no wizard.',
+        'Chips no topo saltam para qualquer uma das 15 telas internas.',
+        'Lado do cliente: alterne entre Proposta e Briefing nos chips acima do Android — o briefing tem 4 passos, chips de escolha única e múltipla, e tela de recebimento.',
+        'Proposta pública: role até o fim, aceite abre a folha, o botão só libera com o termo marcado, e o aceite gera o registro com IP e horário.'
+      ],
+      next: [
+        'Modo escuro (está desligado nas configurações).',
+        'Tela de solicitação de alteração e de proposta expirada.',
+        'Layout tablet e o editor visual de seções em tela grande.'
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
