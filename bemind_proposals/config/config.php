@@ -35,6 +35,17 @@ if (!headers_sent()) {
     header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('Permissions-Policy: interest-cohort=()');
+    // CSP moderada: fontes Google, scripts próprios (inline permitido para
+    // pequenos handlers das views); pode ser endurecida ao remover onclick=.
+    header("Content-Security-Policy: default-src 'self'; "
+        . "img-src 'self' data: https:; "
+        . "font-src 'self' https://fonts.gstatic.com; "
+        . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        . "script-src 'self' 'unsafe-inline'; "
+        . "connect-src 'self'; "
+        . "frame-ancestors 'self'; "
+        . "base-uri 'self'; "
+        . "form-action 'self'");
     if (($_SERVER['HTTPS'] ?? 'off') === 'on') {
         header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
     }

@@ -1,10 +1,14 @@
 # BE MIND PROPOSALS
 
-Sistema interno da Be Mind Marketing para criar, enviar, rastrear e fechar propostas comerciais.
-Stack: **PHP 8.2 + MySQL 8**, deploy por FTP em Apache/Nginx, sem Node em produção.
+Sistema interno da Be Mind Marketing para criar, enviar, rastrear e fechar propostas
+comerciais. **PHP 8.2 + MySQL 8**, deploy por FTP em Apache/Nginx. Sem Node em produção.
 
-Este repositório está no passo 1 da ordem de implementação (`BACKEND.md`):
-esqueleto do servidor + instalador web + `schema.sql`/`seeds.sql`.
+Este pacote implementa **todos os passos** da ordem de `BACKEND.md`:
+esqueleto, banco, instalador, CRUD de clientes/serviços/cloud, Proposta Express,
+proposta pública com aceite digital + rastreamento + PDF, wizard completo,
+briefings (público 4 passos + geração de proposta), envio por WhatsApp/e-mail,
+duplicar/arquivar/renovar, relatórios, notificações, configurações, exportações
+CSV, ACL por papel, rate limit, CSP, backup e modo escuro.
 
 ## Estrutura
 
@@ -12,85 +16,140 @@ esqueleto do servidor + instalador web + `schema.sql`/`seeds.sql`.
 bemind_proposals/
 ├── public/                    docroot
 │   ├── index.php              front controller
-│   ├── .htaccess              rewrite + segurança
-│   ├── assets/css/app.css     tokens do design (coral, ink, jakarta, manrope)
-│   ├── install/index.php      instalador wizard (APAGAR após uso)
+│   ├── .htaccess              rewrite + cache + segurança
+│   ├── favicon.svg
+│   ├── assets/{css,js,fonts,images}
+│   ├── install/index.php      wizard 6 passos (APAGAR após uso)
 │   └── uploads/               logo e anexos (PHP bloqueado)
 ├── app/
-│   ├── Core/                  Router, Db, Session, Csrf, Env, Config, View, Money
-│   ├── Controllers/           Auth, Dashboard, Public (placeholders)
-│   ├── Models/                (passos 2+)
-│   ├── Services/              (passos 3+)
-│   └── Views/
-│       ├── layout/            app.php (autenticado), auth.php (login)
-│       ├── auth/login.php
-│       └── dashboard/index.php
-├── config/                    config.php, routes.php
+│   ├── Core/                  Autoloader, Router, Db, Session, Csrf, Env, Config,
+│   │                          Request, Response, View, Money, Sanitize, Url,
+│   │                          RateLimit, Acl
+│   ├── Controllers/           Auth · Dashboard · Clients · Services · Cloud
+│   │                          · Proposals · ProposalItems · Briefings · Public
+│   │                          · Reports · Notifications · Settings · More · Export
+│   ├── Models/                Client, Service, CloudPlan, Proposal, Briefing,
+│   │                          Notification, CompanySettings, User, ActivityLog
+│   ├── Services/              Numbering · Totals · Tracking · Mailer · Whatsapp
+│   │                          · Pdf · Csv
+│   └── Views/                 layout/{auth,app,public} + telas por controller
+├── config/                    config.php (env + segurança), routes.php
 ├── database/                  schema.sql, seeds.sql, migrations/
-├── storage/                   logs/, pdf/, backups/, installed.lock (após instalar)
+├── storage/                   logs/, pdf/, backups/, ratelimit/, installed.lock
+├── scripts/backup.sh          dump MySQL + tar de uploads (cron)
 ├── .env.example
 └── .gitignore
 ```
 
-## Instalação local (rápida)
-
-Requisitos: PHP ≥ 8.1 com `pdo_mysql`, `mbstring`, `gd`, `openssl`; MySQL 8 ou MariaDB 10.6+.
+## Como rodar localmente
 
 ```bash
 cd bemind_proposals
 php -S localhost:8080 -t public public/index.php
-# abra http://localhost:8080/install/
+# 1) http://localhost:8080/install/  — wizard
+# 2) http://localhost:8080/login    — entrar como o admin criado
 ```
 
-Passos do instalador:
+## Publicação por FTP
 
-1. **Requisitos** — versão e permissões.
-2. **Banco** — dados de conexão + URL do site → grava `.env`, cria database, roda `schema.sql` + `seeds.sql`.
-3. **Administrador** — nome, e-mail, senha (mínimo 8 caracteres).
-4. **Empresa** — razão social, CNPJ, WhatsApp, prefixo (`BEMIND-`), PIX e upload do logo.
-5. **Confirmação** — grava `storage/installed.lock`.
-6. **Concluído** — apague `/public/install` por FTP e siga para `/login`.
+1. Docroot do domínio → `bemind_proposals/public`.
+2. Se o docroot for a raiz do projeto (limitação da hospedagem), o `.htaccess`
+   da raiz reencaminha tudo para `/public`.
+3. Enviar `app/`, `config/`, `database/`, `storage/` **fora do docroot** ou
+   protegidos pelo `.htaccess` da raiz.
+4. Acesse `/install/`, conclua os 5 passos e **apague `/public/install`**.
+5. Cron sugerido para backup:
+   `0 3 * * * /caminho/absoluto/bemind_proposals/scripts/backup.sh`
 
-## Publicação por FTP (produção)
+## Rotas (resumo)
 
-1. Apontar o docroot do domínio para `bemind_proposals/public`.
-2. Se o docroot for a **raiz do projeto** (limitação da hospedagem), o `.htaccess` da raiz reencaminha tudo para `/public`.
-3. Enviar `/app`, `/config`, `/database`, `/storage` **fora do docroot** ou proteger com o `.htaccess` da raiz.
-4. Acessar `/install/`, concluir os 5 passos, **apagar `/public/install`**.
-5. Conferir: HTTPS ativo, `.env` inacessível, `/storage` sem listagem, upload de logo funcionando.
+**Autenticadas**
+- `/dashboard` KPIs, valor aprovado, desempenho, atividade
+- `/proposals` lista com filtros de status · `/proposals/{id}` detalhe/rastreamento
+- `/proposals/express` fluxo em 4 cards · `/proposals/new` wizard completo
+- `/proposals/{id}/wizard?step=0..3` navegação · `/proposals/{id}/pdf` PDF/preview
+- Ações: `POST /proposals/{id}/{send,duplicate,archive,renew}`
+- Itens (JSON): `/api/proposals/{id}/items[/{itemId}]` · `/api/proposals/{id}/autosave`
+- Clientes: `/clients`, `/clients/{id}`, `/clients/new`, `/clients/{id}/edit`
+- Serviços: `/services`, `/services/new`, `/services/{id}/edit`
+- Cloud: `/cloud`, `/cloud/{id}/edit`
+- Briefings: `/briefings`, `/briefings/new`, `/briefings/{id}`, `/briefings/{id}/to-proposal`
+- Relatórios: `/reports` · Notificações: `/notifications`
+- Config: `/settings` · Mais: `/more`
+- Exportações: `/export/{clients|proposals|services}.csv`
 
-## Rotas já existentes
+**Públicas (sem login, com token)**
+- `GET /p/{token}` — proposta online (registra `proposal_views`, muda `enviada → visualizada`)
+- `POST /p/{token}/accept` — aceite digital (nome, e-mail, CPF/CNPJ, IP, UA)
+- `POST /p/{token}/request-change` — solicitação de alteração
+- `POST /p/{token}/decline` — recusa (com motivo opcional)
+- `GET /b/{token}` — briefing (4 passos, autosave)
+- `POST /b/{token}/save|submit`
 
-Autenticadas:
-- `GET /` — redireciona para `/dashboard` ou `/login`.
-- `GET /dashboard` — placeholder com tokens do design aplicados.
-- `POST /logout`.
+## Segurança embutida
 
-Autenticação:
-- `GET /login`, `POST /login` (com CSRF).
+- Sessão `HttpOnly`, `Secure`, `SameSite=Lax`, regeneração de id no login.
+- `password_hash` (bcrypt/argon) + `password_needs_rehash`.
+- **CSRF** em todo `POST/PUT/PATCH/DELETE` (também no `/install`, no aceite, no briefing).
+- **PDO** com `ATTR_EMULATE_PREPARES = false` e prepared statements.
+- Tokens públicos: `bin2hex(random_bytes(16))`, únicos, revogáveis; `proposals.id`
+  nunca é exposto.
+- **Rate limit** por IP em login, aceite, alteração, recusa, briefing.
+- Sanitização de HTML (HTMLPurifier se presente; senão allowlist).
+- Cabeçalhos: HSTS (em HTTPS), CSP moderada, X-Content-Type-Options,
+  X-Frame-Options: SAMEORIGIN, Referrer-Policy.
+- Uploads: mime/ext validados, renome com `random_bytes`, `.htaccess` no
+  `/uploads` bloqueia execução de PHP.
+- ACL por papel: `admin` · `comercial` · `editor` · `viewer` (via `Acl::require()`).
+- `.env` fora do docroot; instalador auto-bloqueia após `storage/installed.lock`.
+- Backup diário via `scripts/backup.sh` (retém 30 dias por padrão).
 
-Placeholders (retornam 501 no passo 1, ganham corpo nos passos 4 e 6):
-- `GET /p/{token}`, `POST /p/{token}/accept|request-change|decline`
-- `GET /b/{token}`, `POST /b/{token}/save|submit`
+## Regras de negócio
 
-## Segurança já garantida
+- **Totais** sempre recalculados no servidor a cada gravação
+  (`Totals::recompute($id)`), nunca confiando no cliente.
+- **Numeração** `BEMIND-{ano}-{4-dig}` (propostas) e `BRIEF-{ano}-{4-dig}`
+  (briefings) com `SELECT ... FOR UPDATE` para evitar colisão.
+- **Cloud**: `min_price` R$ 150,00 é piso configurado; qualquer valor manual é
+  permitido, com aviso.
+- **Aceite**: exige checkbox marcado; grava nome/e-mail/CPF-CNPJ/IP/UA; muda
+  status para `aprovada`; notifica empresa e cliente.
+- **Autosave**: PATCH com debounce ~800ms; devolve `saved_at` para a UI.
+- **Moeda**: sempre `R$ 1.500,00` (`pt-BR`, 2 casas). Nunca `1500.00`.
+- **Filtros**: status de proposta e briefing filtram lista e têm equivalente na API.
+- **Duplicar**: novo número + token; mesmo escopo, itens, cronograma e textos.
+- **Expiração**: `valid_until` no passado exibe "Esta proposta expirou."
+  e bloqueia aceite; admin pode renovar.
 
-- Sessão com cookie `HttpOnly`, `SameSite=Lax`, `Secure` (config), regeneração no login.
-- `password_hash()` / `password_verify()` (bcrypt padrão do PHP) + `password_needs_rehash`.
-- CSRF em todo POST autenticado.
-- PDO com `ATTR_EMULATE_PREPARES = false` e prepared statements.
-- Cabeçalhos: HSTS, `X-Content-Type-Options`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy`.
-- `.env` fora do docroot; `/uploads` bloqueia execução de `.php`.
-- Após instalação, `storage/installed.lock` bloqueia o `/install`.
+## Design tokens
 
-## Próximos passos (roadmap `BACKEND.md`)
+Refletidos em `public/assets/css/app.css`: coral `#FB6D62`, ink `#2B2E35`,
+gradientes CTA e cloud, badges de status com fundo + texto conforme README de
+handoff. Fontes Plus Jakarta Sans + Manrope via Google Fonts (mova para
+`/public/assets/fonts` em produção para não depender de CDN).
+
+## Papéis (ACL)
+
+- `admin` — tudo.
+- `comercial` — clientes/propostas/briefings/notificações + leitura de serviços/cloud/settings/reports.
+- `editor` — serviços/cloud + leitura das demais telas.
+- `viewer` — só leitura.
+
+## PDF
+
+- Se **Dompdf** estiver instalado via Composer em `/vendor`, `/proposals/{id}/pdf`
+  entrega PDF real.
+- Sem Dompdf, o mesmo endpoint devolve o HTML da proposta com CSS `@media print`
+  para "Salvar como PDF" no navegador (funciona bem no mobile).
+
+## Roadmap concluído
 
 - [x] 1. Esqueleto + `/install` + schema/seeds.
-- [ ] 2. Clientes e biblioteca de serviços (CRUD).
-- [ ] 3. Proposta Express + numeração + autosave + link com token.
-- [ ] 4. Proposta pública + tracking + aceite digital + PDF.
-- [ ] 5. Wizard completo (seções, itens, desconto, cronograma, condições).
-- [ ] 6. Briefings (público 4 passos + respostas + "gerar proposta a partir do briefing").
-- [ ] 7. Envio por WhatsApp/e-mail, duplicar, arquivar, templates.
-- [ ] 8. Be Mind Cloud, relatórios, notificações, configurações/PIX, exportações CSV.
-- [ ] 9. Modo escuro, papéis/permissões, backup, revisão de segurança e responsividade.
+- [x] 2. Clientes e biblioteca de serviços (CRUD + JSON APIs).
+- [x] 3. Proposta Express + numeração + autosave + link com token.
+- [x] 4. Proposta pública + tracking + aceite digital + PDF.
+- [x] 5. Wizard completo (seções, itens, desconto, cronograma, condições).
+- [x] 6. Briefings (público 4 passos + respostas + "gerar proposta").
+- [x] 7. Envio WhatsApp/e-mail, duplicar, arquivar, renovar validade.
+- [x] 8. Cloud, Relatórios, Notificações, Configurações/PIX, exportações CSV.
+- [x] 9. Modo escuro, papéis/permissões, backup diário, revisão de segurança.

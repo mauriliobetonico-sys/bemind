@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Db;
+use App\Core\RateLimit;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
@@ -22,6 +23,7 @@ final class AuthController extends Controller
     public function login(Request $req): void
     {
         $this->assertCsrf($req);
+        RateLimit::hit('login', 10, 60);
 
         $email = strtolower(trim((string)($req->post['email'] ?? '')));
         $pass  = (string)($req->post['password'] ?? '');

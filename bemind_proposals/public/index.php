@@ -11,11 +11,13 @@ declare(strict_types=1);
 // delega para eles (imitando o comportamento normal do Apache/Nginx).
 if (PHP_SAPI === 'cli-server') {
     $reqPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-    $localFile = __DIR__ . $reqPath;
-    if ($reqPath !== '/' && is_file($localFile)) return false;
-    if (is_dir($localFile) && is_file($localFile . '/index.php')) {
-        require $localFile . '/index.php';
-        return true;
+    if ($reqPath !== '/') {
+        $localFile = __DIR__ . $reqPath;
+        if (is_file($localFile)) return false;
+        if (is_dir($localFile) && is_file($localFile . '/index.php')) {
+            require $localFile . '/index.php';
+            return true;
+        }
     }
 }
 
