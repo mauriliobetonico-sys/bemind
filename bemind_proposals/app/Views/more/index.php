@@ -5,10 +5,11 @@ $items = [
   ['/briefings',     'Briefings',        'Antes da proposta'],
   ['/services',      'Serviços',         'Biblioteca com preços padrão'],
   ['/cloud',         'Be Mind Cloud',    'Planos de hospedagem'],
-  ['/proposals',     'Modelos e propostas','Duplicar e reaproveitar'],
+  ['/templates',     'Modelos de proposta','Salvar e reutilizar'],
   ['/reports',       'Relatórios',       'Taxa de aprovação, ticket'],
   ['/notifications', 'Notificações',     'Aceites e visualizações'],
-  ['/settings',      'Configurações',    'Empresa, PIX, equipe'],
+  ['/users',         'Equipe',           'Usuários e papéis'],
+  ['/settings',      'Configurações',    'Empresa, PIX, preferências'],
   ['/export/proposals.csv','Exportar CSV','Propostas do mês'],
 ];
 ?>

@@ -84,6 +84,44 @@ $viewsN  = (int)$p['views_count'];
   </form>
 </div>
 
-<div class="row mt-6" style="justify-content:center">
+<div class="row mt-6" style="justify-content:center;gap:14px">
   <a class="link" href="/proposals/<?= (int)$p['id'] ?>/wizard?step=1">Editar escopo</a>
+  <a class="link" href="/proposals/<?= (int)$p['id'] ?>/schedule">Cronograma</a>
+  <button class="link" type="button" data-open-sheet="sheet-tpl" style="background:none;border:0;cursor:pointer">Salvar como modelo</button>
+  <button class="link" type="button" data-open-sheet="sheet-renew" style="background:none;border:0;cursor:pointer">Renovar validade</button>
+</div>
+
+<!-- Sheet: salvar como modelo -->
+<div id="backdrop-sheet-tpl" class="sheet-backdrop hidden" data-close-sheet="sheet-tpl"></div>
+<div id="sheet-tpl" class="sheet hidden">
+  <div class="handle"></div>
+  <h3>Salvar esta proposta como modelo</h3>
+  <p class="small muted">Cria um modelo reutilizável com itens, cronograma e condições.</p>
+  <form method="post" action="/templates/from/<?= (int)$p['id'] ?>" class="stack mt-4">
+    <?= App\Core\Csrf::field() ?>
+    <input class="input" name="name" placeholder="Nome do modelo" value="<?= App\Core\View::e($p['title']) ?>" required>
+    <button class="btn btn-primary btn-block" type="submit">Salvar modelo</button>
+    <button class="btn btn-secondary btn-block" type="button" data-close-sheet="sheet-tpl">Cancelar</button>
+  </form>
+</div>
+
+<!-- Sheet: renovar validade -->
+<div id="backdrop-sheet-renew" class="sheet-backdrop hidden" data-close-sheet="sheet-renew"></div>
+<div id="sheet-renew" class="sheet hidden">
+  <div class="handle"></div>
+  <h3>Renovar validade</h3>
+  <form method="post" action="/proposals/<?= (int)$p['id'] ?>/renew" class="stack mt-4">
+    <?= App\Core\Csrf::field() ?>
+    <div class="chip-row">
+      <?php foreach ([7,15,30,60] as $d): ?>
+        <label class="chip chip-lg <?= $d===15?'active':'' ?>">
+          <input type="radio" name="days" value="<?= $d ?>" <?= $d===15?'checked':'' ?> style="display:none"
+                 onchange="this.parentNode.parentNode.querySelectorAll('label').forEach(l=>l.classList.remove('active'));this.parentNode.classList.add('active')">
+          <?= $d ?> dias
+        </label>
+      <?php endforeach; ?>
+    </div>
+    <button class="btn btn-primary btn-block mt-4" type="submit">Renovar</button>
+    <button class="btn btn-secondary btn-block" type="button" data-close-sheet="sheet-renew">Cancelar</button>
+  </form>
 </div>

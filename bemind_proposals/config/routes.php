@@ -6,7 +6,8 @@ use App\Controllers\{
     AuthController, DashboardController, ClientsController, ServicesController,
     CloudController, ProposalsController, ProposalItemsController, BriefingsController,
     PublicController, ReportsController, NotificationsController, SettingsController,
-    MoreController, ExportController
+    MoreController, ExportController, UsersController, TemplatesController,
+    ProposalScheduleController
 };
 
 /** @var Router $router */
@@ -83,6 +84,23 @@ $router->post('/notifications/{id}/read', [NotificationsController::class, 'read
 $router->get('/settings',                 [SettingsController::class, 'index']);
 $router->post('/settings',                [SettingsController::class, 'update']);
 $router->get('/more',                     [MoreController::class, 'index']);
+
+/* ---------------- Usuários / equipe ---------------- */
+$router->get('/users',                    [UsersController::class, 'index']);
+$router->get('/users/new',                [UsersController::class, 'create']);
+$router->post('/users',                   [UsersController::class, 'store']);
+$router->get('/users/{id}/edit',          [UsersController::class, 'edit']);
+$router->post('/users/{id}',              [UsersController::class, 'update']);
+
+/* ---------------- Templates de proposta ---------------- */
+$router->get('/templates',                [TemplatesController::class, 'index']);
+$router->get('/templates/{id}/new-proposal', [TemplatesController::class, 'newProposal']);
+$router->post('/templates/from/{proposalId}',[TemplatesController::class, 'saveFromProposal']);
+$router->post('/templates/{id}/delete',   [TemplatesController::class, 'destroy']);
+
+/* ---------------- Cronograma ---------------- */
+$router->get('/proposals/{id}/schedule',  [ProposalScheduleController::class, 'edit']);
+$router->post('/proposals/{id}/schedule', [ProposalScheduleController::class, 'update']);
 
 /* ---------------- Exportações CSV ---------------- */
 $router->get('/export/clients.csv',       [ExportController::class, 'clients']);
