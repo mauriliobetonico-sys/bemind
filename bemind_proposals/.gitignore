@@ -1,0 +1,18 @@
+# segredos e estado local
+.env
+storage/installed.lock
+storage/logs/*
+!storage/logs/.gitkeep
+storage/pdf/*
+!storage/pdf/.gitkeep
+storage/backups/*
+!storage/backups/.gitkeep
+public/uploads/*
+!public/uploads/.gitkeep
+!public/uploads/.htaccess
+
+# build local
+node_modules/
+vendor/
+.DS_Store
+Thumbs.db

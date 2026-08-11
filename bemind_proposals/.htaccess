@@ -1,0 +1,20 @@
+# Bloqueio na raiz: se o docroot não puder apontar direto para /public,
+# essa configuração impede acesso a app/config/database/storage.
+Options -Indexes
+
+<FilesMatch "^\.env">
+    Require all denied
+</FilesMatch>
+
+RedirectMatch 403 ^/\.git(/|$)
+RedirectMatch 403 ^/app(/|$)
+RedirectMatch 403 ^/config(/|$)
+RedirectMatch 403 ^/database(/|$)
+RedirectMatch 403 ^/storage(/|$)
+
+# Se o docroot é a raiz do projeto, reescreve tudo para /public.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ /public/$1 [L]
+</IfModule>
