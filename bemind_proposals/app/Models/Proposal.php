@@ -140,7 +140,9 @@ final class Proposal
 
     public static function updateItem(int $itemId, array $d): void
     {
-        $cols = ['name','description','lead_time','quantity','unit_price','discount_percent','recurrence','sort_order'];
+        // Nota: `unit_price` estava definido mas faltava no whitelist antes — corrigido.
+        $cols = ['name','description','lead_time','quantity','unit_price',
+                 'discount_percent','recurrence','sort_order'];
         $set = []; $args = [':id'=>$itemId];
         foreach ($cols as $c) {
             if (array_key_exists($c, $d)) { $set[]="$c=:$c"; $args[":$c"]=$d[$c]; }

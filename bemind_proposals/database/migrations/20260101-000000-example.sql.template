@@ -1,0 +1,16 @@
+-- Exemplo de arquivo de migration para o BE MIND PROPOSALS.
+--
+-- Para criar uma migration real:
+--   1. Copie este arquivo removendo o sufixo ".template"
+--      Ex.: 20260812-1500-add-column-x.sql
+--   2. Escreva SQL idempotente quando possível (IF NOT EXISTS, INSERT IGNORE).
+--   3. Rode:  php scripts/migrate.php
+--      O runner aplica em ordem alfabética e registra em `migrations`.
+--
+-- Convenção de nome: YYYYMMDD-HHMM-descricao-curta.sql
+-- (o timestamp na frente garante ordem estável).
+
+-- Exemplo: adicionar coluna comercial (id do responsável comercial) em propostas.
+-- ALTER TABLE proposals
+--   ADD COLUMN sales_rep_id INT UNSIGNED NULL AFTER user_id,
+--   ADD CONSTRAINT fk_proposals_sales_rep FOREIGN KEY (sales_rep_id) REFERENCES users(id) ON DELETE SET NULL;

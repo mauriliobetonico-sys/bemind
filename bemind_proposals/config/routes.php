@@ -119,6 +119,17 @@ $router->post('/b/{token}/submit',        [PublicController::class, 'briefingSub
 /* ---------------- Health ---------------- */
 $router->get('/health', function () {
     header('Content-Type: application/json');
-    echo json_encode(['ok' => true, 'time' => date('c')]);
+    $out = ['ok' => true, 'time' => date('c'), 'installed' => is_file(BMP_ROOT . '/storage/installed.lock')];
+    if ($out['installed']) {
+        try {
+            \App\Core\Db::conn()->query('SELECT 1');
+            $out['db'] = 'ok';
+        } catch (\Throwable $e) {
+            http_response_code(503);
+            $out['ok'] = false;
+            $out['db'] = 'error';
+        }
+    }
+    echo json_encode($out);
     exit;
 });
