@@ -5,10 +5,13 @@ DirectoryIndex index.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Força HTTPS quando disponível
+    # Força HTTPS quando disponível — EXCETO em localhost/desenvolvimento.
+    # (Use 302 em vez de 301 para não ficar cravado no cache do navegador.)
     RewriteCond %{HTTPS} off
     RewriteCond %{HTTP:X-Forwarded-Proto} !=https
-    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    RewriteCond %{HTTP_HOST} !^localhost(:\d+)?$ [NC]
+    RewriteCond %{HTTP_HOST} !^127\.0\.0\.1(:\d+)?$
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=302]
 
     # Envia tudo para index.php, exceto arquivos/pastas reais
     RewriteCond %{REQUEST_FILENAME} !-f
