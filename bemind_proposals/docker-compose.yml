@@ -1,0 +1,71 @@
+# BE MIND PROPOSALS — ambiente local com Docker Compose.
+#
+# Requer Docker Desktop (Windows/Mac) ou Docker + Compose (Linux).
+#
+# Passos:
+#   1) Abra o terminal na pasta bemind_proposals/
+#   2) Rode:  docker compose up -d --build
+#   3) Abra:  http://localhost:8080/install/
+#   4) Preencha o wizard usando os valores exibidos no README (Docker).
+#
+# Parar:    docker compose stop
+# Zerar:    docker compose down -v     (apaga o volume do banco)
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: bemind-app
+    ports:
+      - "8080:80"
+    volumes:
+      # monta o código-fonte para hot-reload de PHP / views
+      - ./:/var/www/html:delegated
+      # persiste uploads mesmo se o container for recriado
+      - bemind_uploads:/var/www/html/public/uploads
+    environment:
+      APACHE_RUN_USER: www-data
+      APACHE_RUN_GROUP: www-data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: bemind-db
+    ports:
+      # (opcional) exposto na porta 3307 para conectar via TablePlus/DBeaver
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_dev_only
+      MYSQL_DATABASE: bemind
+      MYSQL_USER: bemind
+      MYSQL_PASSWORD: bemind_dev_only
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - bemind_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_dev_only"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # (opcional) painel web para inspecionar o MySQL
+  adminer:
+    image: adminer:4
+    container_name: bemind-adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  bemind_db:
+  bemind_uploads:

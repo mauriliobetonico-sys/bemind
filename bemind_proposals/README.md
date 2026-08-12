@@ -43,6 +43,19 @@ bemind_proposals/
 
 ## Como rodar localmente
 
+### Opção A — Docker (recomendado, um comando)
+
+```bash
+cd bemind_proposals
+docker compose up -d --build
+# depois abra http://localhost:8080/install/
+```
+
+Ambiente completo (PHP + MySQL + Adminer). Guia detalhado em
+[`DOCKER.md`](DOCKER.md).
+
+### Opção B — PHP embutido (precisa MySQL rodando na máquina)
+
 ```bash
 cd bemind_proposals
 php -S localhost:8080 -t public public/index.php
