@@ -19,4 +19,11 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
 # vhost aponta para /public
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 
+# entrypoint garante que storage/ e public/uploads/ sejam graváveis pelo www-data
+# (necessário porque volumes nomeados sobem como root)
+COPY docker/entrypoint.sh /usr/local/bin/bemind-entrypoint
+RUN chmod +x /usr/local/bin/bemind-entrypoint
+
 WORKDIR /var/www/html
+ENTRYPOINT ["/usr/local/bin/bemind-entrypoint"]
+CMD ["apache2-foreground"]
