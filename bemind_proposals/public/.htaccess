@@ -32,9 +32,7 @@ DirectoryIndex index.php
     AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json image/svg+xml
 </IfModule>
 
-# Uploads não executam PHP
-<Directory "uploads">
-    <FilesMatch "\.(php|phtml|phar)$">
-        Require all denied
-    </FilesMatch>
-</Directory>
+# Uploads não executam PHP — regra reforçada aqui (a mais específica
+# fica em public/uploads/.htaccess). <Directory> não é permitido em
+# .htaccess, então usamos <FilesMatch> na base + FilesMatch aninhado
+# em uploads/ para bloquear qualquer .php/.phtml/.phar dentro dela.
