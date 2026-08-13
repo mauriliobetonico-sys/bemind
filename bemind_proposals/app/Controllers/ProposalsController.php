@@ -134,43 +134,77 @@ final class ProposalsController extends Controller
         Acl::require('proposals.create');
         $this->assertCsrf($req);
 
-        $step     = (int)($req->post['step'] ?? 0);
-        $id       = (int)($req->post['proposal_id'] ?? 0);
-        $clientId = (int)($req->post['client_id'] ?? 0);
-        $discount = (float)($req->post['discount_percent'] ?? 0);
-        $terms    = trim((string)($req->post['terms_text'] ?? ''));
-        $pay      = trim((string)($req->post['payment_terms'] ?? ''));
-        $validity = (int)($req->post['validity_days'] ?? 15);
-        $projTitle= trim((string)($req->post['project'] ?? ''));
+        $step = (int)($req->post['step'] ?? 0);
+        $id   = (int)($req->post['proposal_id'] ?? 0);
 
-        if (!$id && $clientId) {
-            $id = Proposal::create([
-                'number'=>Numbering::proposal(),'public_token'=>Numbering::publicToken(),
-                'client_id'=>$clientId,'user_id'=>Session::user()['id']??null,
-                'title'=>$projTitle ?: 'Proposta comercial','project'=>$projTitle ?: null,
-                'summary'=>null,'status'=>'rascunho','issue_date'=>date('Y-m-d'),
-                'valid_until'=>date('Y-m-d', strtotime("+{$validity} days")),
-                'payment_terms'=>$pay ?: null,'terms_text'=>$terms ?: null,
-                'discount_percent'=>$discount,
-            ]);
-            ActivityLog::log('created', 'proposal', $id, ['channel'=>'wizard']);
-        } elseif ($id) {
-            Proposal::update($id, [
-                'client_id'=>$clientId ?: null,
-                'project'=>$projTitle ?: null,
-                'title'=>$projTitle ?: 'Proposta comercial',
-                'discount_percent'=>$discount,
-                'payment_terms'=>$pay ?: null,
-                'terms_text'=>$terms ?: null,
-                'valid_until'=>date('Y-m-d', strtotime("+{$validity} days")),
-            ]);
+        // Cada passo só atualiza os campos que ele realmente envia,
+        // evitando sobrescrever client_id (NOT NULL / FK) ou outros
+        // campos com valores vazios só porque o form daquele passo
+        // não os incluiu.
+        switch ($step) {
+            case 0: // Cliente
+                $clientId  = (int)($req->post['client_id'] ?? 0);
+                $projTitle = trim((string)($req->post['project'] ?? ''));
+                if ($clientId <= 0) {
+                    $this->redirect('/proposals/' . ($id ?: 'new') . '/wizard?step=0');
+                }
+                if (!$id) {
+                    $id = Proposal::create([
+                        'number'=>Numbering::proposal(),'public_token'=>Numbering::publicToken(),
+                        'client_id'=>$clientId,'user_id'=>Session::user()['id']??null,
+                        'title'=>$projTitle ?: 'Proposta comercial','project'=>$projTitle ?: null,
+                        'summary'=>null,'status'=>'rascunho','issue_date'=>date('Y-m-d'),
+                        'valid_until'=>date('Y-m-d', strtotime('+15 days')),
+                        'discount_percent'=>0,
+                    ]);
+                    ActivityLog::log('created', 'proposal', $id, ['channel'=>'wizard']);
+                } else {
+                    $upd = ['client_id'=>$clientId];
+                    if ($projTitle !== '') {
+                        $upd['project'] = $projTitle;
+                        $upd['title']   = $projTitle;
+                    }
+                    Proposal::update($id, $upd);
+                }
+                break;
+
+            case 1: // Escopo — itens são gerenciados por API; aqui só avança
+                break;
+
+            case 2: // Investimento — apenas desconto
+                if ($id && array_key_exists('discount_percent', $req->post)) {
+                    Proposal::update($id, [
+                        'discount_percent' => (float)$req->post['discount_percent'],
+                    ]);
+                }
+                break;
+
+            case 3: // Condições — pagamento, validade e observações
+                if ($id) {
+                    $upd = [];
+                    if (array_key_exists('payment_terms', $req->post)) {
+                        $upd['payment_terms'] = trim((string)$req->post['payment_terms']) ?: null;
+                    }
+                    if (array_key_exists('terms_text', $req->post)) {
+                        $upd['terms_text'] = Sanitize::html((string)$req->post['terms_text']);
+                    }
+                    if (array_key_exists('validity_days', $req->post)) {
+                        $days = max(1, (int)$req->post['validity_days']);
+                        $upd['valid_until'] = date('Y-m-d', strtotime("+{$days} days"));
+                    }
+                    if ($upd) Proposal::update($id, $upd);
+                }
+                break;
         }
 
         if ($id) Totals::recompute($id);
 
         if ($step >= 3 && $id) $this->redirect('/proposals/' . $id);
         $next = min(3, $step + 1);
-        $this->redirect('/proposals/' . ($id ?: '') . '/wizard?step=' . $next);
+        // Se por qualquer motivo ainda não temos ID (não deveria acontecer),
+        // volta para a tela inicial do wizard em vez de gerar /proposals//wizard.
+        if (!$id) $this->redirect('/proposals/new?step=' . $next);
+        $this->redirect('/proposals/' . $id . '/wizard?step=' . $next);
     }
 
     /* -------------------- Detalhe / update -------------------- */
