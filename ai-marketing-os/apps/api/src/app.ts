@@ -35,7 +35,7 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
   await app.register(rateLimit, {
     max: ctx.env.RATE_LIMIT_PER_MINUTE,
     timeWindow: '1 minute',
-    redis: ctx.env.REDIS_URL ? new Redis(ctx.env.REDIS_URL, { maxRetriesPerRequest: 1, enableOfflineQueue: false }) : undefined,
+    redis: ctx.env.REDIS_URL ? new Redis(ctx.env.REDIS_URL, { maxRetriesPerRequest: 1 }) : undefined,
     skipOnError: false,
   });
 

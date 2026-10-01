@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/server.ts', 'src/worker.ts', 'src/db/migrate-cli.ts', 'src/db/seed-admin-cli.ts'],
+  entry: ['src/server.ts', 'src/worker.ts', 'src/db/migrate-cli.ts', 'src/db/seed-admin-cli.ts', 'src/mail/smtp-test-cli.ts'],
   format: ['esm'],
   target: 'node22',
   platform: 'node',

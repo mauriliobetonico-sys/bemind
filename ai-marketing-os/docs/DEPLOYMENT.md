@@ -12,22 +12,48 @@ A stack inteira roda com Docker Compose no seu próprio servidor/cloud: `postgre
 
 O mesmo artefato (imagens `aimos-api`, `aimos-web` com `IMAGE_TAG`) é promovido de staging para produção.
 
+## Teste local completo (Docker)
+
+```bash
+./scripts/setup-local-env.sh     # gera .env com segredos aleatórios, DOMAIN=localhost
+# edite .env e preencha SMTP_USER e SMTP_PASSWORD
+docker compose build
+docker compose up -d
+docker compose ps                # migrate "exited (0)"; api, worker, web, caddy "running"
+
+# testa o SMTP (envia um e-mail real)
+docker compose exec worker node dist/mail/smtp-test-cli.mjs voce@exemplo.com
+
+# cria o primeiro SUPER_ADMIN e imprime o link para definir a senha
+docker compose run --rm -e SEED_ADMIN_EMAIL=voce@exemplo.com -e SEED_ADMIN_NAME="Seu Nome" \
+  -e APP_URL=https://localhost migrate node dist/db/seed-admin-cli.mjs
+```
+
+Abra o link impresso. Em `localhost` o Caddy usa um certificado próprio: o navegador avisa na primeira visita (aceite, ou rode `docker compose exec caddy caddy trust`). Logs: `docker compose logs -f api worker`. Para apagar tudo, inclusive o banco: `docker compose down -v`.
+
+### SMTP
+
+| Porta | `SMTP_SECURE` | Modo |
+| --- | --- | --- |
+| 587 | `false` | STARTTLS (recomendado) |
+| 465 | `true` | TLS direto |
+
+`MAIL_FROM` precisa ser um endereço que a conta autenticada pode usar como remetente, senão o servidor recusa ou o e-mail cai no spam. POP e IMAP não são usados pela plataforma.
+
 ## Primeiro deploy
 
 ```bash
 git clone <repo> && cd ai-marketing-os
 cp .env.example .env            # preencha DOMAIN, APP_URL e TODOS os segredos
-# segredos: openssl rand -base64 32  (POSTGRES_PASSWORD, APP_DB_PASSWORD, REDIS_PASSWORD)
+# segredos: openssl rand -hex 24  (POSTGRES_PASSWORD, APP_DB_PASSWORD, REDIS_PASSWORD)
 
 docker compose build
 docker compose up -d            # migrate roda antes de api/worker
 docker compose ps               # todos healthy; migrate "exited (0)"
 
 # primeiro SUPER_ADMIN (imprime link de uso único, válido por 24h)
-docker compose run --rm \
-  -e SEED_ADMIN_EMAIL=voce@agencia.com -e SEED_ADMIN_NAME="Seu Nome" \
-  -e DATABASE_ADMIN_URL="postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:5432/$POSTGRES_DB" \
-  -e APP_URL="$APP_URL" migrate node dist/db/seed-admin-cli.mjs
+docker compose run --rm -e SEED_ADMIN_EMAIL=voce@agencia.com -e SEED_ADMIN_NAME="Seu Nome" \
+  -e APP_URL="https://$DOMAIN" migrate node dist/db/seed-admin-cli.mjs
 ```
 
 Requisitos do servidor: portas 80/443 abertas, DNS do `DOMAIN` apontando para ele (o Caddy emite o certificado automaticamente).
