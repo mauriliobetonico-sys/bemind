@@ -1,0 +1,41 @@
+name: ai-marketing-os
+
+on:
+  push:
+    paths: ["ai-marketing-os/**", ".github/workflows/ai-marketing-os.yml"]
+  pull_request:
+    paths: ["ai-marketing-os/**", ".github/workflows/ai-marketing-os.yml"]
+
+defaults:
+  run:
+    working-directory: ai-marketing-os
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+    env:
+      TEST_DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: ai-marketing-os/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ai-marketing-os/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm --filter @aimos/web build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"

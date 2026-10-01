@@ -1,0 +1,145 @@
+# AI Marketing OS — stack completa.
+#   desenvolvimento local:  docker compose --profile dev up -d
+#   staging / produção:     docker compose --env-file .env up -d   (ver docs/DEPLOYMENT.md)
+name: aimos
+
+x-api-env: &api-env
+  NODE_ENV: ${NODE_ENV:-production}
+  APP_URL: ${APP_URL}
+  DATABASE_URL: postgres://aimos_app:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-aimos}
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+  COOKIE_SECURE: ${COOKIE_SECURE:-true}
+  TRUST_PROXY: "true"
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-12}
+  SESSION_IDLE_MINUTES: ${SESSION_IDLE_MINUTES:-120}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  MAIL_FROM: ${MAIL_FROM:-AI Marketing OS <no-reply@localhost>}
+  SUPPORT_EMAIL: ${SUPPORT_EMAIL:-suporte@localhost}
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aimos}
+      POSTGRES_USER: ${POSTGRES_USER:-aimos_owner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 20
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?defina REDIS_PASSWORD}", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 5s
+      retries: 20
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks: [internal]
+
+  # Executa migrations com o usuário dono do banco e encerra.
+  migrate:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    image: aimos-api:${IMAGE_TAG:-latest}
+    command: ["node", "dist/db/migrate-cli.mjs"]
+    environment:
+      DATABASE_ADMIN_URL: postgres://${POSTGRES_USER:-aimos_owner}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aimos}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?defina APP_DB_PASSWORD}
+      MIGRATIONS_DIR: /app/apps/api/migrations
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+    networks: [internal]
+
+  api:
+    image: aimos-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment: *api-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    networks: [internal]
+
+  worker:
+    image: aimos-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    command: ["node", "dist/worker.mjs"]
+    environment: *api-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    networks: [internal]
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args: { API_INTERNAL_URL: "http://api:4000" }
+    image: aimos-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on: [api]
+    networks: [internal]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on: [web, api]
+    networks: [internal]
+
+  # Backup diário do banco (pg_dump) com retenção configurável.
+  backup:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/backup/backup-loop.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-aimos_owner}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-aimos}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+    volumes:
+      - ./infra/backup:/backup:ro
+      - ${BACKUP_DIR:-./backups}:/backups
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [internal]
+
+  # Somente em desenvolvimento: captura de e-mails SMTP com interface web.
+  mailpit:
+    image: axllent/mailpit:latest
+    profiles: ["dev"]
+    ports:
+      - "8025:8025"
+    networks: [internal]
+
+volumes:
+  pgdata:
+  redisdata:
+  caddydata:
+  caddyconfig:
+
+networks:
+  internal:
