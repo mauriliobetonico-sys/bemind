@@ -261,7 +261,7 @@ export async function executeToolCall(app: AppContext, tenantId: string, callId:
     const result = await Promise.race([
       tool.execute({ app, tenantId, callId, connection: prep.connection, withTenant: (fn) => withContext(app.pool, tenantCtx(tenantId), fn) }, params as never),
       new Promise<never>((_, rej) => {
-        timer = setTimeout(() => rej(new IntegrationHttpError('Tempo esgotado na execução', undefined, true)), EXEC_TIMEOUT_MS);
+        timer = setTimeout(() => rej(new IntegrationHttpError('Tempo esgotado na execução', undefined, true)), tool.timeoutMs ?? EXEC_TIMEOUT_MS);
       }),
     ]).finally(() => clearTimeout(timer));
     await finish(app, call, 'succeeded', { result });

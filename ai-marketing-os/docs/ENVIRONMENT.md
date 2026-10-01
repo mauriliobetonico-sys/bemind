@@ -42,6 +42,7 @@ Todas são validadas na inicialização (`apps/api/src/config/env.ts`); valor in
 | `APP_TIMEZONE` | `America/Sao_Paulo` | Fuso da agência: define "hoje" no relatório e o horário das rotinas |
 | `DAILY_REPORT_HOUR` | `18` | Hora local em que o relatório diário de cada cliente é gerado e enviado |
 | `REMINDERS_HOUR` | `8` | Hora local dos lembretes (prazos, tarefas atrasadas, aprovações paradas) |
+| `ADOBE_IMS_URL` / `ADOBE_FIREFLY_URL` | endpoints oficiais da Adobe | Não altere — existem só para os testes apontarem para um servidor local. As credenciais da Adobe ficam por cliente, cifradas, em Integrações (nunca no `.env`) |
 | `MCP_ALLOW_PRIVATE_HOSTS` | `false` | `true` permite integrações em endereços internos/HTTP (ex.: n8n na mesma rede). Em produção, mantenha `false` sempre que possível |
 
 ## Somente migração e seed

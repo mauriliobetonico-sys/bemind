@@ -27,6 +27,7 @@ interface Connector {
   builtIn: boolean;
   testable: boolean;
   fields: Field[];
+  capabilities: { name: string; status: 'available' | 'unavailable'; note: string }[];
 }
 interface Tool {
   name: string;
@@ -116,6 +117,19 @@ function ConnectorCard({
     <Card title={c.name} action={status}>
       <p className="ds-text-2" style={{ margin: 0 }}>{c.description}</p>
       {c.requirements && <p className="ds-stat-hint" style={{ margin: 0 }}>{c.availability === 'integration_pending' ? `Para ativar: ${c.requirements}` : c.requirements}</p>}
+      {c.capabilities?.length > 0 && (
+        <ul className="ds-caps" aria-label={`Capacidades de ${c.name}`}>
+          {c.capabilities.map((cap) => (
+            <li key={cap.name}>
+              <Badge tone={cap.status === 'available' ? 'ok' : 'neutral'}>{cap.status === 'available' ? 'Disponível' : 'Indisponível'}</Badge>
+              <span>
+                {cap.name}
+                <span className="ds-stat-hint" style={{ display: 'block' }}>{cap.note}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
       {conn?.lastError && <Alert tone="warn">Último erro: {conn.lastError}</Alert>}
       {conn?.circuitOpenUntil && new Date(conn.circuitOpenUntil) > new Date() && <Alert tone="danger">Pausada após falhas seguidas até {fmtDateTime(conn.circuitOpenUntil)} — novas chamadas aguardam.</Alert>}
       {conn?.lastSuccessAt && <span className="ds-stat-hint">Último sucesso: {fmtDateTime(conn.lastSuccessAt)}</span>}

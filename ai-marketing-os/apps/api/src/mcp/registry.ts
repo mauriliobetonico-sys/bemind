@@ -35,6 +35,8 @@ export interface ConnectorDef {
   /** Conectores internos não precisam de conexão configurada. */
   builtIn?: boolean;
   fields: ConnectorField[];
+  /** Capacidades do produto e por que cada uma está (ou não) disponível. */
+  capabilities?: { name: string; status: 'available' | 'unavailable'; note: string }[];
   /** Testa as credenciais sem efeito colateral. Devolve uma frase de diagnóstico. */
   test?(app: AppContext, conn: ConnectionInfo): Promise<string>;
 }
@@ -67,6 +69,8 @@ export interface ToolDef<P = unknown> {
   rateLimitPerMinute: number;
   /** Aceita agendamento (executa a partir de um horário, depois da aprovação). */
   schedulable?: boolean;
+  /** Tempo máximo de execução (padrão 60 s) — ex.: geração de imagem demora mais. */
+  timeoutMs?: number;
   /** Validação de negócio no momento do pedido (ex.: entregável existe neste tenant). */
   validate?(tx: Tx, tenantId: string, params: P): Promise<{ deliverableId?: string } | void>;
   execute(ctx: ToolExecContext, params: P): Promise<ToolResult>;

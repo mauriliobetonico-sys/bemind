@@ -51,6 +51,9 @@ export interface HttpOptions {
 export interface HttpResult {
   status: number;
   body: string;
+  /** Corpo bruto (para respostas binárias, ex.: imagens). */
+  raw: Buffer;
+  headers: Record<string, string | string[] | undefined>;
   json<T = unknown>(): T;
 }
 
@@ -73,7 +76,7 @@ export function assertSafeUrl(raw: string, allowPrivate: boolean): URL {
 export function safeRequest(
   method: 'GET' | 'POST' | 'PUT',
   rawUrl: string,
-  opts: HttpOptions & { headers?: Record<string, string>; body?: string },
+  opts: HttpOptions & { headers?: Record<string, string>; body?: string | Buffer },
 ): Promise<HttpResult> {
   const url = assertSafeUrl(rawUrl, opts.allowPrivate);
   const maxBytes = opts.maxBytes ?? 1_000_000;
@@ -93,7 +96,10 @@ export function safeRequest(
   return new Promise((resolve, reject) => {
     const req = lib.request(
       url,
-      { method, headers: { 'user-agent': 'AI-Marketing-OS/1.0', ...opts.headers }, lookup, timeout: opts.timeoutMs ?? 20_000 },
+      {
+        method,
+        headers: { 'user-agent': 'AI-Marketing-OS/1.0', ...(opts.body !== undefined ? { 'content-length': String(Buffer.byteLength(opts.body)) } : {}), ...opts.headers },
+        lookup, timeout: opts.timeoutMs ?? 20_000 },
       (res) => {
         const status = res.statusCode ?? 0;
         if (status >= 300 && status < 400) {
@@ -111,10 +117,13 @@ export function safeRequest(
           chunks.push(c);
         });
         res.on('end', () => {
-          const body = Buffer.concat(chunks).toString('utf8');
+          const raw = Buffer.concat(chunks);
+          const body = raw.toString('utf8');
           resolve({
             status,
             body,
+            raw,
+            headers: res.headers,
             json: <T>() => {
               try {
                 return JSON.parse(body) as T;

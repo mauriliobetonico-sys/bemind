@@ -93,6 +93,8 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 
 **ADR-022 — Relatório diário só com fatos visíveis ao cliente.** As seções vêm de consultas ao banco com RLS do tenant (demandas, entregáveis enviados/aprovados, aprovações pendentes, agenda visível). Tarefas internas, QA, agentes e custos nunca entram. O agente Customer Success pode escrever a abertura e observações a partir desses fatos; sem IA, o texto é padrão. Rotinas diárias rodam uma vez por dia (tabela `job_runs` + advisory lock) no fuso `APP_TIMEZONE`.
 
+**ADR-024 — Adobe só por interfaces oficiais, resultados no storage do cliente.** O conector usa exatamente o contrato publicado pela Adobe (IMS client_credentials, Firefly API v3); Photoshop/InDesign API ficam indisponíveis até o storage em nuvem (exigem URLs pré-assinadas de S3/Azure/Dropbox). Saídas viram arquivos internos do tenant; falha local após a geração não é repetida para não cobrar créditos em dobro.
+
 **ADR-023 — Workflows são pedidos ao MCP Hub.** "Quando X → ferramenta Y" com parâmetros por marcadores; cada disparo é um pedido com solicitante `workflow` (mesma regra dos agentes: risco médio/alto exige aprovação humana), idempotente por (regra, evento) e executado com RLS restrito ao tenant do evento.
 
 **ADR-007 — Integrações nunca simuladas.** Indicadores e integrações sem implementação retornam a fase prevista ou `integration_pending`.
@@ -107,5 +109,5 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 | **4 · concluída** | AI Gateway, Orchestrator, 12 agentes, memória com aprovação humana, Agent Room, QA da IA, Chat Global, orçamento e custo por cliente | Memória e execuções isoladas por tenant (API + RLS + FK composta); custo por run e por cliente na rentabilidade |
 | **5 · concluída** | MCP Hub, ferramentas declarativas, conectores (interno, e-mail, webhook/n8n, WordPress), credenciais cifradas, políticas, aprovação humana, circuit breaker, SSRF | Ferramenta HIGH nunca executa sem aprovação (código + CHECK no banco + teste de mutação) |
 | **6 · concluída** | Notificações internas e por e-mail com preferências, relatório diário por cliente, lembretes (prazos, tarefas, aprovações), workflows, publicação agendada | Cada cliente recebe só o próprio relatório (RLS + destinatários do servidor + teste de mutação) |
-| 7 | Adobe Connector (APIs oficiais) | Workflow real testado |
+| **7 · concluída** | Adobe Connector: Firefly Services (gerar e expandir imagens) pela API oficial, resultados como arquivos internos, Estúdio criativo; capacidades sem API oficial marcadas como indisponíveis | Contrato oficial (IMS + Firefly v3) verificado por testes contra servidor local; nenhuma geração repetida/cobrada em dobro; isolamento por cliente |
 | 8 | Planos e limites, billing, observabilidade, otimização | Limites aplicados no backend |

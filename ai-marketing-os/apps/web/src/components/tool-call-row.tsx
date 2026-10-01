@@ -26,12 +26,25 @@ export interface ToolCall {
   decidedByName: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
-  result: { summary?: string; data?: { link?: string } } | null;
+  result: { summary?: string; data?: { link?: string; files?: { id: string; name: string }[] } } | null;
   error: string | null;
   createdAt: string;
   finishedAt: string | null;
   scheduledFor?: string | null;
   workflowName?: string | null;
+}
+
+/** Imagens salvas por uma ferramenta (ex.: Adobe Firefly) — arquivos internos, só a equipe vê. */
+export function GeneratedImages({ files }: { files: { id: string; name: string }[] }) {
+  return (
+    <div className="ds-thumbs">
+      {files.map((f) => (
+        <a key={f.id} href={`/api/files/${f.id}/download`} title={`Baixar ${f.name}`}>
+          <img src={`/api/files/${f.id}/download?inline=1`} alt={f.name} loading="lazy" />
+        </a>
+      ))}
+    </div>
+  );
 }
 
 export function CallRow({ c, onDone }: { c: ToolCall; onDone: (text: string, tone?: 'ok' | 'danger') => void }) {
@@ -86,6 +99,7 @@ export function CallRow({ c, onDone }: { c: ToolCall; onDone: (text: string, ton
             )}
           </Alert>
         )}
+        {!!c.result?.data?.files?.length && <GeneratedImages files={c.result.data.files} />}
         {c.error && <Alert tone={c.status === 'failed' ? 'danger' : 'warn'}>{c.status === 'queued' ? `Aguardando nova tentativa: ${c.error}` : c.error}</Alert>}
         {pending && can('mcp:approve') && (
           <div className="ds-stack" style={{ gap: 6 }}>

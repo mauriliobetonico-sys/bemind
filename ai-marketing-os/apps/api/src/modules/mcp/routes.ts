@@ -65,6 +65,7 @@ export async function mcpRoutes(app: FastifyInstance, ctx: AppContext) {
         builtIn: !!c.builtIn,
         testable: !!c.test,
         fields: c.fields,
+        capabilities: c.capabilities ?? [],
       })),
       tools: TOOLS.map((t) => ({
         name: t.name,
@@ -228,6 +229,7 @@ export async function mcpRoutes(app: FastifyInstance, ctx: AppContext) {
     const params: unknown[] = [];
     if (q.status) where.push(`c.status = $${params.push(q.status)}`);
     if (q.deliverableId) where.push(`c.deliverable_id = $${params.push(q.deliverableId)}`);
+    if (q.connector) where.push(`c.connector = $${params.push(q.connector)}`);
     params.push(q.limit);
     return withContext(ctx.pool, access.context('mcp:read', requestedTenant(req)), async (tx) => ({
       items: (

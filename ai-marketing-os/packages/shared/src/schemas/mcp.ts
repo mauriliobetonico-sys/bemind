@@ -49,6 +49,7 @@ export const decideToolCallInput = z.strictObject({
 export const listToolCallsQuery = z.strictObject({
   status: z.enum(TOOL_CALL_STATUSES).optional(),
   deliverableId: z.uuid().optional(),
+  connector: z.string().regex(/^[a-z_]{2,40}$/).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(100),
 });
 

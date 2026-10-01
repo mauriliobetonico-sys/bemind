@@ -2,6 +2,7 @@ import type { ConnectorDef, ToolDef } from './registry';
 import { createTaskTool, internalConnector, scheduleEventTool } from './connectors/internal';
 import { emailConnector, sendClientEmailTool } from './connectors/email';
 import { triggerWebhookTool, webhookConnector } from './connectors/webhook';
+import { adobeConnector, adobeExpandImageTool, adobeGenerateImageTool } from './connectors/adobe';
 import { wordpressConnector, wordpressDraftTool, wordpressPublishTool } from './connectors/wordpress';
 
 /**
@@ -23,12 +24,12 @@ export const CONNECTORS: ConnectorDef[] = [
   emailConnector,
   webhookConnector,
   wordpressConnector,
+  adobeConnector,
   pending('meta', 'Instagram e Facebook (Meta)', 'Publicação e métricas de páginas e perfis profissionais.', 'App na Meta for Developers com permissões instagram_content_publish/pages_manage_posts aprovadas na revisão de app.'),
   pending('google_workspace', 'Google Drive, Gmail e Calendar', 'Arquivos, e-mails e agenda do cliente.', 'Cliente OAuth no Google Cloud (tela de consentimento verificada) com os escopos de Drive, Gmail e Calendar.'),
   pending('google_analytics', 'Google Analytics 4', 'Relatórios de tráfego e conversão.', 'Cliente OAuth no Google Cloud com escopo analytics.readonly e acesso à propriedade GA4.'),
   pending('ads', 'Google Ads e Meta Ads', 'Leitura de campanhas; ativação sempre com aprovação humana.', 'Developer token do Google Ads e app Meta com ads_management aprovados.'),
   pending('whatsapp', 'WhatsApp Business', 'Mensagens pela API oficial (Cloud API).', 'Conta WhatsApp Business verificada, número e modelos de mensagem aprovados pela Meta.'),
-  pending('adobe', 'Adobe (Photoshop, Illustrator, InDesign, Premiere, After Effects)', 'Fase 7 — somente APIs oficiais da Adobe.', 'Credenciais da Adobe Developer Console (Fase 7).'),
 ];
 
 export const TOOLS: ToolDef<never>[] = [
@@ -38,6 +39,8 @@ export const TOOLS: ToolDef<never>[] = [
   triggerWebhookTool,
   wordpressDraftTool,
   wordpressPublishTool,
+  adobeGenerateImageTool,
+  adobeExpandImageTool,
 ] as unknown as ToolDef<never>[];
 
 export const connectorByKey = (key: string) => CONNECTORS.find((c) => c.key === key);

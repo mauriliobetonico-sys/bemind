@@ -31,6 +31,7 @@ const STAFF_NAV: NavItem[] = [
   { href: '/ai-settings', label: 'Orçamento de IA', permission: 'ai:settings' },
   { href: '/integrations', label: 'Integrações', permission: 'mcp:read' },
   { href: '/tool-calls', label: 'Ações das ferramentas', permission: 'mcp:read' },
+  { href: '/creative', label: 'Estúdio criativo', permission: 'mcp:use' },
   { href: '/workflows', label: 'Workflows', permission: 'workflows:manage' },
   { href: '/reports', label: 'Relatórios diários', permission: 'reports:read' },
   { href: '/proposals', label: 'Propostas', permission: 'proposals:read' },

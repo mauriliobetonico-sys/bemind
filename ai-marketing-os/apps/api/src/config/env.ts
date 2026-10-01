@@ -76,6 +76,9 @@ const envSchema = z.object({
   ),
   /** Permite integrações em endereços privados (ex.: n8n na mesma rede). Desligado: só hosts públicos e HTTPS. */
   MCP_ALLOW_PRIVATE_HOSTS: bool.default(false),
+  /** Endpoints oficiais da Adobe (IMS e Firefly Services). Só mudam em testes. */
+  ADOBE_IMS_URL: z.url().default('https://ims-na1.adobelogin.com'),
+  ADOBE_FIREFLY_URL: z.url().default('https://firefly-api.adobe.io'),
 
   /** Fuso da agência: define "hoje" do relatório diário e o horário das rotinas. */
   APP_TIMEZONE: z.string().default('America/Sao_Paulo').refine((tz) => {

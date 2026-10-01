@@ -31,7 +31,7 @@ defineAgent({
 
 Master Orchestrator · Diretor de Marketing · Pesquisador · Copywriter · Social Media · Designer · Vídeo · Tráfego · Analytics · Customer Success · Financeiro (consultivo, só no Agent Room) · QA.
 
-Designer e Vídeo entregam briefing visual, especificações e roteiro; a geração de arte/vídeo final é integração pendente (fase 7, Adobe).
+Designer e Vídeo entregam briefing visual, especificações e roteiro; o Designer pode propor `adobe.generate_image` e `adobe.expand_image` (Adobe Firefly, sempre com aprovação humana); vídeo final segue sem API oficial disponível (ver [MCP.md](MCP.md#adobe-connector)).
 
 ## Fluxo de uma demanda
 

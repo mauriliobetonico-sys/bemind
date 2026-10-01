@@ -146,7 +146,7 @@ Toda execução é assíncrona: a rota grava a execução e o evento na mesma tr
 | PATCH | `/mcp/connections/:id/status` | `mcp:manage` | `active` / `disabled` |
 | POST | `/mcp/connections/:id/test` | `mcp:manage` | Teste sem efeito colateral → `{ ok, message }` |
 | DELETE | `/mcp/connections/:id` | `mcp:manage` | Remove e cancela chamadas pendentes |
-| GET | `/mcp/tool-calls` | `mcp:read` | Filtros `status`, `deliverableId` |
+| GET | `/mcp/tool-calls` | `mcp:read` | Filtros `status`, `deliverableId`, `connector` (ex.: `adobe`) |
 | POST | `/mcp/tool-calls` | `mcp:use` (+ permissão da ferramenta) | `{ tool, params, reason }` → 202 `queued` ou `pending_approval`. Erros: 400 `invalid_params`/`invalid_request`, 403 `forbidden`, 409 `not_connected`/`tool_disabled`/`integration_pending` |
 | POST | `/mcp/tool-calls/:id/decide` | `mcp:approve` | `approve` (enfileira) / `reject`; 403 se a política exigir outra pessoa |
 | POST | `/mcp/tool-calls/:id/cancel` | `mcp:use` | Quem pediu ou um aprovador; só antes de executar |
