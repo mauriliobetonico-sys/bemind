@@ -32,6 +32,7 @@ Todas são validadas na inicialização (`apps/api/src/config/env.ts`); valor in
 | `MAX_UPLOAD_MB` | `200` | Limite por arquivo |
 | `CLAMAV_HOST` / `CLAMAV_PORT` | — / `3310` | clamd. Sem host: `scan_status = skipped` |
 | `ANTHROPIC_API_KEY` | — | Chave da Anthropic (somente servidor). Sem ela: agentes em `integration_pending` |
+| `ANTHROPIC_WORKSPACE_ID` | — | ID do workspace da Anthropic. Necessário quando a chave é da organização (não de um workspace): enviado no cabeçalho `anthropic-workspace-id` |
 | `AI_MODEL` | `claude-opus-5-5` | Modelo dos agentes |
 | `AI_SERVER_FALLBACK` | `true` | Se o modelo recusar por política, a Anthropic refaz no modelo de fallback recomendado (beta `server-side-fallback-2026-07-01`) |
 | `AI_TIMEOUT_MS` | `300000` | Tempo máximo por chamada ao modelo |

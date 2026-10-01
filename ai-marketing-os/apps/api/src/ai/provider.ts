@@ -73,7 +73,14 @@ export class AnthropicProvider implements AiProvider {
 
   constructor(private readonly env: Env) {
     this.configured = !!env.ANTHROPIC_API_KEY;
-    this.client = env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: 2 }) : null;
+    this.client = env.ANTHROPIC_API_KEY
+      ? new Anthropic({
+          apiKey: env.ANTHROPIC_API_KEY,
+          maxRetries: 2,
+          // Chave da organização (não de um workspace): a API exige dizer qual workspace usar.
+          ...(env.ANTHROPIC_WORKSPACE_ID ? { defaultHeaders: { 'anthropic-workspace-id': env.ANTHROPIC_WORKSPACE_ID } } : {}),
+        })
+      : null;
   }
 
   async create(req: ProviderRequest): Promise<ProviderResponse> {

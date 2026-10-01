@@ -18,7 +18,7 @@ if (!provider.configured) {
   console.log('Anthropic: integration_pending (ANTHROPIC_API_KEY ausente no ambiente do container).');
   ok = false;
 } else {
-  console.log(`Anthropic: chamando ${env.AI_MODEL} (fallback do servidor: ${env.AI_SERVER_FALLBACK ? 'ligado' : 'desligado'})…`);
+  console.log(`Anthropic: chamando ${env.AI_MODEL} (fallback do servidor: ${env.AI_SERVER_FALLBACK ? 'ligado' : 'desligado'}; workspace: ${env.ANTHROPIC_WORKSPACE_ID ? 'definido' : 'não definido'})…`);
   try {
     const format = zodOutputFormat(z.object({ status: z.string(), idioma: z.string() }));
     const res = await provider.create({

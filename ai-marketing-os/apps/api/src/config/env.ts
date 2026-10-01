@@ -4,8 +4,8 @@ const bool = z
   .enum(['true', 'false', '1', '0'])
   .transform((v) => v === 'true' || v === '1');
 
-/** Variável opcional: string vazia (padrão do docker compose) conta como ausente. */
-const optionalSecret = z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().min(1).optional());
+/** Variável opcional: string vazia (padrão do docker compose) conta como ausente; espaços e \r (Windows) são removidos. */
+const optionalSecret = z.preprocess((v) => (typeof v === 'string' ? (v.trim() === '' ? undefined : v.trim()) : v), z.string().min(1).optional());
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
@@ -58,6 +58,8 @@ const envSchema = z.object({
 
   /** Chave da Anthropic (somente servidor). Sem ela, os agentes ficam em "integration_pending". */
   ANTHROPIC_API_KEY: optionalSecret,
+  /** Workspace da Anthropic (obrigatório quando a chave não é de um workspace específico). */
+  ANTHROPIC_WORKSPACE_ID: optionalSecret,
   /** Modelo padrão dos agentes. */
   AI_MODEL: z.string().default('claude-opus-5-5'),
   /** Fallback do servidor da Anthropic quando o modelo recusa por política (beta). */

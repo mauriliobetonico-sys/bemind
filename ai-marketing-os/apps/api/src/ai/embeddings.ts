@@ -31,7 +31,16 @@ export class OpenAiEmbedder implements Embedder {
       body: JSON.stringify({ model: this.model, input: texts.map((t) => t.slice(0, 8000)), dimensions: EMBEDDING_DIMENSIONS }),
       signal: AbortSignal.timeout(30_000),
     });
-    if (!res.ok) throw new Error(`embeddings: HTTP ${res.status}`);
+    if (!res.ok) {
+      // A mensagem da OpenAI ajuda a diagnosticar (ela já mascara a chave).
+      let detail = '';
+      try {
+        detail = ((await res.json()) as { error?: { message?: string } }).error?.message?.slice(0, 300) ?? '';
+      } catch {
+        /* corpo não-JSON */
+      }
+      throw new Error(`embeddings: HTTP ${res.status}${detail ? ` — ${detail}` : ''}`);
+    }
     const body = (await res.json()) as { data: { index: number; embedding: number[] }[] };
     return body.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
   }
