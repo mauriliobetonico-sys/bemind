@@ -37,7 +37,7 @@ export async function assertAssignable(tx: Tx, tenantId: string, userId: string)
     await tx.query(
       `SELECT 1 FROM users u
         WHERE u.id = $2 AND u.status = 'active'
-          AND (u.global_role IS NOT NULL
+          AND (u.global_role IN ('SUPER_ADMIN', 'ADMIN')
                OR EXISTS (SELECT 1 FROM tenant_users tu WHERE tu.user_id = u.id AND tu.tenant_id = $1 AND tu.role_key <> 'CLIENTE'))`,
       [tenantId, userId],
     )

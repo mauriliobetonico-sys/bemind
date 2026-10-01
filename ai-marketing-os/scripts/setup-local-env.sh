@@ -25,6 +25,7 @@ set_var APP_URL https://localhost
 set_var POSTGRES_PASSWORD "$(secret)"
 set_var APP_DB_PASSWORD "$(secret)"
 set_var REDIS_PASSWORD "$(secret)"
+set_var APP_SECRET "$(openssl rand -hex 32)"
 set_var SMTP_HOST smtp.bemindmarketing.com.br
 set_var SMTP_PORT 587
 set_var SMTP_SECURE false

@@ -19,6 +19,10 @@ import { demandRoutes } from './modules/demands/routes';
 import { taskRoutes } from './modules/tasks/routes';
 import { fileRoutes } from './modules/files/routes';
 import { calendarRoutes } from './modules/calendar/routes';
+import { proposalRoutes } from './modules/commercial/proposals';
+import { contractRoutes } from './modules/commercial/contracts';
+import { financeRoutes } from './modules/finance/routes';
+import { hitlRoutes } from './modules/hitl/actions';
 
 export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
   const app = Fastify({
@@ -76,6 +80,10 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
       await api.register(taskRoutes, ctx);
       await api.register(fileRoutes, ctx);
       await api.register(calendarRoutes, ctx);
+      await api.register(proposalRoutes, ctx);
+      await api.register(contractRoutes, ctx);
+      await api.register(financeRoutes, ctx);
+      await api.register(hitlRoutes, ctx);
     },
     { prefix: '/api' },
   );

@@ -63,6 +63,20 @@ Arquitetura prevista (fases 3–5): ações `HIGH` (publicação, alteração fi
 - Rascunhos da equipe ficam `internal` até o QA liberar o entregável — o cliente recebe 404.
 - Somente o cliente decide aprovações (`approvals:decide`); a equipe não aprova em nome dele.
 
+## Comercial (Fase 3)
+
+- Link público de proposta: token HMAC de 256 bits, só o hash no banco, rate limit, resposta sem notas internas, e-mail do cliente ou IDs de tenant; expira com a validade; aceite registra nome, concordância, IP e user-agent e é auditado.
+- Despesas pertencem ao tenant da agência: nem o cliente rateado as alcança (RLS); o trigger impede despesa em tenant de cliente.
+- Ações financeiras críticas passam por HITL; quem não tem `finance:approve` não decide; autoaprovação depende da política; mudar política é exclusivo do SUPER_ADMIN; tudo auditado (`*.requested`, `*.approved`, `*.rejected`).
+- Papel FINANCEIRO: acesso global a contratos e finanças, sem operação, usuários ou auditoria.
+
+## Revisão da Fase 3
+
+- [x] Isolamento: cliente B não vê propostas, contratos, faturas nem link de A; gestor não vê faturas/despesas; FINANCEIRO não vê operação
+- [x] Notas internas da proposta nunca saem para o cliente (link, PDF, portal)
+- [x] Geração de faturas idempotente e sem buracos na numeração
+- [x] Nenhuma ação crítica executa sem aprovação (testado: pendente, aprovar, rejeitar, autoaprovação bloqueada)
+
 ## Revisão da Fase 2
 
 - [x] Isolamento A→B para demandas, arquivos, aprovações, tarefas, Brand Vault e calendário (API e banco)

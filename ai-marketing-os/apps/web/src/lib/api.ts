@@ -22,7 +22,7 @@ function csrfToken(): string | undefined {
 }
 
 /** Páginas acessíveis sem sessão: um 401 nelas não redireciona. */
-const PUBLIC_PATHS = ['/login', '/set-password', '/forgot-password'];
+const PUBLIC_PATHS = ['/login', '/set-password', '/forgot-password', '/p/'];
 
 let tenantHeader: string | null = null;
 /** Seleciona um tenant específico (apenas estreita o escopo; o servidor valida). */

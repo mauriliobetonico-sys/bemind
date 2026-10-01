@@ -60,6 +60,8 @@ Requisitos do servidor: portas 80/443 abertas, DNS do `DOMAIN` apontando para el
 
 ## Atualização
 
+> **Ao atualizar para a Fase 3:** adicione `APP_SECRET` ao `.env` antes de subir (`openssl rand -hex 32`). Sem ela a API não inicia.
+
 ```bash
 git pull && docker compose build && docker compose up -d
 ```

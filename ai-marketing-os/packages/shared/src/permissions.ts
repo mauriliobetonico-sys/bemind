@@ -28,11 +28,19 @@ export const PERMISSIONS = {
   'files:delete': 'Excluir arquivos',
   'approvals:request': 'Enviar entregáveis para aprovação do cliente',
   'approvals:decide': 'Aprovar ou pedir alteração em entregáveis',
+  'proposals:read': 'Ver propostas comerciais',
+  'proposals:write': 'Criar, editar e enviar propostas',
+  'contracts:read': 'Ver contratos',
+  'contracts:write': 'Criar e alterar contratos',
+  'finance:read': 'Ver faturas, pagamentos, despesas e rentabilidade',
+  'finance:write': 'Registrar pagamentos e despesas, emitir faturas',
+  'finance:approve': 'Aprovar ações financeiras críticas (HITL)',
+  'billing:read': 'Ver o próprio contrato e as próprias faturas (portal)',
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
 
-export const ROLE_KEYS = ['SUPER_ADMIN', 'ADMIN', 'GESTOR', 'OPERADOR', 'CLIENTE'] as const;
+export const ROLE_KEYS = ['SUPER_ADMIN', 'ADMIN', 'FINANCEIRO', 'GESTOR', 'OPERADOR', 'CLIENTE'] as const;
 export type SystemRoleKey = (typeof ROLE_KEYS)[number];
 
 /** Papéis globais valem para todos os tenants; papéis de tenant valem por associação. */
@@ -52,13 +60,19 @@ export const SYSTEM_ROLES: readonly RoleDefinition[] = [
     key: 'SUPER_ADMIN',
     name: 'Super administrador',
     scope: 'global',
-    permissions: ALL.filter((p) => p !== 'approvals:decide'),
+    permissions: ALL.filter((p) => p !== 'approvals:decide' && p !== 'billing:read'),
   },
   {
     key: 'ADMIN',
     name: 'Administrador da agência',
     scope: 'global',
-    permissions: ALL.filter((p) => p !== 'platform:settings' && p !== 'approvals:decide'),
+    permissions: ALL.filter((p) => p !== 'platform:settings' && p !== 'approvals:decide' && p !== 'billing:read'),
+  },
+  {
+    key: 'FINANCEIRO',
+    name: 'Financeiro',
+    scope: 'global',
+    permissions: ['clients:read', 'proposals:read', 'contracts:read', 'contracts:write', 'finance:read', 'finance:write'],
   },
   {
     key: 'GESTOR',
@@ -68,6 +82,7 @@ export const SYSTEM_ROLES: readonly RoleDefinition[] = [
       'clients:read', 'clients:write', 'users:read', 'dashboard:admin',
       'work:read', 'work:manage', 'tasks:read', 'tasks:write', 'demands:create',
       'files:read', 'files:write', 'files:delete', 'approvals:request',
+      'proposals:read', 'proposals:write', 'contracts:read',
     ],
   },
   {
@@ -83,7 +98,7 @@ export const SYSTEM_ROLES: readonly RoleDefinition[] = [
     key: 'CLIENTE',
     name: 'Cliente',
     scope: 'tenant',
-    permissions: ['clients:read', 'dashboard:client', 'work:read', 'demands:create', 'files:read', 'files:write', 'approvals:decide'],
+    permissions: ['clients:read', 'dashboard:client', 'work:read', 'demands:create', 'files:read', 'files:write', 'approvals:decide', 'billing:read'],
   },
 ];
 
@@ -91,4 +106,4 @@ export const GLOBAL_ROLE_KEYS = SYSTEM_ROLES.filter((r) => r.scope === 'global')
 export const TENANT_ROLE_KEYS = SYSTEM_ROLES.filter((r) => r.scope === 'tenant').map((r) => r.key);
 
 /** Papéis internos da agência (veem o painel administrativo). */
-export const STAFF_ROLE_KEYS: readonly SystemRoleKey[] = ['SUPER_ADMIN', 'ADMIN', 'GESTOR', 'OPERADOR'];
+export const STAFF_ROLE_KEYS: readonly SystemRoleKey[] = ['SUPER_ADMIN', 'ADMIN', 'FINANCEIRO', 'GESTOR', 'OPERADOR'];

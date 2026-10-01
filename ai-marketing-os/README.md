@@ -2,7 +2,7 @@
 
 Plataforma SaaS multi-tenant para uma agência de marketing administrar dezenas ou centenas de clientes, cada um com seu ambiente isolado e — nas próximas fases — sua própria equipe de agentes de IA.
 
-> **Status:** Fases 1 (Core) e 2 (Operação) concluídas — autenticação, tenants, RBAC, RLS, auditoria, Maurílio Desk, CRM, onboarding, portal do cliente, projetos, demandas, briefings, tarefas, entregáveis com QA, aprovações, arquivos com Brand Vault e calendário. Fases 3–8: ver [roadmap](docs/ARCHITECTURE.md#roadmap).
+> **Status:** Fases 1 (Core), 2 (Operação) e 3 (Comercial) concluídas — autenticação, tenants, RBAC, RLS, auditoria, Maurílio Desk, CRM, onboarding, portal do cliente, demandas, QA, aprovações, arquivos/Brand Vault, calendário, propostas com aceite online e PDF, contratos, cobrança, pagamentos, despesas, rentabilidade e aprovação humana para ações financeiras. Fases 4–8: ver [roadmap](docs/ARCHITECTURE.md#roadmap).
 
 ## O que já funciona
 
@@ -23,6 +23,11 @@ Plataforma SaaS multi-tenant para uma agência de marketing administrar dezenas 
 | Aprovações (F2) | Cliente aprova ou pede alteração (motivo obrigatório); a demanda volta à etapa certa; e-mails para os dois lados |
 | Arquivos (F2) | Upload múltiplo por arrastar-e-soltar, tipo detectado pelo conteúdo, classificação automática ("Identifiquei: 11 imagens, 1 logo…"), rascunhos internos invisíveis ao cliente, ClamAV opcional, download só autenticado |
 | Brand Vault (F2) | Paleta, logos, fontes, manuais, produtos e referências por cliente |
+| Propostas (F3) | Editor com serviços recorrentes/únicos e desconto; PDF; envio por e-mail com link assinado; o cliente vê, baixa e aceita online (nome + concordância + IP registrados) ou recusa |
+| Contratos e cobrança (F3) | Aceite → contrato ativo → fatura de setup + faturas recorrentes geradas automaticamente (idempotente) → lembrete de vencimento; baixa manual de pagamentos (gateway: integração pendente) |
+| Onboarding por pagamento (F3) | Prospect sem acesso: o primeiro pagamento confirmado cria o usuário e envia as boas-vindas |
+| Financeiro (F3) | MRR, ticket médio, recebido, a receber, inadimplência, despesas (sempre da agência, com rateio opcional) e rentabilidade por cliente com alerta de margem |
+| HITL (F3) | Cancelar fatura/contrato, alterar valor e excluir despesa viram pedidos que só executam após aprovação humana; políticas configuráveis |
 | Calendário (F2) | Mensal, semanal e diário: eventos + prazos de demandas, aprovações e tarefas (internas só para a equipe) |
 
 Indicadores que dependem de módulos futuros (contratos, pagamentos, tarefas, agentes, custos de IA) aparecem como **“Fase N”** — nunca com números simulados. Sem SMTP configurado, `/api/ready` informa `smtp: integration_pending` e os convites aguardam no outbox.
@@ -74,6 +79,7 @@ Os testes criam um banco descartável, aplicam as migrations e rodam contra o Po
 - `rls.test.ts` — isolamento no próprio banco: sem contexto não há linhas; contexto de A não lê nem grava em B; FK composta; auditoria append-only.
 - `auth.test.ts` — cookies, hash de sessão, enumeração, bloqueio, CSRF, origem, logout, ociosidade, recuperação de senha, rate limit.
 - `rbac-and-onboarding.test.ts` — papéis, escalonamento de privilégio, provisionamento transacional, e-mail de boas-vindas, retry de SMTP, histórico, MRR.
+- `commercial.test.ts` — cálculo da proposta, link público (sem dados internos), PDF, aceite → contrato → faturas, rotina de cobrança idempotente, pagamentos, onboarding no primeiro pagamento, HITL (pedido, aprovação, rejeição, autoaprovação), despesas, rentabilidade e isolamento comercial.
 - `operations.test.ts` — fluxo completo demanda→QA→aprovação→entrega, isolamento de demandas/arquivos/aprovações/tarefas/Brand Vault/calendário, upload com extensão falsa, executável, limite de tamanho, SVG em sandbox, antivírus (protocolo clamd), RLS e FKs compostas das novas tabelas.
 
 ## Documentação

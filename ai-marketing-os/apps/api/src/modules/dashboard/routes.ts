@@ -10,8 +10,6 @@ import { listClientEvents, toClientDto, type ClientRow } from '../clients/reposi
  * explicitamente a fase em vez de devolver números simulados.
  */
 const PENDING_MODULES = [
-  { key: 'contracts', label: 'Contratos e propostas', phase: 3 },
-  { key: 'payments', label: 'Pagamentos e inadimplência', phase: 3 },
   { key: 'agents', label: 'Agentes ativos e com erro', phase: 4 },
   { key: 'ai_costs', label: 'Custos de IA', phase: 4 },
 ];
@@ -30,6 +28,7 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
           churned: number;
           new_this_month: number;
           mrr_cents: string;
+          active_contracts: number;
         }>(
           `SELECT count(*)::int AS total,
                   count(*) FILTER (WHERE status = 'active')::int AS active,
@@ -38,7 +37,8 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
                   count(*) FILTER (WHERE status = 'paused')::int AS paused,
                   count(*) FILTER (WHERE status = 'churned')::int AS churned,
                   count(*) FILTER (WHERE created_at >= date_trunc('month', now()))::int AS new_this_month,
-                  coalesce(sum(monthly_fee_cents) FILTER (WHERE status = 'active'), 0) AS mrr_cents
+                  (SELECT coalesce(sum(round(k.recurring_amount_cents / CASE k.periodicity WHEN 'quarterly' THEN 3 WHEN 'yearly' THEN 12 ELSE 1 END)), 0) FROM contracts k WHERE k.status = 'active') AS mrr_cents,
+                  (SELECT count(*)::int FROM contracts k WHERE k.status = 'active') AS active_contracts
              FROM clients`,
         )
       ).rows[0]!;
@@ -46,7 +46,8 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
       const byPlan = (
         await tx.query<{ plan: string; count: number; mrr_cents: string }>(
           `SELECT plan, count(*)::int AS count,
-                  coalesce(sum(monthly_fee_cents) FILTER (WHERE status = 'active'), 0) AS mrr_cents
+                  coalesce(sum((SELECT sum(round(k.recurring_amount_cents / CASE k.periodicity WHEN 'quarterly' THEN 3 WHEN 'yearly' THEN 12 ELSE 1 END))
+                                FROM contracts k WHERE k.tenant_id = clients.tenant_id AND k.status = 'active')), 0) AS mrr_cents
              FROM clients GROUP BY plan ORDER BY plan`,
         )
       ).rows.map((r) => ({ plan: r.plan, count: r.count, mrrCents: Number(r.mrr_cents) }));
@@ -137,6 +138,20 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
       }));
 
       const mrrCents = Number(totals.mrr_cents);
+      // Inadimplência e ações críticas: só para quem tem acesso financeiro.
+      const finance = access.canAny('finance:read')
+        ? (
+            await tx.query(
+              `SELECT (SELECT count(*)::int FROM invoices WHERE status = 'open' AND due_date < current_date) AS "overdueCount",
+                      (SELECT coalesce(sum(amount_cents), 0)::float8 FROM invoices WHERE status = 'open' AND due_date < current_date) AS "overdueCents",
+                      (SELECT coalesce(sum(amount_cents), 0)::float8 FROM payments WHERE date_trunc('month', paid_at) = date_trunc('month', current_date)) AS "receivedThisMonthCents",
+                      (SELECT count(*)::int FROM pending_actions WHERE status = 'pending') AS "pendingActions",
+                      (SELECT count(*)::int FROM proposals WHERE status IN ('sent', 'viewed')) AS "openProposals",
+                      (SELECT count(*)::int FROM clients c WHERE c.status IN ('active', 'onboarding')
+                         AND NOT EXISTS (SELECT 1 FROM contracts k WHERE k.tenant_id = c.tenant_id AND k.status = 'active')) AS "clientsWithoutContract"`,
+            )
+          ).rows[0]
+        : null;
       return {
         clients: {
           total: totals.total,
@@ -149,8 +164,9 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
         },
         revenue: {
           mrrCents,
-          averageTicketCents: totals.active > 0 ? Math.round(mrrCents / totals.active) : 0,
-          basis: 'Mensalidade cadastrada dos clientes ativos (contratos e pagamentos entram na fase 3)',
+          averageTicketCents: totals.active_contracts > 0 ? Math.round(mrrCents / totals.active_contracts) : 0,
+          activeContracts: totals.active_contracts,
+          basis: 'Contratos ativos (valor recorrente normalizado por mês)',
         },
         byPlan,
         attention,
@@ -166,6 +182,7 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
           tasksDueToday: ops.tasks_due_today,
         },
         workAttention,
+        finance,
         timeline,
         pendingModules: PENDING_MODULES,
       };
@@ -199,7 +216,6 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
           )
         ).rows[0],
         pendingModules: [
-          { key: 'contract', label: 'Contrato e financeiro', phase: 3 },
           { key: 'agents', label: 'Sua equipe de agentes', phase: 4 },
           { key: 'reports', label: 'Relatório diário', phase: 6 },
         ],

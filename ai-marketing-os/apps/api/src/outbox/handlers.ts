@@ -5,6 +5,12 @@ import { notificationEmail, resetEmail, staffInviteEmail, welcomeEmail } from '.
 import { scanStream } from '../storage/clamav';
 import type { Tx } from '../db/pool';
 import type { OutboxHandler } from './outbox';
+import { proposalToken } from '../modules/commercial/proposals';
+import { getAgencySettings } from '../modules/finance/settings';
+import { ACTION_LABELS } from '@aimos/shared';
+
+const brl = (c: number | string) => (Number(c) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const dmy = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
 
 /** Serviços exibidos no e-mail de boas-vindas por plano (até o módulo de contratos, fase 3). */
 const PLAN_SERVICES: Record<string, string[]> = {
@@ -21,6 +27,43 @@ const PLAN_SERVICES: Record<string, string[]> = {
 export function outboxHandlers(ctx: AppContext): Record<string, OutboxHandler> {
   const base = ctx.env.APP_URL.replace(/\/$/, '');
   const link = (path: string, token: string) => `${ctx.env.APP_URL.replace(/\/$/, '')}${path}?token=${encodeURIComponent(token)}`;
+
+  async function invoiceEmail(event: { tenant_id: string | null; payload: Record<string, unknown> }, kind: 'issued' | 'overdue') {
+    const { invoiceId } = event.payload as { invoiceId: string };
+    if (!event.tenant_id) return;
+    const tenantId = event.tenant_id;
+    const messages = await withContext(ctx.pool, SYSTEM, async (tx) => {
+      const inv = (
+        await tx.query<{ number: string; description: string; amount: string; due: string; status: string; paid: string }>(
+          `SELECT number, description, amount_cents AS amount, to_char(due_date, 'YYYY-MM-DD') AS due, status,
+                  (SELECT coalesce(sum(amount_cents), 0) FROM payments WHERE invoice_id = invoices.id) AS paid
+             FROM invoices WHERE id = $1 AND tenant_id = $2`,
+          [invoiceId, tenantId],
+        )
+      ).rows[0];
+      if (!inv || inv.status !== 'open') return [];
+      const agency = await getAgencySettings(tx);
+      const balance = Number(inv.amount) - Number(inv.paid);
+      return (await billingRecipients(tx, tenantId)).map((r) =>
+        notificationEmail({
+          to: r.email,
+          title: kind === 'issued' ? `Fatura ${inv.number}` : `Fatura ${inv.number} vencida`,
+          intro:
+            kind === 'issued'
+              ? `Olá, ${r.name}! Sua fatura de ${agency.agencyName} está disponível.`
+              : `Olá, ${r.name}! Não identificamos o pagamento da fatura ${inv.number}, vencida em ${dmy(inv.due)}. Se já pagou, desconsidere.`,
+          details: [
+            ['Referente a', inv.description],
+            ['Valor', brl(balance)],
+            ['Vencimento', dmy(inv.due)],
+            ...(agency.paymentInstructions ? ([['Como pagar', agency.paymentInstructions]] as [string, string][]) : []),
+          ],
+          cta: { url: `${base}/billing`, label: 'Ver no portal' },
+        }),
+      );
+    });
+    for (const m of messages) await ctx.mailer.send(m);
+  }
 
   return {
     'user.invite': async (event) => {
@@ -177,10 +220,141 @@ export function outboxHandlers(ctx: AppContext): Record<string, OutboxHandler> {
       if (result.status === 'infected') await ctx.storage.remove(tenantId, fileId);
     },
 
+    // ---------------------------------------------------------------- fase 3
+    /** PROPOSTA ENVIADA → e-mail ao contato do cliente com o link assinado. */
+    'proposal.sent': async (event) => {
+      const { proposalId } = event.payload as { proposalId: string };
+      const message = await withContext(ctx.pool, SYSTEM, async (tx) => {
+        const p = (
+          await tx.query<{ number: string; title: string; status: string; nonce: string | null; valid_until: string; recurring: string; one_time: string; periodicity: string; contact: string; responsible: string; trade_name: string }>(
+            `SELECT p.number, p.title, p.status, p.public_token_nonce AS nonce, to_char(p.valid_until, 'YYYY-MM-DD') AS valid_until,
+                    p.recurring_total_cents AS recurring, p.one_time_total_cents AS one_time, p.periodicity,
+                    c.email AS contact, c.responsible_name AS responsible, c.trade_name
+               FROM proposals p JOIN clients c ON c.tenant_id = p.tenant_id WHERE p.id = $1 AND p.tenant_id = $2`,
+            [proposalId, event.tenant_id],
+          )
+        ).rows[0];
+        if (!p || !p.nonce || !['sent', 'viewed'].includes(p.status)) return null;
+        const agency = await getAgencySettings(tx);
+        const url = `${base}/p/${proposalToken(ctx.env.APP_SECRET, proposalId, p.nonce)}`;
+        return notificationEmail({
+          to: p.contact,
+          title: `Proposta ${p.number} — ${p.title}`,
+          intro: `Olá, ${p.responsible}! A ${agency.agencyName} preparou uma proposta para a ${p.trade_name}.`,
+          details: [
+            ['Investimento recorrente', brl(p.recurring)],
+            ...(Number(p.one_time) > 0 ? ([['Investimento único', brl(p.one_time)]] as [string, string][]) : []),
+            ['Válida até', dmy(p.valid_until)],
+          ],
+          cta: { url, label: 'Ver proposta' },
+          footer: 'Pelo link você vê todos os detalhes, baixa o PDF e pode aceitar ou recusar a proposta.',
+        });
+      });
+      if (message) await ctx.mailer.send(message);
+    },
+
+    /** PROPOSTA RESPONDIDA → aviso para quem criou e para os administradores. */
+    'proposal.answered': async (event) => {
+      const { proposalId } = event.payload as { proposalId: string };
+      const messages = await withContext(ctx.pool, SYSTEM, async (tx) => {
+        const p = (
+          await tx.query<{ number: string; title: string; status: string; accepted_by_name: string | null; rejection_reason: string | null; trade_name: string; created_by: string | null }>(
+            `SELECT p.number, p.title, p.status, p.accepted_by_name, p.rejection_reason, c.trade_name, p.created_by
+               FROM proposals p JOIN clients c ON c.tenant_id = p.tenant_id WHERE p.id = $1 AND p.tenant_id = $2`,
+            [proposalId, event.tenant_id],
+          )
+        ).rows[0];
+        if (!p || !['accepted', 'rejected'].includes(p.status)) return [];
+        const to = (
+          await tx.query<{ email: string }>(
+            `SELECT DISTINCT email FROM users WHERE status = 'active' AND (global_role IN ('SUPER_ADMIN', 'ADMIN') OR id = $1)`,
+            [p.created_by],
+          )
+        ).rows;
+        const accepted = p.status === 'accepted';
+        return to.map((u) =>
+          notificationEmail({
+            to: u.email,
+            title: accepted ? `Proposta aceita — ${p.trade_name}` : `Proposta recusada — ${p.trade_name}`,
+            intro: accepted
+              ? `${p.accepted_by_name ?? 'O cliente'} aceitou a proposta ${p.number} (${p.title}). O contrato foi criado e a cobrança iniciada.`
+              : `A proposta ${p.number} (${p.title}) foi recusada.`,
+            details: p.rejection_reason ? [['Motivo', p.rejection_reason]] : [],
+            cta: { url: `${base}/proposals/${proposalId}`, label: 'Abrir proposta' },
+          }),
+        );
+      });
+      for (const m of messages) await ctx.mailer.send(m);
+    },
+
+    /** CONTRATO ATIVADO → confirmação ao cliente. */
+    'contract.activated': async (event) => {
+      const { contractId } = event.payload as { contractId: string };
+      const messages = await withContext(ctx.pool, SYSTEM, async (tx) => {
+        const k = (
+          await tx.query<{ number: string; title: string; recurring: string; setup: string; periodicity: string; start: string }>(
+            `SELECT number, title, recurring_amount_cents AS recurring, setup_amount_cents AS setup, periodicity, to_char(start_date, 'YYYY-MM-DD') AS start
+               FROM contracts WHERE id = $1 AND tenant_id = $2 AND status = 'active'`,
+            [contractId, event.tenant_id],
+          )
+        ).rows[0];
+        if (!k || !event.tenant_id) return [];
+        const recipients = await billingRecipients(tx, event.tenant_id);
+        return recipients.map((r) =>
+          notificationEmail({
+            to: r.email,
+            title: `Contrato ${k.number} ativo`,
+            intro: `Olá, ${r.name}! Seu contrato "${k.title}" está ativo a partir de ${dmy(k.start)}.`,
+            details: [['Valor recorrente', brl(k.recurring)], ...(Number(k.setup) > 0 ? ([['Setup', brl(k.setup)]] as [string, string][]) : [])],
+            footer: 'As faturas chegam por e-mail e ficam disponíveis no portal.',
+          }),
+        );
+      });
+      for (const m of messages) await ctx.mailer.send(m);
+    },
+
+    /** FATURA EMITIDA / VENCIDA → e-mail ao cliente com instruções de pagamento. */
+    'invoice.issued': async (event) => invoiceEmail(event, 'issued'),
+    'invoice.overdue': async (event) => invoiceEmail(event, 'overdue'),
+
+    /** AÇÃO CRÍTICA PEDIDA → aviso aos aprovadores (HITL). */
+    'action.requested': async (event) => {
+      const { actionId } = event.payload as { actionId: string };
+      const messages = await withContext(ctx.pool, SYSTEM, async (tx) => {
+        const a = (
+          await tx.query<{ action: string; reason: string; status: string; requester: string | null; tenant_name: string }>(
+            `SELECT a.action, a.reason, a.status, u.name AS requester, t.name AS tenant_name
+               FROM pending_actions a JOIN tenants t ON t.id = a.tenant_id LEFT JOIN users u ON u.id = a.requested_by WHERE a.id = $1`,
+            [actionId],
+          )
+        ).rows[0];
+        if (!a || a.status !== 'pending') return [];
+        const approvers = (await tx.query<{ email: string }>(`SELECT email FROM users WHERE status = 'active' AND global_role IN ('SUPER_ADMIN', 'ADMIN')`)).rows;
+        return approvers.map((u) =>
+          notificationEmail({
+            to: u.email,
+            title: 'Aprovação necessária',
+            intro: `${a.requester ?? 'Alguém da equipe'} pediu: ${ACTION_LABELS[a.action] ?? a.action} (${a.tenant_name}).`,
+            details: [['Motivo', a.reason]],
+            cta: { url: `${base}/finance/actions`, label: 'Revisar pedido' },
+            footer: 'Nada é executado até a sua decisão.',
+          }),
+        );
+      });
+      for (const m of messages) await ctx.mailer.send(m);
+    },
+
     // Eventos de domínio sem efeito colateral nesta fase (consumidos pelas próximas fases).
     'client.created': async () => undefined,
     'client.updated': async () => undefined,
   };
+}
+
+/** Destinatários de cobrança: usuários CLIENTE ativos; sem usuário, o e-mail de contato do cadastro. */
+async function billingRecipients(tx: Tx, tenantId: string) {
+  const users = await tenantClientUsers(tx, tenantId);
+  if (users.length) return users;
+  return (await tx.query<{ email: string; name: string }>(`SELECT email, responsible_name AS name FROM clients WHERE tenant_id = $1`, [tenantId])).rows;
 }
 
 interface ApprovalInfo {

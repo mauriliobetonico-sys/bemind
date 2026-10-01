@@ -79,3 +79,8 @@ export const deliverableTone: Record<string, Tone> = {
   approved: 'ok',
 };
 export const priorityTone: Record<string, Tone> = { low: 'neutral', normal: 'neutral', high: 'warn', urgent: 'danger' };
+
+export const proposalTone: Record<string, Tone> = { draft: 'neutral', sent: 'info', viewed: 'info', accepted: 'ok', rejected: 'danger', expired: 'neutral' };
+export const invoiceTone: Record<string, Tone> = { open: 'info', overdue: 'danger', paid: 'ok', cancelled: 'neutral' };
+export const INVOICE_STATUS_LABELS: Record<string, string> = { open: 'Em aberto', overdue: 'Vencida', paid: 'Paga', cancelled: 'Cancelada' };
+export const contractTone: Record<string, Tone> = { active: 'ok', suspended: 'warn', ended: 'neutral', cancelled: 'danger' };

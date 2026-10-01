@@ -10,6 +10,7 @@ Todas são validadas na inicialização (`apps/api/src/config/env.ts`); valor in
 | `API_HOST` / `API_PORT` | `0.0.0.0` / `4000` | Endereço da API |
 | `LOG_LEVEL` | `info` | Nível de log |
 | `APP_URL` | — (obrigatório) | URL pública; usada em e-mails e na checagem de `Origin` |
+| `APP_SECRET` | — (obrigatório, mín. 32) | Assina os links públicos de proposta (HMAC). Trocar invalida todos os links já enviados |
 | `DATABASE_URL` | — (obrigatório) | Conexão do role `aimos_app` (sujeito a RLS) |
 | `DATABASE_POOL_MAX` | `10` | Conexões por processo |
 | `REDIS_URL` | — | Rate limit distribuído (recomendado em produção) |

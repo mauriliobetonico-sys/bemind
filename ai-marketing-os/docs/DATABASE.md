@@ -58,9 +58,22 @@ Todas com `tenant_id` + RLS (`app.enable_tenant_rls`) e FKs compostas entre si.
 | `approvals` | Pedido de aprovação por versão; no máximo um pendente por entregável; pedir alteração exige motivo (CHECK) |
 | `calendar_events` | Eventos (conteúdo, campanha, reunião, tarefa, entrega, aprovação) com visibilidade client/internal |
 
+## Tabelas da Fase 3
+
+| Tabela | Tenant | Descrição |
+| --- | --- | --- |
+| `proposals` / `proposal_items` | cliente | Proposta numerada, validade, recorrência, desconto, totais calculados no servidor, link público (hash + nonce), aceite (nome, via, IP, user-agent) |
+| `contracts` | cliente | Contrato numerado, periodicidade, valor, setup, vigência, dia de cobrança, serviços, status de assinatura |
+| `invoices` | cliente | Faturas numeradas (setup, recorrente, avulsa); índice único por contrato/tipo/período garante geração idempotente |
+| `payments` | cliente | Baixas (parciais permitidas), forma, referência, `provider = manual` |
+| `expenses` | **agência** | Despesas por categoria; `client_tenant_id` só para rateio (trigger garante agência/cliente) |
+| `pending_actions` | cliente/agência | Pedidos HITL: ação, payload, motivo, status, quem pediu/decidiu |
+| `agency_settings` | global | Dados da agência, instruções de pagamento, limite de margem, antecedência de faturamento (somente global/system) |
+| `action_policies` | global | Política por ação crítica |
+
 ## Entidades das próximas fases
 
-Já modeladas na arquitetura (todas com `tenant_id` + RLS): `proposals`, `contracts`, `subscriptions`, `payments`, `expenses`, `campaigns`, `agents`, `agent_runs`, `agent_memory`, `agent_knowledge`, `agent_policies`, `agent_meetings`, `agent_messages`, `ai_usage`, `integrations`, `mcp_connections`, `mcp_tool_calls`, `notifications`, `daily_reports`, `analytics`, `plans`.
+Já modeladas na arquitetura (todas com `tenant_id` + RLS): `subscriptions`, `campaigns`, `agents`, `agent_runs`, `agent_memory`, `agent_knowledge`, `agent_policies`, `agent_meetings`, `agent_messages`, `ai_usage`, `integrations`, `mcp_connections`, `mcp_tool_calls`, `notifications`, `daily_reports`, `analytics`, `plans`.
 
 ## Backup
 

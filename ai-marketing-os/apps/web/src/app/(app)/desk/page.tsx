@@ -29,6 +29,14 @@ interface AdminDashboard {
     tasksDueToday: number;
   };
   workAttention: { kind: string; demandId: string; title: string; clientName: string; detail: string }[];
+  finance: {
+    overdueCount: number;
+    overdueCents: number;
+    receivedThisMonthCents: number;
+    pendingActions: number;
+    openProposals: number;
+    clientsWithoutContract: number;
+  } | null;
 }
 
 export default function DeskPage() {
@@ -68,10 +76,10 @@ export default function DeskPage() {
           [0, 1, 2, 3].map((i) => <Skeleton key={i} height={104} />)
         ) : (
           <>
-            <StatCard label="MRR" value={brl(data.revenue.mrrCents)} hint="Mensalidades de clientes ativos" />
+            <StatCard label="MRR" value={brl(data.revenue.mrrCents)} hint="contratos ativos" />
             <StatCard label="Clientes ativos" value={data.clients.active} hint={`${data.clients.total} no total`} />
             <StatCard label="Em onboarding" value={data.clients.onboarding} tone={data.clients.onboarding > 0 ? 'warn' : undefined} hint={`${data.clients.newThisMonth} novo(s) este mês`} />
-            <StatCard label="Ticket médio" value={brl(data.revenue.averageTicketCents)} hint={`${data.clients.paused} pausados · ${data.clients.churned} encerrados`} />
+            <StatCard label="Ticket médio" value={brl(data.revenue.averageTicketCents)} hint="MRR ÷ contratos ativos" />
           </>
         )}
       </div>
@@ -82,6 +90,15 @@ export default function DeskPage() {
           <StatCard label="Em produção" value={data.operations.inProduction} hint={`${data.operations.overdueDemands} atrasada(s)`} tone={data.operations.overdueDemands > 0 ? 'danger' : undefined} />
           <StatCard label="Aprovações pendentes" value={data.operations.approvalsPending} hint={`${data.operations.approvalsStale} parada(s) há +3 dias`} tone={data.operations.approvalsStale > 0 ? 'warn' : undefined} />
           <StatCard label="Tarefas atrasadas" value={data.operations.overdueTasks} hint={`${data.operations.tasksDueToday} vencem hoje · ${data.operations.openTasks} abertas`} tone={data.operations.overdueTasks > 0 ? 'danger' : undefined} />
+        </div>
+      )}
+
+      {data?.finance && (
+        <div className="ds-grid ds-grid-4">
+          <StatCard label="Recebido no mês" value={brl(data.finance.receivedThisMonthCents)} hint={<Link href="/finance">abrir financeiro</Link>} />
+          <StatCard label="Inadimplência" value={brl(data.finance.overdueCents)} tone={data.finance.overdueCount > 0 ? 'danger' : undefined} hint={`${data.finance.overdueCount} fatura(s) vencida(s)`} />
+          <StatCard label="Propostas aguardando" value={data.finance.openProposals} hint={<Link href="/proposals">ver propostas</Link>} />
+          <StatCard label="Aprovações críticas" value={data.finance.pendingActions} tone={data.finance.pendingActions > 0 ? 'warn' : undefined} hint={data.finance.clientsWithoutContract > 0 ? `${data.finance.clientsWithoutContract} cliente(s) sem contrato` : 'todos os clientes com contrato'} />
         </div>
       )}
 

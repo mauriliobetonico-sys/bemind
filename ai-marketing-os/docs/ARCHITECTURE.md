@@ -29,7 +29,10 @@
 | Projetos, demandas, briefings, tarefas, entregáveis, QA, aprovações | 2 | `modules/projects`, `modules/demands`, `modules/tasks` |
 | Arquivos, Brand Vault (storage por tenant, detecção de tipo, ClamAV) | 2 | `modules/files`, `storage/` |
 | Calendário | 2 | `modules/calendar` |
-| Propostas, contratos, financeiro, pagamentos, rentabilidade | 3 | — |
+| Propostas (link público assinado, PDF), contratos, cobrança | 3 | `modules/commercial` |
+| Faturas, pagamentos, despesas, resumo, rentabilidade, configurações | 3 | `modules/finance` |
+| Ações críticas com aprovação humana (HITL) | 3 | `modules/hitl` |
+| Rotina de cobrança (worker) | 3 | `jobs/billing-tick.ts` |
 | AI Gateway, Orchestrator, agentes, memória, Agent Room, QA, Chat Global | 4 | ver [AGENTS.md](AGENTS.md) |
 | MCP Hub e integrações | 5 | ver [MCP.md](MCP.md) |
 | Notificações, daily report, workflows, publicação | 6 | — |
@@ -64,6 +67,14 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 
 **ADR-009 — Filas: outbox agora, BullMQ na fase 4.** As tarefas assíncronas da fase 2 (e-mails, varredura antivírus) são curtas e cabem no outbox transacional, que já tem retry, backoff e dead-letter. BullMQ entra com os agentes (fase 4), onde há jobs longos e concorrência por fila.
 
+**ADR-010 — Links públicos de proposta assinados com HMAC.** O token é `HMAC(APP_SECRET, id:nonce)`; o banco guarda só o SHA-256 dele. O e-mail é montado no worker recalculando o token — nada sensível em claro no outbox. Trocar o nonce revoga o link.
+
+**ADR-011 — Aceite eletrônico simples agora; assinatura com certificado depois.** O aceite registra nome, concordância explícita, data/hora, IP e user-agent. Assinatura com validade de certificado (ICP-Brasil ou provedor de e-sign) entra como integração (`signature_status = esign_*`), sem mudar o modelo.
+
+**ADR-012 — Despesas sempre no tenant da agência.** O rateio para um cliente é uma coluna, não o tenant da linha: nenhuma política de RLS de cliente alcança custos da agência.
+
+**ADR-013 — HITL como infraestrutura.** Ações críticas viram `pending_actions` e só executam após decisão humana, com política por ação (`requires_approval`, `allow_self_approval`). Os agentes da fase 4 usarão o mesmo mecanismo — e nunca terão autoaprovação.
+
 **ADR-007 — Integrações nunca simuladas.** Indicadores e integrações sem implementação retornam a fase prevista ou `integration_pending`.
 
 ## Roadmap
@@ -72,7 +83,7 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 | --- | --- | --- |
 | **1 · concluída** | Auth, usuários, tenants, RBAC, RLS, auditoria, dashboard, clientes, onboarding | Testes de isolamento A→B passando contra Postgres real |
 | **2 · concluída** | Projetos, demandas, briefings, tarefas, entregáveis, QA, aprovações, arquivos/Brand Vault, calendário, notificações por e-mail | Download cruzado bloqueado; upload validado pelo conteúdo; DLQ no outbox |
-| 3 | Propostas (PDF), contratos, financeiro, pagamentos, rentabilidade | Alterações financeiras auditadas e com HITL |
+| **3 · concluída** | Propostas (PDF + aceite online), contratos, cobrança automática, pagamentos, despesas, rentabilidade, HITL | Alterações financeiras auditadas e com HITL; cliente nunca alcança custos da agência |
 | 4 | AI Gateway, Orchestrator, agentes, memória, Agent Room, QA, Chat Global | Memória isolada por tenant; custo por run |
 | 5 | MCP Hub, ferramentas, conectores, permissões | Ferramenta HIGH nunca executa sem aprovação |
 | 6 | Daily report, e-mails, notificações, workflows, publicação | Cada cliente recebe só o próprio relatório |

@@ -23,8 +23,12 @@ const STAFF_NAV: NavItem[] = [
   { href: '/projects', label: 'Projetos', permission: 'work:read' },
   { href: '/calendar', label: 'Calendário', permission: 'work:read' },
   { href: '/files', label: 'Arquivos e marca', permission: 'files:read' },
+  { href: '/proposals', label: 'Propostas', permission: 'proposals:read' },
+  { href: '/contracts', label: 'Contratos', permission: 'contracts:read' },
+  { href: '/finance', label: 'Financeiro', permission: 'finance:read' },
   { href: '/users', label: 'Equipe e acessos', permission: 'users:read' },
   { href: '/audit', label: 'Auditoria', permission: 'audit:read' },
+  { href: '/settings', label: 'Configurações', permission: 'finance:approve' },
 ];
 
 const CLIENT_NAV: NavItem[] = [
@@ -33,6 +37,7 @@ const CLIENT_NAV: NavItem[] = [
   { href: '/approvals', label: 'Aprovações', permission: 'work:read' },
   { href: '/calendar', label: 'Calendário', permission: 'work:read' },
   { href: '/files', label: 'Arquivos e marca', permission: 'files:read' },
+  { href: '/billing', label: 'Contrato e faturas', permission: 'billing:read' },
 ];
 
 function ThemeToggle() {

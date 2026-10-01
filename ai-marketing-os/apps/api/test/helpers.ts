@@ -30,6 +30,7 @@ export async function createTestEnv(overrides: Record<string, string> = {}): Pro
   const env = loadEnv({
     NODE_ENV: 'test',
     APP_URL,
+    APP_SECRET: 'segredo-de-teste-com-mais-de-32-caracteres',
     DATABASE_URL: inject('appUrl'),
     COOKIE_SECURE: 'true',
     AUTH_RATE_PER_MINUTE: '10000',
@@ -130,8 +131,18 @@ export function clientPayload(name: string, extra: Record<string, unknown> = {})
   };
 }
 
+/** Processa o outbox até esvaziar (vários lotes), somando os resultados. */
 export async function drainOutbox(env: TestEnv) {
-  return processOutbox(env.ctx.pool, outboxHandlers(env.ctx), { maxAttempts: env.ctx.env.OUTBOX_MAX_ATTEMPTS });
+  const handlers = outboxHandlers(env.ctx);
+  const total = { processed: 0, failed: 0, dead: 0 };
+  for (let i = 0; i < 50; i++) {
+    const r = await processOutbox(env.ctx.pool, handlers, { maxAttempts: env.ctx.env.OUTBOX_MAX_ATTEMPTS });
+    total.processed += r.processed;
+    total.failed += r.failed;
+    total.dead += r.dead;
+    if (r.processed + r.failed + r.dead === 0) break;
+  }
+  return total;
 }
 
 export function tokenFromEmail(text: string): string {

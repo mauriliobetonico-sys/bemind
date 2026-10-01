@@ -10,6 +10,9 @@ const envSchema = z.object({
   API_PORT: z.coerce.number().int().default(4000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
+  /** Segredo para links assinados (propostas). Mínimo 32 caracteres; nunca reutilize em outro sistema. */
+  APP_SECRET: z.string().min(32, 'APP_SECRET precisa de pelo menos 32 caracteres'),
+
   /** URL pública da plataforma (usada em e-mails e na checagem de Origin). */
   APP_URL: z.url(),
 

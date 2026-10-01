@@ -80,6 +80,37 @@ Criação de recursos exige **um** cliente: usuários com um único tenant não 
 | GET | `/calendar?from=&to=` | `work:read` | Eventos + prazos derivados (máx. 62 dias) |
 | POST/DELETE | `/calendar/events[/:id]` | `work:manage` | Eventos |
 
+## Comercial e financeiro (Fase 3)
+
+| Método | Rota | Permissão | Descrição |
+| --- | --- | --- | --- |
+| GET/POST | `/proposals` | `proposals:read` / `proposals:write` | Lista e cria (totais calculados no servidor) |
+| GET/PATCH | `/proposals/:id` | `proposals:read` / `proposals:write` | Detalhe; edição só em rascunho |
+| GET | `/proposals/:id/pdf` | `proposals:read` | PDF |
+| POST | `/proposals/:id/send` | `proposals:write` | Envia/reenvia (e-mail) e devolve o link público |
+| POST | `/proposals/:id/accept-manual` | `proposals:write` | Aceite registrado pela agência → contrato |
+| GET | `/public/proposals/:token` | pública (rate limit) | Proposta sem dados internos; marca visualizada |
+| GET | `/public/proposals/:token/pdf` | pública | PDF |
+| POST | `/public/proposals/:token/accept` | pública | `{ name, agree: true }` → contrato + faturas |
+| POST | `/public/proposals/:token/reject` | pública | `{ reason? }` |
+| GET/POST | `/contracts` | `contracts:read` / `contracts:write` | Lista e cria contrato direto |
+| GET/PATCH | `/contracts/:id` | `contracts:read` / `contracts:write` | Detalhe com faturas; título, fim, dia, suspender/reativar |
+| POST | `/contracts/:id/change-value` | `contracts:write` | HITL → 202 pendente (ou 200 se a política não exigir) |
+| POST | `/contracts/:id/cancel` | `contracts:write` | HITL |
+| GET/POST | `/invoices` | `finance:read` / `finance:write` | Faturas (`?status=open\|overdue\|paid\|cancelled`); avulsa |
+| POST | `/invoices/:id/payments` | `finance:write` | Baixa (parcial ou total) |
+| POST | `/invoices/:id/cancel` | `finance:write` | HITL |
+| GET/POST | `/expenses?month=` | `finance:read` / `finance:write` | Despesas da agência (rateio opcional) |
+| DELETE | `/expenses/:id` | `finance:write` | HITL (`{ reason }`) |
+| GET | `/finance/summary?month=` | `finance:read` | MRR, ticket, recebido, a receber, inadimplência, despesas, série de 6 meses |
+| GET | `/finance/profitability?month=` | `finance:read` | Rentabilidade por cliente com método e alertas |
+| GET/PUT | `/settings/agency` | `finance:read` / `finance:approve` | Dados da agência e parâmetros de cobrança |
+| GET | `/actions?status=` | `finance:read` | Pedidos HITL |
+| POST | `/actions/:id/decide` | `finance:approve` | `{ decision: approve \| reject, note? }` — aprovar executa |
+| GET | `/action-policies` | `finance:approve` | Políticas |
+| PUT | `/action-policies/:action` | `platform:settings` | Só SUPER_ADMIN |
+| GET | `/portal/billing` | `billing:read` | Cliente: contrato, faturas, propostas (com link) e instruções de pagamento |
+
 ## Dashboards e auditoria
 
 | Método | Rota | Permissão | Descrição |
