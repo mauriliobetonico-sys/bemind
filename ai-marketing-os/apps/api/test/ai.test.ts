@@ -140,7 +140,7 @@ describe('Orchestrator → produção → QA → revisão (fluxo completo)', () 
     expect(usage).toEqual([{ tenant_id: w.clientA.tenantId, n: 7, c: 7 * FAKE_COST_MICROS }]);
     const runs = (await runsOf(demandId)).rows;
     expect(runs.every((r) => Number(r.cost_usd_micros) === FAKE_COST_MICROS)).toBe(true);
-    const report = await w.admin.get('/api/ai/usage');
+    const report = await w.admin.get('/api/ai/usage', { 'x-tenant-id': w.clientA.tenantId }); // outros arquivos de teste rodam em paralelo no mesmo banco
     expect(report.statusCode).toBe(200);
     expect(report.json().byAgent.find((x: { key: string }) => x.key === 'qa').calls).toBe(3);
     expect((await w.gestorA.get('/api/ai/usage')).statusCode).toBe(403); // orçamento/consumo: só papéis globais

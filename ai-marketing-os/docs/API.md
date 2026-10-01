@@ -136,6 +136,22 @@ Toda execução é assíncrona: a rota grava a execução e o evento na mesma tr
 | PUT | `/ai/usd-rate` | `ai:settings` (global) | Cotação usada na rentabilidade |
 | GET | `/ai/usage?month=AAAA-MM` | `ai:settings` | Consumo por cliente, agente, modelo e finalidade |
 
+## MCP Hub (Fase 5)
+
+| Método | Rota | Permissão | Descrição |
+| --- | --- | --- | --- |
+| GET | `/mcp/catalog` | `mcp:read` | Conectores (campos, disponibilidade, requisitos) e ferramentas (risco, regra de aprovação, agentes, política) |
+| GET | `/mcp/connections` | `mcp:read` | Conexões (sem segredos; `hasSecret`) — `X-Tenant-Id` filtra |
+| PUT | `/mcp/connections/:tenantId/:connector` | `mcp:manage` | Conecta/atualiza; `secrets` omitidos mantêm os atuais; 409 `credentials_key_missing` sem `CREDENTIALS_KEY`; 409 `integration_pending` para conectores sem app oficial |
+| PATCH | `/mcp/connections/:id/status` | `mcp:manage` | `active` / `disabled` |
+| POST | `/mcp/connections/:id/test` | `mcp:manage` | Teste sem efeito colateral → `{ ok, message }` |
+| DELETE | `/mcp/connections/:id` | `mcp:manage` | Remove e cancela chamadas pendentes |
+| GET | `/mcp/tool-calls` | `mcp:read` | Filtros `status`, `deliverableId` |
+| POST | `/mcp/tool-calls` | `mcp:use` (+ permissão da ferramenta) | `{ tool, params, reason }` → 202 `queued` ou `pending_approval`. Erros: 400 `invalid_params`/`invalid_request`, 403 `forbidden`, 409 `not_connected`/`tool_disabled`/`integration_pending` |
+| POST | `/mcp/tool-calls/:id/decide` | `mcp:approve` | `approve` (enfileira) / `reject`; 403 se a política exigir outra pessoa |
+| POST | `/mcp/tool-calls/:id/cancel` | `mcp:use` | Quem pediu ou um aprovador; só antes de executar |
+| PUT | `/mcp/policies/:tool` | `mcp:manage` (global) | `{ enabled, allowSelfApproval }` — risco alto continua exigindo aprovação |
+
 ## Dashboards e auditoria
 
 | Método | Rota | Permissão | Descrição |

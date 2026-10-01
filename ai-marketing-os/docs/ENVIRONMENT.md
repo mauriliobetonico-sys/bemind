@@ -37,6 +37,8 @@ Todas são validadas na inicialização (`apps/api/src/config/env.ts`); valor in
 | `AI_TIMEOUT_MS` | `300000` | Tempo máximo por chamada ao modelo |
 | `OPENAI_API_KEY` | — | Opcional: SOMENTE embeddings da memória (busca semântica) |
 | `EMBEDDING_MODEL` | `text-embedding-3-small` | Modelo de embeddings (1536 dimensões) |
+| `CREDENTIALS_KEY` | — | 64 hex (`openssl rand -hex 32`). Cifra as credenciais das integrações. Sem ela, integrações com senha não podem ser salvas. Guarde cópia segura; perdê-la exige reconectar as integrações |
+| `MCP_ALLOW_PRIVATE_HOSTS` | `false` | `true` permite integrações em endereços internos/HTTP (ex.: n8n na mesma rede). Em produção, mantenha `false` sempre que possível |
 
 ## Somente migração e seed
 

@@ -83,6 +83,12 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 
 **ADR-017 — Embeddings opcionais pela OpenAI.** A Anthropic não tem API de embeddings. Com `OPENAI_API_KEY`, memórias aprovadas ganham embedding (`vector(1536)`, pgvector) e o contexto é ordenado por similaridade; sem a chave, a memória funciona por tipo/recência e a tela mostra `integration_pending`. A OpenAI é usada SOMENTE para embeddings.
 
+**ADR-018 — MCP Hub com aprovação própria, executada pela fila.** O HITL da fase 3 executa a ação dentro da transação da decisão — adequado para mudanças no banco, não para chamadas externas lentas e falháveis. Ferramentas têm sua própria fila de decisão em `mcp_tool_calls`: aprovar só enfileira; o worker revalida política, conexão, circuito e limite antes de executar. Risco HIGH sempre exige decisão humana (código + CHECK no banco). Agentes só *propõem* ações; nunca aprovam.
+
+**ADR-019 — Credenciais cifradas na aplicação.** AES-256-GCM com chave em `CREDENTIALS_KEY` (fora do banco, fora do backup do banco) e AAD amarrada a tenant + conexão. Um dump do banco não expõe senhas de integração. Perder a chave significa reconectar as integrações — nada mais.
+
+**ADR-020 — Só integrações com API oficial e credenciais reais.** WordPress (REST API + senha de aplicativo), webhooks assinados (n8n/Make/Zapier) e e-mail (SMTP da plataforma) funcionam hoje. Meta, Google, Ads e WhatsApp exigem apps aprovados pelos provedores: aparecem como `integration_pending` com o que falta, e entram como novos arquivos de conector quando houver credenciais.
+
 **ADR-007 — Integrações nunca simuladas.** Indicadores e integrações sem implementação retornam a fase prevista ou `integration_pending`.
 
 ## Roadmap
@@ -93,7 +99,7 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 | **2 · concluída** | Projetos, demandas, briefings, tarefas, entregáveis, QA, aprovações, arquivos/Brand Vault, calendário, notificações por e-mail | Download cruzado bloqueado; upload validado pelo conteúdo; DLQ no outbox |
 | **3 · concluída** | Propostas (PDF + aceite online), contratos, cobrança automática, pagamentos, despesas, rentabilidade, HITL | Alterações financeiras auditadas e com HITL; cliente nunca alcança custos da agência |
 | **4 · concluída** | AI Gateway, Orchestrator, 12 agentes, memória com aprovação humana, Agent Room, QA da IA, Chat Global, orçamento e custo por cliente | Memória e execuções isoladas por tenant (API + RLS + FK composta); custo por run e por cliente na rentabilidade |
-| 5 | MCP Hub, ferramentas, conectores, permissões | Ferramenta HIGH nunca executa sem aprovação |
+| **5 · concluída** | MCP Hub, ferramentas declarativas, conectores (interno, e-mail, webhook/n8n, WordPress), credenciais cifradas, políticas, aprovação humana, circuit breaker, SSRF | Ferramenta HIGH nunca executa sem aprovação (código + CHECK no banco + teste de mutação) |
 | 6 | Daily report, e-mails, notificações, workflows, publicação | Cada cliente recebe só o próprio relatório |
 | 7 | Adobe Connector (APIs oficiais) | Workflow real testado |
 | 8 | Planos e limites, billing, observabilidade, otimização | Limites aplicados no backend |

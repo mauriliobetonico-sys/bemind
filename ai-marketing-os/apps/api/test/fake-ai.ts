@@ -21,6 +21,13 @@ export class FakeProvider implements AiProvider {
   requests: ProviderRequest[] = [];
   /** Próximas respostas forçadas (ex.: recusa, erro transitório). */
   queue: ('refusal' | 'retryable')[] = [];
+  /** Ações que cada agente propõe (por chave do agente, lida do system prompt). */
+  actions: Record<string, { tool: string; paramsJson: string; reason: string }[]> = {};
+
+  private actionsFor(system: string) {
+    const name = system.match(/^Você é (.+?) —/)?.[1] ?? '';
+    return this.actions[name] ?? [];
+  }
 
   async create(req: ProviderRequest): Promise<ProviderResponse> {
     this.requests.push(req);
@@ -58,6 +65,7 @@ export class FakeProvider implements AiProvider {
         content: designer ? 'Briefing visual: 1080x1350, cores da marca.' : revised ? 'Texto revisado com CTA.' : 'Primeira versão sem CTA.',
         notes: '',
         memoryProposals: revised ? [] : [{ kind: 'brand_rules', content: `Proposta do ${designer ? 'designer' : 'copywriter'}: usar tom próximo.` }],
+        actionRequests: revised ? [] : this.actionsFor(req.system),
       };
     }
     if (s.includes('revisar o entregável e decidir')) {
@@ -67,7 +75,7 @@ export class FakeProvider implements AiProvider {
         : { approved: true, score: 60, issues: [{ severity: 'major', item: 'copy', reason: 'Falta CTA' }], summary: 'Sem CTA.' };
     }
     if (s.includes('contribuir na reunião')) {
-      return { content: `Minha sugestão: focar em conversão.`, memoryProposals: [] };
+      return { content: `Minha sugestão: focar em conversão.`, memoryProposals: [], actionRequests: this.actionsFor(req.system) };
     }
     if (s.includes('redigir a ata')) {
       return {

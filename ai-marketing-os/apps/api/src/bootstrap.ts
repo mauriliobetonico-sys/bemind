@@ -9,6 +9,7 @@ import { LocalStorage } from './storage/storage';
 import { AiGateway } from './ai/gateway';
 import { AnthropicProvider, type AiProvider } from './ai/provider';
 import { OpenAiEmbedder, type Embedder } from './ai/embeddings';
+import { CredentialVault } from './mcp/crypto';
 
 export function createContext(overrides: { env?: Env; mailer?: Mailer; storage?: LocalStorage; aiProvider?: AiProvider; embedder?: Embedder } = {}): AppContext {
   const env = overrides.env ?? loadEnv();
@@ -21,6 +22,7 @@ export function createContext(overrides: { env?: Env; mailer?: Mailer; storage?:
     rolePermissions: new RolePermissionCache(pool),
     mailer: overrides.mailer ?? new SmtpMailer(env),
     storage: overrides.storage ?? new LocalStorage(env.STORAGE_DIR),
+    credentials: new CredentialVault(env.CREDENTIALS_KEY),
     ai: new AiGateway(pool, overrides.aiProvider ?? new AnthropicProvider(env), env, overrides.embedder ?? new OpenAiEmbedder(env)),
   };
 }

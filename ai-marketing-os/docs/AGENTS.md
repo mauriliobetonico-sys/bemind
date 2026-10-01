@@ -7,7 +7,7 @@ A IA aparece como **uma equipe**, não como prompts. Esta página descreve o que
 1. **Agentes são dados.** Cada agente é uma definição declarativa em `apps/api/src/ai/agents.ts` (`defineAgent`). Adicionar um agente não muda gateway, fila, memória nem QA.
 2. **Tudo roda em fila.** Nenhuma execução bloqueia uma requisição: a rota grava `agent_runs` + evento `agent.run` no outbox na mesma transação e responde `202`. O worker reivindica só execuções `queued`.
 3. **Isolamento total.** Execuções, memória, reuniões, mensagens e consumo têm `tenant_id`, RLS forçado e FKs compostas. O worker monta o contexto numa transação restrita ao tenant do job.
-4. **Nada crítico sem humano.** Agentes não têm ferramentas de escrita externa: produzem rascunhos, pareceres e propostas. Enviar ao cliente, aprovar memória e criar tarefas são cliques humanos.
+4. **Nada crítico sem humano.** Agentes produzem rascunhos, pareceres e propostas. Desde a Fase 5 podem **propor** ações em ferramentas (WordPress, webhook, e-mail, tarefas) — que passam pelo MCP Hub: risco médio pedido por agente e todo risco alto esperam aprovação humana ([MCP.md](MCP.md)). Aprovar memória e enviar ao cliente continuam sendo cliques humanos.
 5. **Falha não vira sucesso.** Recusa do modelo, resposta truncada ou fora do formato → `failed` com o motivo; sem chave/IA desligada/orçamento → `blocked`; erro transitório → volta à fila com backoff; execução presa → `failed` após 30 min. Botões *Repetir* e *Cancelar* na tela.
 
 ## Contrato de um agente

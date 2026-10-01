@@ -81,6 +81,26 @@ Arquitetura prevista (fases 3–5): ações `HIGH` (publicação, alteração fi
 - Orçamento por cliente verificado antes de cada chamada; execução bloqueada (`blocked`) não chama o modelo. Todo consumo, inclusive recusas e saídas inválidas, fica em `ai_usage` (só INSERT).
 - Bastidores (eventos `ai.*`, QA interno, rascunhos) nunca aparecem para o cliente: linha do tempo, portal e demanda filtram no servidor.
 
+## Integrações / MCP (Fase 5)
+
+- Risco alto nunca executa sem decisão humana: regra no código, CHECKs no banco e conferência no worker (teste de mutação comprova).
+- Agentes só propõem; cada proposta passa pela mesma política de uma pessoa, restrita às ferramentas permitidas àquele agente e conectadas no cliente.
+- Credenciais AES-256-GCM com chave fora do banco e AAD por tenant/conexão; nunca retornadas pela API, nunca em logs/auditoria (o redator da auditoria também mascara chaves com `secret`/`password`/`token`).
+- SSRF: só http(s), HTTPS obrigatório em hosts públicos, IP validado no momento da conexão (anti DNS rebinding), redes internas e metadados de nuvem bloqueados, sem redirecionamentos, resposta limitada.
+- Destinatários de e-mail e conteúdo publicado são definidos pelo servidor (usuários do portal; entregável aprovado), nunca por texto livre de quem pede — um agente manipulado não consegue exfiltrar dados por essas ferramentas.
+- Webhooks saem assinados (HMAC-SHA256 com timestamp) para o receptor validar origem e evitar replay.
+- Isolamento: conexões e chamadas com `tenant_id` + RLS + FKs compostas; a validação de parâmetros roda com RLS do cliente (um entregável de outro cliente "não existe").
+- Eventos `mcp.*` nunca aparecem para o cliente.
+
+## Revisão da Fase 5
+
+- [x] HIGH bloqueado sem aprovação: API, worker e banco (CHECK) — e mutação detectada pelos testes
+- [x] Segredo nunca em resposta, banco em claro, log ou auditoria; sem `CREDENTIALS_KEY`, nada é salvo
+- [x] Equipe do cliente B não vê conexões nem chamadas do A; entregável de B recusado em chamada de A
+- [x] SSRF: loopback, privadas, link-local/metadados, http público, credenciais na URL e redirecionamentos recusados
+- [x] Circuit breaker abre após 5 falhas seguidas e protege o serviço externo
+- [x] Corrigido nesta revisão: tela de Integrações quebrava ao abrir um conector ainda não conectado
+
 ## Revisão da Fase 4
 
 - [x] Isolamento: equipe do cliente B não vê execuções, memória, reuniões nem consumo do A (API + RLS); FK composta recusa execução cruzada

@@ -28,6 +28,8 @@ const STAFF_NAV: NavItem[] = [
   { href: '/memory', label: 'Memória', permission: 'ai:read' },
   { href: '/chat', label: 'Chat Global', permission: 'ai:chat' },
   { href: '/ai-settings', label: 'Orçamento de IA', permission: 'ai:settings' },
+  { href: '/integrations', label: 'Integrações', permission: 'mcp:read' },
+  { href: '/tool-calls', label: 'Ações das ferramentas', permission: 'mcp:read' },
   { href: '/proposals', label: 'Propostas', permission: 'proposals:read' },
   { href: '/contracts', label: 'Contratos', permission: 'contracts:read' },
   { href: '/finance', label: 'Financeiro', permission: 'finance:read' },

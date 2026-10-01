@@ -154,7 +154,7 @@ export async function insertClientEvent(
   );
 }
 
-/** Eventos de bastidor (QA interno, agentes de IA): só a equipe vê. */
+/** Eventos de bastidor (QA interno, agentes de IA, ferramentas): só a equipe vê. */
 export const INTERNAL_EVENT_TYPES = ['deliverable.qa_rejected', 'deliverable.submitted_for_qa', 'deliverable.created'];
 
 export async function listClientEvents(tx: Tx, clientId: string, limit = 100, opts: { includeInternal: boolean } = { includeInternal: false }) {
@@ -163,7 +163,7 @@ export async function listClientEvents(tx: Tx, clientId: string, limit = 100, op
       `SELECT e.id, e.type, e.data, e.created_at, u.name AS actor_name
          FROM client_events e LEFT JOIN users u ON u.id = e.actor_user_id
         WHERE e.client_id = $1
-          AND ($3 OR (e.type <> ALL($4) AND e.type NOT LIKE 'ai.%'))
+          AND ($3 OR (e.type <> ALL($4) AND e.type NOT LIKE 'ai.%' AND e.type NOT LIKE 'mcp.%'))
         ORDER BY e.created_at DESC
         LIMIT $2`,
       [clientId, limit, opts.includeInternal, INTERNAL_EVENT_TYPES],

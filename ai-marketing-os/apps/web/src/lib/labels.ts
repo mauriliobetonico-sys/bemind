@@ -35,6 +35,9 @@ const EVENT_LABELS: Record<string, string> = {
   'ai.qa_failed': 'QA da IA devolveu ao agente',
   'ai.plan_completed': 'Equipe de agentes concluiu o plano — revisão humana',
   'ai.meeting_opened': 'Reunião aberta no Agent Room',
+  'mcp.tool_succeeded': 'Ferramenta executada',
+  'mcp.tool_failed': 'Ferramenta falhou',
+  'mcp.calendar_event_created': 'Evento interno agendado por ferramenta',
   'brand.asset_added': 'Item adicionado ao Brand Vault',
 };
 export const eventLabel = (type: string) => EVENT_LABELS[type] ?? type;
@@ -106,3 +109,14 @@ export const memoryTone: Record<string, Tone> = { proposed: 'warn', approved: 'o
 /** micro-dólares → "US$ 0,0140" */
 export const usd = (micros: number | null | undefined, digits = 2) =>
   `US$ ${((micros ?? 0) / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: Math.max(digits, 4) })}`;
+
+export const riskTone: Record<string, Tone> = { LOW: 'neutral', MEDIUM: 'warn', HIGH: 'danger' };
+export const toolCallTone: Record<string, Tone> = {
+  pending_approval: 'warn',
+  queued: 'neutral',
+  running: 'info',
+  succeeded: 'ok',
+  failed: 'danger',
+  rejected: 'neutral',
+  cancelled: 'neutral',
+};

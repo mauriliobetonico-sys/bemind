@@ -31,6 +31,9 @@ x-api-env: &api-env
   AI_SERVER_FALLBACK: ${AI_SERVER_FALLBACK:-true}
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
   EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+  # Integrações (MCP Hub): chave que cifra as credenciais; hosts privados só se você precisar (ex.: n8n local).
+  CREDENTIALS_KEY: ${CREDENTIALS_KEY:-}
+  MCP_ALLOW_PRIVATE_HOSTS: ${MCP_ALLOW_PRIVATE_HOSTS:-false}
 
 services:
   postgres:

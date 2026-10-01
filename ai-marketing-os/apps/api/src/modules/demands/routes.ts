@@ -126,7 +126,7 @@ export async function demandRoutes(app: FastifyInstance, ctx: AppContext) {
         await tx.query(
           `SELECT e.id, e.type, e.data, e.created_at AS "createdAt", u.name AS "actorName"
              FROM client_events e LEFT JOIN users u ON u.id = e.actor_user_id
-            WHERE e.tenant_id = $1 AND e.data->>'demandId' = $2 ${staff ? '' : `AND e.type <> ALL($3) AND e.type NOT LIKE 'ai.%'`}
+            WHERE e.tenant_id = $1 AND e.data->>'demandId' = $2 ${staff ? '' : `AND e.type <> ALL($3) AND e.type NOT LIKE 'ai.%' AND e.type NOT LIKE 'mcp.%'`}
             ORDER BY e.created_at DESC LIMIT 100`,
           staff ? [demand.tenantId, id] : [demand.tenantId, id, INTERNAL_EVENT_TYPES],
         )

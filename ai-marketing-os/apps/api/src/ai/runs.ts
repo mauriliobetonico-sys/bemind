@@ -9,6 +9,53 @@ import { clientContext, demandContext, memoryContext } from './context';
 import { AiBlockedError, AiOutputError, tenantCtx } from './gateway';
 import { ProviderRetryableError, type ProviderMessage } from './provider';
 import { runChat } from './chat';
+import { requestToolCall, toolsForAgent, ToolPolicyError } from '../mcp/hub';
+
+/** Marcador que o agente usa para se referir ao entregável que acabou de produzir. */
+export const THIS_DELIVERABLE = 'ESTE_ENTREGAVEL';
+
+/** Ferramentas disponíveis para o agente neste cliente, descritas para o prompt. */
+async function toolsPrompt(tx: Tx, tenantId: string, agentKey: AgentKey, withDeliverable: boolean): Promise<string> {
+  const tools = await toolsForAgent(tx, tenantId, agentKey);
+  if (!tools.length) return 'Ferramentas: nenhuma disponível para você neste cliente — deixe actionRequests vazio.';
+  return [
+    'Ferramentas que você pode PROPOR em actionRequests (o servidor aplica a política; risco médio/alto vai para aprovação humana):',
+    ...tools.map((t) => `- ${t.name} (risco ${t.risk}): ${t.description} Parâmetros (JSON Schema): ${JSON.stringify(t.schema)}`),
+    withDeliverable ? `Para se referir ao entregável que você está produzindo agora, use "deliverableId": "${THIS_DELIVERABLE}".` : '',
+    'Só proponha uma ação quando ela for claramente útil para a demanda. Nunca invente IDs.',
+  ].filter(Boolean).join('\n');
+}
+
+/** Encaminha as ações propostas ao MCP Hub (cada uma isolada num SAVEPOINT). */
+async function submitActionRequests(
+  tx: Tx,
+  ctx: AppContext,
+  run: { id: string; tenant_id: string; agent_key: AgentKey },
+  requests: { tool: string; paramsJson: string; reason: string }[],
+  deliverableId: string | null,
+) {
+  const results: { tool: string; status: string; error?: string; callId?: string }[] = [];
+  for (const [i, a] of requests.slice(0, 3).entries()) {
+    let params: unknown;
+    try {
+      params = JSON.parse(a.paramsJson.replaceAll(THIS_DELIVERABLE, deliverableId ?? THIS_DELIVERABLE));
+    } catch {
+      results.push({ tool: a.tool, status: 'rejected', error: 'parâmetros não são JSON válido' });
+      continue;
+    }
+    await tx.query(`SAVEPOINT action_${i}`);
+    try {
+      const r = await requestToolCall(tx, ctx, { tenantId: run.tenant_id, tool: a.tool, params, reason: a.reason || 'Proposta do agente', requester: { type: 'agent', agentKey: run.agent_key, runId: run.id } });
+      await tx.query(`RELEASE SAVEPOINT action_${i}`);
+      results.push({ tool: a.tool, status: r.status, callId: r.id });
+    } catch (err) {
+      await tx.query(`ROLLBACK TO SAVEPOINT action_${i}`);
+      if (!(err instanceof ToolPolicyError)) throw err;
+      results.push({ tool: a.tool, status: 'rejected', error: err.message.slice(0, 300) });
+    }
+  }
+  return results;
+}
 
 /** Quantas vezes o QA pode devolver um entregável ao agente antes de parar para um humano. */
 export const MAX_REVISIONS = 2;
@@ -33,11 +80,16 @@ export const planOutput = z.object({
   qaFocus: z.array(z.string()).describe('Pontos que o QA deve verificar com atenção'),
 });
 
+const actionRequests = z
+  .array(z.object({ tool: z.string(), paramsJson: z.string().describe('Parâmetros da ferramenta como JSON (objeto)'), reason: z.string() }))
+  .describe('Ações propostas por meio das ferramentas disponíveis (no máximo 3). Passam pela política e, quando exigido, por aprovação humana. Deixe vazio se não houver.');
+
 export const produceOutput = z.object({
   deliverableTitle: z.string(),
   content: z.string().describe('O entregável completo, em Markdown'),
   notes: z.string().describe('Observações para a equipe: premissas, pendências, alternativas'),
   memoryProposals,
+  actionRequests,
 });
 
 export const qaOutput = z.object({
@@ -53,7 +105,7 @@ export const qaOutput = z.object({
   summary: z.string(),
 });
 
-export const replyOutput = z.object({ content: z.string(), memoryProposals });
+export const replyOutput = z.object({ content: z.string(), memoryProposals, actionRequests });
 
 export const summaryOutput = z.object({
   summary: z.string(),
@@ -278,6 +330,7 @@ async function runProduce(ctx: AppContext, run: RunRow) {
       plan,
       previous,
       current,
+      tools: run.revision === 0 ? await toolsPrompt(tx, run.tenant_id, run.agent_key, true) : 'Ferramentas: não proponha ações numa revisão — deixe actionRequests vazio.',
       client: await clientContext(tx, run.tenant_id),
       memory: await memoryContext(tx, run.tenant_id, agent.memoryScopes, `${d.title}\n${run.instruction ?? ''}`, ctx.ai.embedder),
     };
@@ -299,6 +352,7 @@ async function runProduce(ctx: AppContext, run: RunRow) {
             prompt.plan ? fence('plano', `Resumo: ${prompt.plan.summary}\nPontos de atenção do QA: ${prompt.plan.qaFocus.join('; ')}`) : '',
             ...prompt.previous.map((p) => fence('entregavel', `Passo anterior (${AGENT_LABELS[p.agent_key]}): ${p.title}\n${(p.description ?? '').slice(0, 12_000)}`)),
             prompt.current?.description ? fence('entregavel', `Versão atual a revisar:\n${prompt.current.description.slice(0, 20_000)}`) : '',
+            prompt.tools,
             `Sua tarefa:\n${run.instruction ?? ''}`,
           ].filter(Boolean).join('\n\n'),
         },
@@ -329,7 +383,9 @@ async function runProduce(ctx: AppContext, run: RunRow) {
       ).rows[0]!.id;
     }
     await tx.query('UPDATE agent_runs SET deliverable_id = $2 WHERE id = $1', [run.id, deliverableId]);
-    await succeed(tx, run.id, { deliverableTitle: title, notes: out.notes, memoryProposals: out.memoryProposals.length });
+    // Ações só na primeira versão (revisões não repetem pedidos).
+    const actions = run.revision === 0 ? await submitActionRequests(tx, ctx, run, out.actionRequests, deliverableId) : [];
+    await succeed(tx, run.id, { deliverableTitle: title, notes: out.notes, memoryProposals: out.memoryProposals.length, actions });
     await proposeMemories(tx, run.tenant_id, run.id, run.agent_key, out.memoryProposals);
     await recordActivity(tx, {
       tenantId: run.tenant_id,
@@ -455,7 +511,13 @@ async function runReply(ctx: AppContext, run: RunRow) {
   const agent = AGENTS[run.agent_key];
   const p = await withContext(ctx.pool, tenantCtx(run.tenant_id), async (tx) => {
     const { m, transcript } = await meetingTranscript(tx, run.meeting_id!);
-    return { m, transcript, client: await clientContext(tx, run.tenant_id), memory: await memoryContext(tx, run.tenant_id, agent.memoryScopes, `${m.title}\n${m.agenda ?? ''}`, ctx.ai.embedder) };
+    return {
+      m,
+      transcript,
+      tools: await toolsPrompt(tx, run.tenant_id, run.agent_key, false),
+      client: await clientContext(tx, run.tenant_id),
+      memory: await memoryContext(tx, run.tenant_id, agent.memoryScopes, `${m.title}\n${m.agenda ?? ''}`, ctx.ai.embedder),
+    };
   });
   if (p.m.status !== 'open') return withContext(ctx.pool, tenantCtx(run.tenant_id), (tx) => succeed(tx, run.id, { skipped: 'reunião encerrada' }));
   const out = await ctx.ai.structured(
@@ -471,6 +533,7 @@ async function runReply(ctx: AppContext, run: RunRow) {
             p.client,
             p.memory,
             fence('mensagens', `Reunião: ${p.m.title}\nPauta: ${p.m.agenda ?? '(sem pauta)'}\n\n${p.transcript}`),
+            p.tools,
             'Responda à última mensagem da equipe humana como participante desta reunião. Seja direto (até ~250 palavras), concorde ou discorde dos outros agentes com argumentos.',
           ].join('\n\n'),
         },
@@ -483,7 +546,8 @@ async function runReply(ctx: AppContext, run: RunRow) {
       `INSERT INTO agent_messages (tenant_id, meeting_id, author_type, agent_key, run_id, content) VALUES ($1, $2, 'agent', $3, $4, $5)`,
       [run.tenant_id, run.meeting_id, run.agent_key, run.id, out.content.slice(0, 40_000) || '(sem resposta)'],
     );
-    await succeed(tx, run.id, { memoryProposals: out.memoryProposals.length });
+    const actions = await submitActionRequests(tx, ctx, run, out.actionRequests, null);
+    await succeed(tx, run.id, { memoryProposals: out.memoryProposals.length, actions });
     await proposeMemories(tx, run.tenant_id, run.id, run.agent_key, out.memoryProposals);
   });
 }

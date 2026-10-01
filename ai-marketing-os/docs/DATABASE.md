@@ -85,9 +85,17 @@ Todas com `tenant_id` + RLS (`app.enable_tenant_rls`) e FKs compostas entre si.
 
 `deliverables` ganhou `agent_run_id` (rascunho produzido por agente) e `ai_review` (parecer do QA da IA). `agency_settings.usd_brl_rate` converte o custo de IA para a rentabilidade.
 
+## Tabelas da Fase 5 (MCP)
+
+| Tabela | Tenant | Descrição |
+| --- | --- | --- |
+| `mcp_connections` | cliente | Uma por conector e cliente: status, `config` (não secreta), `secret_ciphertext` (AES-256-GCM), falhas seguidas, circuito, último erro/sucesso |
+| `mcp_tool_calls` | cliente | Cada pedido de ferramenta: risco, status (`pending_approval → queued → running → succeeded/failed`, `rejected`, `cancelled`), parâmetros, motivo, quem pediu (pessoa **ou** agente + execução), entregável, decisão, resultado. CHECKs: HIGH ⇒ exige aprovação; exige aprovação ⇒ só sai da espera com `decided_by` |
+| `mcp_tool_policies` | global | Sobrescritas por ferramenta: ligada/desligada e se quem pediu pode aprovar (escrita só em escopo global) |
+
 ## Entidades das próximas fases
 
-Já modeladas na arquitetura (todas com `tenant_id` + RLS): `subscriptions`, `campaigns`, `integrations`, `mcp_connections`, `mcp_tool_calls`, `notifications`, `daily_reports`, `analytics`, `plans`.
+Já modeladas na arquitetura (todas com `tenant_id` + RLS): `subscriptions`, `campaigns`, `notifications`, `daily_reports`, `analytics`, `plans`.
 
 ## Backup
 

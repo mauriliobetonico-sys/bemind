@@ -166,8 +166,19 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
               : null,
           }
         : null;
+      // Ferramentas (MCP): o que espera decisão humana e o que falhou.
+      const mcp = access.canAny('mcp:read')
+        ? (
+            await tx.query(
+              `SELECT (SELECT count(*)::int FROM mcp_tool_calls WHERE status = 'pending_approval') AS "pendingApprovals",
+                      (SELECT count(*)::int FROM mcp_tool_calls WHERE status = 'failed' AND created_at > now() - interval '7 days') AS "failed7d",
+                      (SELECT count(*)::int FROM mcp_connections WHERE status = 'error') AS "connectionsWithError"`,
+            )
+          ).rows[0]
+        : null;
       return {
         ai,
+        mcp,
         clients: {
           total: totals.total,
           active: totals.active,

@@ -16,7 +16,7 @@ export interface Run {
   stepIndex: number | null;
   revision: number;
   instruction: string | null;
-  output: { summary?: string; missingInfo?: string[]; score?: number } | null;
+  output: { summary?: string; missingInfo?: string[]; score?: number; actions?: { tool: string; status: string; error?: string }[] } | null;
   error: string | null;
   costUsdMicros: number;
   createdAt: string;
@@ -44,6 +44,14 @@ export function RunRow({ r, onAction, context }: { r: Run; onAction?: (path: str
         </span>
         {r.kind === 'qa' && typeof r.output?.score === 'number' && <span className="ds-stat-hint">Nota {r.output.score}/100</span>}
         {r.error && <span className="ds-stat-hint" style={{ color: 'var(--danger-ink)' }}>{r.error}</span>}
+        {!!r.output?.actions?.length && (
+          <span className="ds-stat-hint">
+            Ações propostas:{' '}
+            {r.output.actions
+              .map((a) => `${a.tool} (${a.status === 'pending_approval' ? 'aguardando aprovação' : a.status === 'queued' ? 'na fila' : a.status === 'rejected' ? `recusada pela política${a.error ? `: ${a.error}` : ''}` : a.status})`)
+              .join(' · ')}
+          </span>
+        )}
         <span className="ds-stat-hint">
           {fmtDateTime(r.createdAt)}
           {r.costUsdMicros > 0 && ` · ${usd(r.costUsdMicros, 4)}`}

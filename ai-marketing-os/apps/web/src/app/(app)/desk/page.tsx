@@ -17,6 +17,7 @@ interface AdminDashboard {
   attention: { clientId: string; tradeName: string; status: string; since: string; reason: string }[];
   timeline: { id: string; type: string; at: string; clientId: string; clientName: string; actorName: string | null }[];
   pendingModules: { key: string; label: string; phase: number }[];
+  mcp: { pendingApprovals: number; failed7d: number; connectionsWithError: number } | null;
   ai: { status: string; runsActive: number; runsWithProblems: number; runsDoneThisMonth: number; memoryProposals: number; costThisMonthUsdMicros: number | null } | null;
   operations: {
     openDemands: number;
@@ -179,6 +180,12 @@ export default function DeskPage() {
                 <StatCard label="Concluídas no mês" value={data.ai.runsDoneThisMonth} />
                 <StatCard label="Memória aguardando você" value={data.ai.memoryProposals} tone={data.ai.memoryProposals ? 'warn' : undefined} hint={data.ai.memoryProposals ? <Link href="/memory">revisar</Link> : undefined} />
               </div>
+              {data.mcp && (data.mcp.pendingApprovals > 0 || data.mcp.failed7d > 0 || data.mcp.connectionsWithError > 0) && (
+                <Alert tone="warn">
+                  Ferramentas: {data.mcp.pendingApprovals} aguardando sua aprovação · {data.mcp.failed7d} falhas em 7 dias
+                  {data.mcp.connectionsWithError > 0 && ` · ${data.mcp.connectionsWithError} integração(ões) com erro`} — <Link href="/tool-calls">revisar</Link>
+                </Alert>
+              )}
               {data.ai.costThisMonthUsdMicros !== null && (
                 <p className="ds-stat-hint">
                   Custo de IA no mês: {usd(data.ai.costThisMonthUsdMicros)} · <Link href="/ai-settings">orçamento por cliente</Link>

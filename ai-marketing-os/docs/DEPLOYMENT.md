@@ -102,6 +102,15 @@ docker compose exec worker node dist/ai/ai-test-cli.mjs
 
 O teste faz **uma** chamada mínima (fração de centavo) e mostra modelo, resposta e custo — nunca imprime as chaves. Depois, em **Orçamento de IA**, defina limites mensais por cliente antes de ligar o auto-plano. `GET /api/ready` informa `ai` e `embeddings`.
 
+## Integrações (MCP)
+
+```bash
+# no .env (uma vez): CREDENTIALS_KEY=$(openssl rand -hex 32)   — guarde uma cópia segura
+docker compose up -d --build        # aplica a migration 0005
+```
+
+Depois, em **Integrações**: escolha o cliente, conecte (WordPress: endereço, usuário e senha de aplicativo; Webhook/n8n: URL e segredo) e use **Testar conexão**. As aprovações ficam em **Ações das ferramentas**. Se o n8n roda na sua rede interna, defina `MCP_ALLOW_PRIVATE_HOSTS=true`.
+
 ## Antivírus (opcional)
 
 ```bash

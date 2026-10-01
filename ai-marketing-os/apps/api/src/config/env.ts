@@ -67,6 +67,14 @@ const envSchema = z.object({
   OPENAI_API_KEY: optionalSecret,
   EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
 
+  /** Chave (64 hex = 32 bytes) que cifra as credenciais das integrações. Sem ela, não é possível salvar segredos. */
+  CREDENTIALS_KEY: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().regex(/^[0-9a-fA-F]{64}$/, 'CREDENTIALS_KEY precisa ter 64 caracteres hexadecimais (openssl rand -hex 32)').optional(),
+  ),
+  /** Permite integrações em endereços privados (ex.: n8n na mesma rede). Desligado: só hosts públicos e HTTPS. */
+  MCP_ALLOW_PRIVATE_HOSTS: bool.default(false),
+
   OUTBOX_POLL_MS: z.coerce.number().int().min(200).default(2000),
   OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().min(1).default(8),
 });

@@ -41,6 +41,10 @@ export const PERMISSIONS = {
   'ai:memory_approve': 'Aprovar, corrigir ou rejeitar memória e regras de marca propostas',
   'ai:settings': 'Orçamento e configurações de IA por cliente',
   'ai:chat': 'Chat Global da agência com ferramentas internas',
+  'mcp:read': 'Ver integrações e chamadas de ferramentas',
+  'mcp:use': 'Acionar ferramentas de integração (risco baixo e médio)',
+  'mcp:approve': 'Aprovar ou rejeitar chamadas de ferramenta que exigem decisão humana',
+  'mcp:manage': 'Conectar, configurar e desligar integrações e políticas de ferramenta',
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -89,6 +93,7 @@ export const SYSTEM_ROLES: readonly RoleDefinition[] = [
       'files:read', 'files:write', 'files:delete', 'approvals:request',
       'proposals:read', 'proposals:write', 'contracts:read',
       'ai:read', 'ai:run', 'ai:memory_approve',
+      'mcp:read', 'mcp:use', 'mcp:approve',
     ],
   },
   {
@@ -97,7 +102,7 @@ export const SYSTEM_ROLES: readonly RoleDefinition[] = [
     scope: 'tenant',
     permissions: [
       'clients:read', 'dashboard:admin', 'work:read', 'work:manage', 'tasks:read', 'tasks:write',
-      'files:read', 'files:write', 'approvals:request', 'ai:read', 'ai:run',
+      'files:read', 'files:write', 'approvals:request', 'ai:read', 'ai:run', 'mcp:read', 'mcp:use',
     ],
   },
   {

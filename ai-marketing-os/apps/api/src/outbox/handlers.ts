@@ -11,6 +11,8 @@ import { ACTION_LABELS } from '@aimos/shared';
 import { executeRun } from '../ai/runs';
 import { tenantCtx } from '../ai/gateway';
 import { toVectorLiteral } from '../ai/embeddings';
+import { executeToolCall } from '../mcp/hub';
+import { RISK_LABELS, type RiskLevel } from '@aimos/shared';
 
 const brl = (c: number | string) => (Number(c) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dmy = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
@@ -89,6 +91,45 @@ export function outboxHandlers(ctx: AppContext): Record<string, OutboxHandler> {
       await withContext(ctx.pool, tenantCtx(tenantId), (tx) =>
         tx.query('UPDATE agent_memories SET embedding = $2::vector, embedding_model = $3 WHERE id = $1', [memoryId, toVectorLiteral(vec), ctx.ai.embedder.model]),
       );
+    },
+    // Chamada de ferramenta autorizada (MCP Hub). Transitórias voltam com backoff.
+    'mcp.call': async (event) => {
+      const { callId } = event.payload as { callId: string };
+      if (!event.tenant_id) throw new Error('mcp.call sem tenant');
+      await executeToolCall(ctx, event.tenant_id, callId, { lastAttempt: event.attempts >= ctx.env.OUTBOX_MAX_ATTEMPTS });
+    },
+    // Avisa quem pode aprovar: SUPER_ADMIN/ADMIN e gestores do cliente.
+    'mcp.approval_requested': async (event) => {
+      const { callId } = event.payload as { callId: string };
+      const messages = await withContext(ctx.pool, SYSTEM, async (tx) => {
+        const c = (
+          await tx.query<{ tool: string; risk: RiskLevel; reason: string | null; agent: string | null; requester: string | null; client: string; status: string }>(
+            `SELECT c.tool, c.risk, c.reason, c.requested_by_agent AS agent, u.name AS requester, t.name AS client, c.status
+               FROM mcp_tool_calls c JOIN tenants t ON t.id = c.tenant_id LEFT JOIN users u ON u.id = c.requested_by_user
+              WHERE c.id = $1 AND c.tenant_id = $2`,
+            [callId, event.tenant_id],
+          )
+        ).rows[0];
+        if (!c || c.status !== 'pending_approval') return [];
+        const approvers = (
+          await tx.query<{ email: string; name: string }>(
+            `SELECT DISTINCT u.email, u.name FROM users u
+               LEFT JOIN tenant_users tu ON tu.user_id = u.id AND tu.tenant_id = $1 AND tu.role_key = 'GESTOR'
+              WHERE u.status = 'active' AND (u.global_role IN ('SUPER_ADMIN', 'ADMIN') OR tu.user_id IS NOT NULL)`,
+            [event.tenant_id],
+          )
+        ).rows;
+        return approvers.map((a) =>
+          notificationEmail({
+            to: a.email,
+            title: `Aprovação de ferramenta — ${c.client}`,
+            intro: `${c.agent ? `O agente ${c.agent}` : c.requester ?? 'Alguém da equipe'} pediu para executar uma ação que precisa da sua decisão.`,
+            details: [['Ferramenta', c.tool], ['Risco', RISK_LABELS[c.risk]], ...(c.reason ? ([['Motivo', c.reason]] as [string, string][]) : [])],
+            cta: { url: `${base}/tool-calls`, label: 'Revisar e decidir' },
+          }),
+        );
+      });
+      for (const m of messages) await ctx.mailer.send(m);
     },
     'user.invite': async (event) => {
       const { userId, template, clientId } = event.payload as { userId: string; template: string; clientId?: string };

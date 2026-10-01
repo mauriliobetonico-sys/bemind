@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, type FormEvent } from 'react';
+import { use, useState, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   DELIVERABLE_STATUS_LABELS,
@@ -11,9 +11,11 @@ import {
 } from '@aimos/shared';
 import { api, ApiError, fmtDate } from '@/lib/api';
 import { useApi } from '@/lib/use-api';
+import { useAuth } from '@/lib/auth';
 import { deliverableTone, demandTone, eventLabel, priorityTone } from '@/lib/labels';
 import { FileDrop } from '@/components/file-drop';
 import { AiPanel } from '@/components/ai-panel';
+import { DeliverableTools } from '@/components/deliverable-tools';
 import { Alert, Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton, Textarea, Timeline } from '@/design-system/components';
 
 interface Approval {
@@ -82,6 +84,10 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
   const { id } = use(params);
   const demand = useApi<Demand>(`/demands/${id}`);
   const files = useApi<{ items: FileItem[] }>(`/files?demandId=${id}`);
+  const { can } = useAuth();
+  // Integrações do cliente (para as ações do entregável). Só a equipe com mcp:read.
+  const conns = useApi<{ items: { connector: string; status: string }[] }>(demand.data?.canManage && can('mcp:read') ? '/mcp/connections' : null, { tenantId: demand.data?.tenantId });
+  const wordpress = !!conns.data?.items.some((c) => c.connector === 'wordpress' && c.status !== 'disabled');
   const [msg, setMsg] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null);
 
   if (demand.error) {
@@ -178,7 +184,7 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
             ) : (
               <div className="ds-stack" style={{ gap: 'var(--space-3)' }}>
                 {d.deliverables.map((v) => (
-                  <DeliverableRow key={v.id} v={v} canManage={d.canManage} files={files.data?.items ?? []} run={run} />
+                  <DeliverableRow key={v.id} v={v} canManage={d.canManage} files={files.data?.items ?? []} run={run} tools={wordpress ? <DeliverableTools deliverableId={v.id} tenantId={d.tenantId} approved={v.status === 'approved'} /> : null} />
                 ))}
               </div>
             )}
@@ -323,11 +329,13 @@ function DeliverableRow({
   canManage,
   files,
   run,
+  tools,
 }: {
   v: Deliverable;
   canManage: boolean;
   files: FileItem[];
   run: (fn: () => Promise<unknown>, ok: string) => Promise<void>;
+  tools?: ReactNode;
 }) {
   const [qaNotes, setQaNotes] = useState('');
   const [message, setMessage] = useState('');
@@ -368,6 +376,7 @@ function DeliverableRow({
         </Alert>
       )}
       {canManage && v.qaNotes && <Alert tone="warn">QA: {v.qaNotes}</Alert>}
+      {canManage && tools}
       {v.lastApproval?.status === 'changes_requested' && <Alert tone="danger">Pedido do cliente: “{v.lastApproval.reason}”</Alert>}
 
       {canManage && (
