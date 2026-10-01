@@ -18,6 +18,16 @@ export const PERMISSIONS = {
   'dashboard:admin': 'Painel administrativo da agência',
   'dashboard:client': 'Painel do portal do cliente',
   'audit:read': 'Consultar trilha de auditoria',
+  'work:read': 'Ver projetos, demandas, entregáveis e calendário',
+  'work:manage': 'Planejar e produzir: projetos, briefings, entregáveis, eventos',
+  'tasks:read': 'Ver tarefas internas da equipe',
+  'tasks:write': 'Criar e atualizar tarefas internas',
+  'demands:create': 'Abrir novas demandas',
+  'files:read': 'Ver e baixar arquivos',
+  'files:write': 'Enviar arquivos e organizar o Brand Vault',
+  'files:delete': 'Excluir arquivos',
+  'approvals:request': 'Enviar entregáveis para aprovação do cliente',
+  'approvals:decide': 'Aprovar ou pedir alteração em entregáveis',
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -42,31 +52,38 @@ export const SYSTEM_ROLES: readonly RoleDefinition[] = [
     key: 'SUPER_ADMIN',
     name: 'Super administrador',
     scope: 'global',
-    permissions: ALL,
+    permissions: ALL.filter((p) => p !== 'approvals:decide'),
   },
   {
     key: 'ADMIN',
     name: 'Administrador da agência',
     scope: 'global',
-    permissions: ALL.filter((p) => p !== 'platform:settings'),
+    permissions: ALL.filter((p) => p !== 'platform:settings' && p !== 'approvals:decide'),
   },
   {
     key: 'GESTOR',
     name: 'Gestor de contas',
     scope: 'tenant',
-    permissions: ['clients:read', 'clients:write', 'users:read', 'dashboard:admin'],
+    permissions: [
+      'clients:read', 'clients:write', 'users:read', 'dashboard:admin',
+      'work:read', 'work:manage', 'tasks:read', 'tasks:write', 'demands:create',
+      'files:read', 'files:write', 'files:delete', 'approvals:request',
+    ],
   },
   {
     key: 'OPERADOR',
     name: 'Operador',
     scope: 'tenant',
-    permissions: ['clients:read', 'dashboard:admin'],
+    permissions: [
+      'clients:read', 'dashboard:admin', 'work:read', 'work:manage', 'tasks:read', 'tasks:write',
+      'files:read', 'files:write', 'approvals:request',
+    ],
   },
   {
     key: 'CLIENTE',
     name: 'Cliente',
     scope: 'tenant',
-    permissions: ['clients:read', 'dashboard:client'],
+    permissions: ['clients:read', 'dashboard:client', 'work:read', 'demands:create', 'files:read', 'files:write', 'approvals:decide'],
   },
 ];
 

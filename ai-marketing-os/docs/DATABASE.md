@@ -42,9 +42,25 @@ Funções (`schema app`, `SECURITY INVOKER`): `current_scope()`, `current_tenant
 | `audit_logs` | system/global ou tenant acessível | INSERT no próprio escopo; sem UPDATE/DELETE |
 | `outbox_events` | system | INSERT no próprio escopo; processamento só system |
 
+## Tabelas da Fase 2
+
+Todas com `tenant_id` + RLS (`app.enable_tenant_rls`) e FKs compostas entre si.
+
+| Tabela | Descrição |
+| --- | --- |
+| `projects` | Projetos do cliente (status, início, entrega) |
+| `demands` | Pedidos: tipo, título, descrição, prioridade, prazo, referências, status do fluxo |
+| `briefings` | Briefing versionado da demanda (objetivo, público, mensagens, entregáveis, tom, restrições) |
+| `tasks` | Tarefas internas da equipe (status, prioridade, responsável, prazo, conclusão) |
+| `folders`, `files` | Metadados dos arquivos: nome saneado, MIME detectado, tamanho, SHA-256, categoria, `scan_status`, `visibility` (client/internal), exclusão lógica |
+| `brand_assets` | Brand Vault: cor (#RRGGBB), logo, fonte, manual, produto, serviço, preço, referência… (valor e/ou arquivo) |
+| `deliverables` | Entregáveis da demanda com versão, status (draft → internal_review → awaiting_client → changes_requested/approved) e notas de QA |
+| `approvals` | Pedido de aprovação por versão; no máximo um pendente por entregável; pedir alteração exige motivo (CHECK) |
+| `calendar_events` | Eventos (conteúdo, campanha, reunião, tarefa, entrega, aprovação) com visibilidade client/internal |
+
 ## Entidades das próximas fases
 
-Já modeladas na arquitetura (todas com `tenant_id` + RLS): `proposals`, `contracts`, `subscriptions`, `payments`, `expenses`, `projects`, `tasks`, `briefings`, `deliverables`, `approvals`, `folders`, `files`, `brand_assets`, `calendar_events`, `campaigns`, `agents`, `agent_runs`, `agent_memory`, `agent_knowledge`, `agent_policies`, `agent_meetings`, `agent_messages`, `ai_usage`, `integrations`, `mcp_connections`, `mcp_tool_calls`, `notifications`, `daily_reports`, `analytics`, `plans`.
+Já modeladas na arquitetura (todas com `tenant_id` + RLS): `proposals`, `contracts`, `subscriptions`, `payments`, `expenses`, `campaigns`, `agents`, `agent_runs`, `agent_memory`, `agent_knowledge`, `agent_policies`, `agent_meetings`, `agent_messages`, `ai_usage`, `integrations`, `mcp_connections`, `mcp_tool_calls`, `notifications`, `daily_reports`, `analytics`, `plans`.
 
 ## Backup
 

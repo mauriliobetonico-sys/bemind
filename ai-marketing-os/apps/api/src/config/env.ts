@@ -43,6 +43,13 @@ const envSchema = z.object({
   MAIL_FROM: z.string().default('AI Marketing OS <no-reply@localhost>'),
   SUPPORT_EMAIL: z.string().default('suporte@localhost'),
 
+  /** Diretório (volume) onde os arquivos ficam, organizados por tenant. */
+  STORAGE_DIR: z.string().default('./data/storage'),
+  MAX_UPLOAD_MB: z.coerce.number().int().min(1).max(2048).default(200),
+  /** clamd (ClamAV). Sem host, os arquivos ficam com scan_status = 'skipped'. */
+  CLAMAV_HOST: z.string().optional(),
+  CLAMAV_PORT: z.coerce.number().int().default(3310),
+
   OUTBOX_POLL_MS: z.coerce.number().int().min(200).default(2000),
   OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().min(1).default(8),
 });

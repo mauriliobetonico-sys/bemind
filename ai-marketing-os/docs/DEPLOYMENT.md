@@ -80,7 +80,24 @@ docker compose run --rm migrate     # recria o role aimos_app, grants e sincroni
 docker compose start api worker
 ```
 
+Arquivos dos clientes: `backups/aimos-files-*.tar.gz` contém o volume de storage.
+
+```bash
+docker compose stop api worker
+docker run --rm -v aimos_storage:/storage -v "$PWD/backups":/b alpine sh -c 'rm -rf /storage/* && tar -xzf /b/aimos-files-AAAAMMDDTHHMMSSZ.tar.gz -C /storage && chown -R 1000:1000 /storage'
+docker compose start api worker
+```
+
 Teste a restauração periodicamente em staging.
+
+## Antivírus (opcional)
+
+```bash
+# no .env: CLAMAV_HOST=clamav
+docker compose --profile antivirus up -d
+```
+
+O ClamAV leva alguns minutos para baixar as assinaturas na primeira subida; enquanto isso os arquivos ficam "em verificação" e o worker tenta de novo com backoff.
 
 ## Observabilidade (Fase 1)
 

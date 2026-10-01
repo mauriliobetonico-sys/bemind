@@ -27,6 +27,9 @@ Todas são validadas na inicialização (`apps/api/src/config/env.ts`); valor in
 | `MAIL_FROM` | `AI Marketing OS <no-reply@localhost>` | Remetente |
 | `SUPPORT_EMAIL` | `suporte@localhost` | Contato no e-mail de boas-vindas |
 | `OUTBOX_POLL_MS` / `OUTBOX_MAX_ATTEMPTS` | `2000` / `8` | Worker: intervalo e tentativas antes de `dead` |
+| `STORAGE_DIR` | `./data/storage` (Docker: `/data/storage`) | Volume dos arquivos dos clientes |
+| `MAX_UPLOAD_MB` | `200` | Limite por arquivo |
+| `CLAMAV_HOST` / `CLAMAV_PORT` | — / `3310` | clamd. Sem host: `scan_status = skipped` |
 
 ## Somente migração e seed
 

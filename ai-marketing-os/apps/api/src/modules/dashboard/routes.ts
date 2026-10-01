@@ -12,8 +12,6 @@ import { listClientEvents, toClientDto, type ClientRow } from '../clients/reposi
 const PENDING_MODULES = [
   { key: 'contracts', label: 'Contratos e propostas', phase: 3 },
   { key: 'payments', label: 'Pagamentos e inadimplência', phase: 3 },
-  { key: 'tasks', label: 'Tarefas e produção', phase: 2 },
-  { key: 'approvals', label: 'Aprovações pendentes', phase: 2 },
   { key: 'agents', label: 'Agentes ativos e com erro', phase: 4 },
   { key: 'ai_costs', label: 'Custos de IA', phase: 4 },
 ];
@@ -71,6 +69,54 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
         reason: r.status === 'paused' ? 'Cliente pausado' : r.pending_invite ? 'Onboarding — convite ainda não aceito' : 'Onboarding em andamento',
       }));
 
+      const ops = (
+        await tx.query<{
+          open_demands: number;
+          new_demands: number;
+          in_production: number;
+          overdue_demands: number;
+          approvals_pending: number;
+          approvals_stale: number;
+          open_tasks: number;
+          overdue_tasks: number;
+          tasks_due_today: number;
+        }>(
+          `SELECT
+             (SELECT count(*)::int FROM demands WHERE status NOT IN ('delivered','cancelled')) AS open_demands,
+             (SELECT count(*)::int FROM demands WHERE status = 'submitted') AS new_demands,
+             (SELECT count(*)::int FROM demands WHERE status IN ('in_production','in_review','changes_requested')) AS in_production,
+             (SELECT count(*)::int FROM demands WHERE due_date < current_date AND status NOT IN ('approved','delivered','cancelled')) AS overdue_demands,
+             (SELECT count(*)::int FROM approvals WHERE status = 'pending') AS approvals_pending,
+             (SELECT count(*)::int FROM approvals WHERE status = 'pending' AND created_at < now() - interval '3 days') AS approvals_stale,
+             (SELECT count(*)::int FROM tasks WHERE status <> 'done') AS open_tasks,
+             (SELECT count(*)::int FROM tasks WHERE status <> 'done' AND due_date < current_date) AS overdue_tasks,
+             (SELECT count(*)::int FROM tasks WHERE status <> 'done' AND due_date = current_date) AS tasks_due_today`,
+        )
+      ).rows[0]!;
+
+      const workAttention = (
+        await tx.query<{ kind: string; id: string; title: string; client_name: string; client_id: string; detail: string }>(
+          `SELECT * FROM (
+             SELECT 'demand_new' AS kind, d.id, d.title, t.name AS client_name, c.id AS client_id, 'Nova demanda aguardando triagem' AS detail, d.created_at AS at
+               FROM demands d JOIN tenants t ON t.id = d.tenant_id JOIN clients c ON c.tenant_id = d.tenant_id
+              WHERE d.status = 'submitted'
+             UNION ALL
+             SELECT 'demand_overdue', d.id, d.title, t.name, c.id, 'Demanda atrasada (prazo ' || to_char(d.due_date, 'DD/MM') || ')', d.due_date::timestamptz
+               FROM demands d JOIN tenants t ON t.id = d.tenant_id JOIN clients c ON c.tenant_id = d.tenant_id
+              WHERE d.due_date < current_date AND d.status NOT IN ('approved','delivered','cancelled')
+             UNION ALL
+             SELECT 'changes_requested', d.id, d.title, t.name, c.id, 'Cliente pediu alteração', d.updated_at
+               FROM demands d JOIN tenants t ON t.id = d.tenant_id JOIN clients c ON c.tenant_id = d.tenant_id
+              WHERE d.status = 'changes_requested'
+             UNION ALL
+             SELECT 'approval_stale', v.demand_id, v.title, t.name, c.id, 'Aprovação parada há mais de 3 dias', a.created_at
+               FROM approvals a JOIN deliverables v ON v.tenant_id = a.tenant_id AND v.id = a.deliverable_id
+               JOIN tenants t ON t.id = a.tenant_id JOIN clients c ON c.tenant_id = a.tenant_id
+              WHERE a.status = 'pending' AND a.created_at < now() - interval '3 days'
+           ) x ORDER BY at LIMIT 15`,
+        )
+      ).rows.map((r) => ({ kind: r.kind, demandId: r.id, title: r.title, clientName: r.client_name, clientId: r.client_id, detail: r.detail }));
+
       const timeline = (
         await tx.query<{ id: string; type: string; created_at: Date; trade_name: string; client_id: string; actor_name: string | null; data: Record<string, unknown> }>(
           `SELECT e.id, e.type, e.created_at, c.trade_name, c.id AS client_id, u.name AS actor_name, e.data
@@ -108,6 +154,18 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
         },
         byPlan,
         attention,
+        operations: {
+          openDemands: ops.open_demands,
+          newDemands: ops.new_demands,
+          inProduction: ops.in_production,
+          overdueDemands: ops.overdue_demands,
+          approvalsPending: ops.approvals_pending,
+          approvalsStale: ops.approvals_stale,
+          openTasks: ops.open_tasks,
+          overdueTasks: ops.overdue_tasks,
+          tasksDueToday: ops.tasks_due_today,
+        },
+        workAttention,
         timeline,
         pendingModules: PENDING_MODULES,
       };
@@ -130,8 +188,17 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
         companies: rows.map((r) => ({ tenantId: r.tenant_id, tradeName: r.trade_name })),
         client: toClientDto(first),
         history: await listClientEvents(tx, first.id, 20),
+        work: (
+          await tx.query(
+            `SELECT
+               (SELECT count(*)::int FROM approvals WHERE status = 'pending' AND tenant_id = $1) AS "approvalsPending",
+               (SELECT count(*)::int FROM demands WHERE status NOT IN ('delivered','cancelled') AND tenant_id = $1) AS "openDemands",
+               (SELECT count(*)::int FROM demands WHERE status IN ('planning','in_production','in_review','changes_requested') AND tenant_id = $1) AS "inProduction",
+               (SELECT count(*)::int FROM demands WHERE status IN ('approved','delivered') AND tenant_id = $1) AS "completed"`,
+            [first.tenant_id],
+          )
+        ).rows[0],
         pendingModules: [
-          { key: 'demands', label: 'Demandas e aprovações', phase: 2 },
           { key: 'contract', label: 'Contrato e financeiro', phase: 3 },
           { key: 'agents', label: 'Sua equipe de agentes', phase: 4 },
           { key: 'reports', label: 'Relatório diário', phase: 6 },

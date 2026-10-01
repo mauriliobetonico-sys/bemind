@@ -15,6 +15,20 @@ const EVENT_LABELS: Record<string, string> = {
   'client.created': 'Cliente cadastrado e ambiente provisionado',
   'client.updated': 'Cadastro atualizado',
   'client.user_invited': 'Acesso do cliente criado — convite na fila de e-mail',
+  'project.created': 'Projeto criado',
+  'demand.created': 'Nova demanda aberta',
+  'demand.status_changed': 'Status da demanda atualizado',
+  'briefing.saved': 'Briefing registrado',
+  'deliverable.created': 'Entregável criado',
+  'deliverable.submitted_for_qa': 'Entregável enviado para QA',
+  'deliverable.qa_rejected': 'QA devolveu para correção',
+  'deliverable.new_version': 'Nova versão em produção',
+  'qa.approved': 'QA aprovado',
+  'approval.requested': 'Aprovação solicitada ao cliente',
+  'approval.approved': 'Cliente aprovou',
+  'approval.changes_requested': 'Cliente pediu alteração',
+  'files.uploaded': 'Arquivos enviados',
+  'brand.asset_added': 'Item adicionado ao Brand Vault',
 };
 export const eventLabel = (type: string) => EVENT_LABELS[type] ?? type;
 
@@ -45,3 +59,23 @@ export function greeting(date = new Date()) {
   const h = date.getHours();
   return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
 }
+
+export const demandTone: Record<string, Tone> = {
+  submitted: 'info',
+  planning: 'info',
+  in_production: 'neutral',
+  in_review: 'neutral',
+  awaiting_approval: 'warn',
+  changes_requested: 'danger',
+  approved: 'ok',
+  delivered: 'ok',
+  cancelled: 'neutral',
+};
+export const deliverableTone: Record<string, Tone> = {
+  draft: 'neutral',
+  internal_review: 'info',
+  awaiting_client: 'warn',
+  changes_requested: 'danger',
+  approved: 'ok',
+};
+export const priorityTone: Record<string, Tone> = { low: 'neutral', normal: 'neutral', high: 'warn', urgent: 'danger' };

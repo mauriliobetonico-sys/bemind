@@ -79,3 +79,15 @@ export function resetEmail(d: { to: string; userName: string; resetUrl: string; 
   );
   return { to: d.to, subject: 'Redefinição de senha — AI Marketing OS', text, html };
 }
+
+export function notificationEmail(d: { to: string; title: string; intro: string; details?: [string, string][]; cta?: { url: string; label: string }; footer?: string }): MailMessage {
+  const rows = (d.details ?? [])
+    .map(([k, v]) => `<tr><td style="color:#5b6573;padding-right:16px;vertical-align:top">${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`)
+    .join('');
+  const html = layout(
+    d.title,
+    `<p style="line-height:1.6">${escapeHtml(d.intro)}</p>${rows ? `<table role="presentation" style="font-size:14px;line-height:1.8">${rows}</table>` : ''}${d.cta ? button(d.cta.url, d.cta.label) : ''}${d.footer ? `<p style="font-size:13px;color:#5b6573">${escapeHtml(d.footer)}</p>` : ''}`,
+  );
+  const text = [d.intro, '', ...(d.details ?? []).map(([k, v]) => `${k}: ${v}`), ...(d.cta ? ['', `${d.cta.label}: ${d.cta.url}`] : []), ...(d.footer ? ['', d.footer] : [])].join('\n');
+  return { to: d.to, subject: `${d.title} — AI Marketing OS`, text, html };
+}

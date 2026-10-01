@@ -3,6 +3,9 @@ import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import pg from 'pg';
 import { inject } from 'vitest';
 import { buildApp } from '../src/app';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { createContext } from '../src/bootstrap';
 import { loadEnv } from '../src/config/env';
 import type { AppContext } from '../src/context';
@@ -31,6 +34,7 @@ export async function createTestEnv(overrides: Record<string, string> = {}): Pro
     COOKIE_SECURE: 'true',
     AUTH_RATE_PER_MINUTE: '10000',
     RATE_LIMIT_PER_MINUTE: '100000',
+    STORAGE_DIR: mkdtempSync(path.join(tmpdir(), 'aimos-storage-')),
     ...overrides,
   });
   const ctx = createContext({ env, mailer });
@@ -193,4 +197,25 @@ export async function buildWorld(env: TestEnv): Promise<World> {
     gestorA: await login(env.app, g.email),
     operadorA: await login(env.app, o.email),
   };
+}
+
+/** PNG 1×1 válido (assinatura real, detectável pelo conteúdo). */
+export const PNG_1PX = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+/** Monta um corpo multipart/form-data para app.inject. */
+export function multipart(files: { name: string; content: Buffer }[]) {
+  const boundary = `----aimos${Math.random().toString(16).slice(2)}`;
+  const parts: Buffer[] = [];
+  for (const f of files) {
+    parts.push(
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="files"; filename="${f.name}"\r\nContent-Type: application/octet-stream\r\n\r\n`),
+      f.content,
+      Buffer.from('\r\n'),
+    );
+  }
+  parts.push(Buffer.from(`--${boundary}--\r\n`));
+  return { payload: Buffer.concat(parts), headers: { 'content-type': `multipart/form-data; boundary=${boundary}` } };
 }

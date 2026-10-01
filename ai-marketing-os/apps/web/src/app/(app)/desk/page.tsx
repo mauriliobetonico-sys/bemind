@@ -17,6 +17,18 @@ interface AdminDashboard {
   attention: { clientId: string; tradeName: string; status: string; since: string; reason: string }[];
   timeline: { id: string; type: string; at: string; clientId: string; clientName: string; actorName: string | null }[];
   pendingModules: { key: string; label: string; phase: number }[];
+  operations: {
+    openDemands: number;
+    newDemands: number;
+    inProduction: number;
+    overdueDemands: number;
+    approvalsPending: number;
+    approvalsStale: number;
+    openTasks: number;
+    overdueTasks: number;
+    tasksDueToday: number;
+  };
+  workAttention: { kind: string; demandId: string; title: string; clientName: string; detail: string }[];
 }
 
 export default function DeskPage() {
@@ -64,15 +76,34 @@ export default function DeskPage() {
         )}
       </div>
 
+      {data && (
+        <div className="ds-grid ds-grid-4">
+          <StatCard label="Demandas em aberto" value={data.operations.openDemands} hint={`${data.operations.newDemands} nova(s) aguardando triagem`} />
+          <StatCard label="Em produção" value={data.operations.inProduction} hint={`${data.operations.overdueDemands} atrasada(s)`} tone={data.operations.overdueDemands > 0 ? 'danger' : undefined} />
+          <StatCard label="Aprovações pendentes" value={data.operations.approvalsPending} hint={`${data.operations.approvalsStale} parada(s) há +3 dias`} tone={data.operations.approvalsStale > 0 ? 'warn' : undefined} />
+          <StatCard label="Tarefas atrasadas" value={data.operations.overdueTasks} hint={`${data.operations.tasksDueToday} vencem hoje · ${data.operations.openTasks} abertas`} tone={data.operations.overdueTasks > 0 ? 'danger' : undefined} />
+        </div>
+      )}
+
       <div className="ds-grid" style={{ gridTemplateColumns: 'minmax(0, 1.25fr) minmax(0, 1fr)' }}>
         <div className="ds-stack" style={{ gap: 'var(--space-4)' }}>
           <Card title="O que precisa da sua atenção">
             {!data ? (
               <Skeleton height={80} />
-            ) : data.attention.length === 0 ? (
+            ) : data.attention.length === 0 && data.workAttention.length === 0 ? (
               <EmptyState>Nada pendente nos clientes. Tudo em dia.</EmptyState>
             ) : (
               <ul className="ds-list">
+                {data.workAttention.map((a) => (
+                  <li key={`${a.kind}-${a.demandId}`}>
+                    <Link href={`/demands/${a.demandId}`}>
+                      {a.clientName} — {a.title} <span className="ds-text-2">· {a.detail}</span>
+                    </Link>
+                    <Badge tone={a.kind === 'demand_new' ? 'info' : a.kind === 'approval_stale' ? 'warn' : 'danger'}>
+                      {a.kind === 'demand_new' ? 'nova' : a.kind === 'approval_stale' ? 'aprovação' : a.kind === 'changes_requested' ? 'alteração' : 'atraso'}
+                    </Badge>
+                  </li>
+                ))}
                 {data.attention.map((a) => (
                   <li key={a.clientId}>
                     <Link href={`/clients/${a.clientId}`}>

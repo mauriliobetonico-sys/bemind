@@ -51,6 +51,35 @@ Corpo de criação (`createClientInput`): `legalName, tradeName, cnpj?, responsi
 | GET | `/tenants` | `tenants:read` | Lista com contagem de usuários |
 | PATCH | `/tenants/:id` | `tenants:manage` | `{ status }` — suspender/arquivar corta o acesso imediatamente |
 
+## Operação (Fase 2)
+
+Criação de recursos exige **um** cliente: usuários com um único tenant não informam nada; a equipe envia `X-Tenant-Id` (validado contra as associações). Listagens agregam só os tenants autorizados.
+
+| Método | Rota | Permissão | Descrição |
+| --- | --- | --- | --- |
+| GET/POST | `/projects` | `work:read` / `work:manage` | Lista e cria projetos |
+| GET/PATCH | `/projects/:id` | `work:read` / `work:manage` | Detalhe e atualização |
+| GET | `/demands?status=&open=&projectId=` | `work:read` | Demandas (cliente vê só as suas) |
+| POST | `/demands` | `demands:create` | Abre demanda → evento `demand.created` (e-mail à equipe) |
+| GET | `/demands/:id` | `work:read` | Demanda + briefing + entregáveis + linha do tempo (cliente não vê rascunhos nem notas de QA) |
+| PATCH | `/demands/:id` | `work:manage` | Campos e transições manuais válidas de status |
+| PUT | `/demands/:id/briefing` | `work:manage` | Nova versão do briefing |
+| POST | `/demands/:id/deliverables` | `work:manage` | Cria entregável |
+| PATCH | `/deliverables/:id` | `work:manage` | Edita rascunho; `action`: `submit_for_qa`, `qa_reject` (exige `qaNotes`), `new_version` |
+| POST | `/deliverables/:id/request-approval` | `approvals:request` | Só a partir de `internal_review` (QA); libera o arquivo ao cliente; e-mail ao cliente |
+| GET | `/approvals?status=` | `work:read` | Aprovações |
+| POST | `/approvals/:id/decide` | `approvals:decide` | `{ decision: approved \| changes_requested, reason }` — somente o cliente |
+| GET/POST | `/tasks` | `tasks:read` / `tasks:write` | Tarefas internas (`?mine=&overdue=&status=&demandId=`); responsável precisa ser da equipe do cliente |
+| PATCH | `/tasks/:id` | `tasks:write` | Atualiza tarefa |
+| GET | `/files?category=&demandId=&q=` | `files:read` | Arquivos (internos só para a equipe) |
+| POST | `/files?demandId=&visibility=` | `files:write` | Upload multipart (até 20, `MAX_UPLOAD_MB` cada) → `{ files, rejected, summary }` |
+| GET | `/files/:id/download?inline=1` | `files:read` | Download autenticado e auditado; bloqueado durante a varredura ou se houver ameaça |
+| DELETE | `/files/:id` | `files:delete` | Exclusão (lógica no banco, física no storage) |
+| GET/POST | `/brand-assets` | `files:read` / `files:write` | Brand Vault |
+| DELETE | `/brand-assets/:id` | `files:write` | Remove item |
+| GET | `/calendar?from=&to=` | `work:read` | Eventos + prazos derivados (máx. 62 dias) |
+| POST/DELETE | `/calendar/events[/:id]` | `work:manage` | Eventos |
+
 ## Dashboards e auditoria
 
 | Método | Rota | Permissão | Descrição |

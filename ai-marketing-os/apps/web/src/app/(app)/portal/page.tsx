@@ -3,13 +3,15 @@
 import { useAuth } from '@/lib/auth';
 import { useApi } from '@/lib/use-api';
 import { eventLabel, greeting, statusLabel, statusTone } from '@/lib/labels';
-import { Alert, Badge, Card, PageHeader, PendingModule, Skeleton, Timeline } from '@/design-system/components';
+import Link from 'next/link';
+import { Alert, Badge, Card, PageHeader, PendingModule, Skeleton, StatCard, Timeline } from '@/design-system/components';
 import type { ClientStatus } from '@aimos/shared';
 
 interface Overview {
   companies: { tenantId: string; tradeName: string }[];
   client: { tradeName: string; plan: string; status: ClientStatus; responsibleName: string; email: string };
   history: { id: string; type: string; createdAt: string }[];
+  work: { approvalsPending: number; openDemands: number; inProduction: number; completed: number };
   pendingModules: { key: string; label: string; phase: number }[];
 }
 
@@ -27,6 +29,25 @@ export default function PortalPage() {
       <p className="ds-text-2" style={{ maxWidth: 720 }}>
         Este é o espaço da {data.client.tradeName}. Tudo o que aparece aqui é exclusivo da sua empresa.
       </p>
+      {data.work.approvalsPending > 0 && (
+        <Alert tone="warn">
+          Você tem {data.work.approvalsPending} entrega(s) aguardando sua aprovação. <Link href="/approvals">Ver agora</Link>
+        </Alert>
+      )}
+      <div className="ds-grid ds-grid-4">
+        <StatCard label="Aguardando você" value={data.work.approvalsPending} tone={data.work.approvalsPending > 0 ? 'warn' : undefined} hint="aprovações" />
+        <StatCard label="Demandas em aberto" value={data.work.openDemands} />
+        <StatCard label="Em produção" value={data.work.inProduction} hint="sua equipe está trabalhando" />
+        <StatCard label="Concluídas" value={data.work.completed} />
+      </div>
+      <div className="ds-row">
+        <Link className="ds-btn ds-btn-primary" href="/demands/new">
+          Nova demanda
+        </Link>
+        <Link className="ds-btn" href="/files">
+          Enviar arquivos
+        </Link>
+      </div>
       <div className="ds-grid" style={{ gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)' }}>
         <div className="ds-stack" style={{ gap: 'var(--space-4)' }}>
           <Card title="Seu plano">

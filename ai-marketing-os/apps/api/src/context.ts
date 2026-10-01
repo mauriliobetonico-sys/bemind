@@ -4,6 +4,7 @@ import type { RolePermissionCache } from './security/access';
 import type { SessionService } from './security/sessions';
 import type { AuditService } from './modules/audit/audit';
 import type { Mailer } from './mail/mailer';
+import type { LocalStorage } from './storage/storage';
 
 /** Dependências compartilhadas pela API e pelo worker. */
 export interface AppContext {
@@ -13,4 +14,5 @@ export interface AppContext {
   audit: AuditService;
   rolePermissions: RolePermissionCache;
   mailer: Mailer;
+  storage: LocalStorage;
 }

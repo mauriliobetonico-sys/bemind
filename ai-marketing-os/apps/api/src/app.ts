@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import multipart from '@fastify/multipart';
 import { Redis } from 'ioredis';
 import type { AppContext } from './context';
 import { AppError } from './lib/errors';
@@ -13,6 +14,11 @@ import { tenantRoutes } from './modules/tenants/routes';
 import { dashboardRoutes } from './modules/dashboard/routes';
 import { auditRoutes } from './modules/audit/routes';
 import { healthRoutes } from './modules/health/routes';
+import { projectRoutes } from './modules/projects/routes';
+import { demandRoutes } from './modules/demands/routes';
+import { taskRoutes } from './modules/tasks/routes';
+import { fileRoutes } from './modules/files/routes';
+import { calendarRoutes } from './modules/calendar/routes';
 
 export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
   const app = Fastify({
@@ -32,6 +38,7 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
     crossOriginResourcePolicy: { policy: 'same-origin' },
   });
   await app.register(cookie);
+  await app.register(multipart, { limits: { fileSize: ctx.env.MAX_UPLOAD_MB * 1024 * 1024, files: 20, fields: 10, parts: 40 } });
   await app.register(rateLimit, {
     max: ctx.env.RATE_LIMIT_PER_MINUTE,
     timeWindow: '1 minute',
@@ -64,6 +71,11 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
       await api.register(tenantRoutes, ctx);
       await api.register(dashboardRoutes, ctx);
       await api.register(auditRoutes, ctx);
+      await api.register(projectRoutes, ctx);
+      await api.register(demandRoutes, ctx);
+      await api.register(taskRoutes, ctx);
+      await api.register(fileRoutes, ctx);
+      await api.register(calendarRoutes, ctx);
     },
     { prefix: '/api' },
   );

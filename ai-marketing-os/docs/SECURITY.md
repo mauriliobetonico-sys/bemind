@@ -53,6 +53,24 @@ Arquitetura prevista (fases 3–5): ações `HIGH` (publicação, alteração fi
 - Uploads (fase 2): allowlist de MIME por conteúdo, limite de tamanho, ClamAV quando disponível, chaves `tenants/{id}/…`, download apenas por URL assinada curta após checagem.
 - Backups diários com retenção configurável — ver [DEPLOYMENT.md](DEPLOYMENT.md#backup-e-restauração).
 
+## Arquivos (Fase 2)
+
+- Caminho no disco: `tenants/{tenant}/{id}` com IDs validados como UUID — o nome enviado nunca entra no caminho; nomes exibidos são saneados.
+- Tipo detectado pelo **conteúdo** (magic bytes) com allowlist; extensão e Content-Type do navegador são ignorados. Executáveis, scripts e tipos desconhecidos são recusados.
+- Limite por arquivo (`MAX_UPLOAD_MB`) aplicado durante o streaming; o parcial é apagado.
+- ClamAV opcional (`CLAMAV_HOST`): o arquivo fica `pending` e não pode ser baixado até a varredura; ameaça → bloqueado, removido do disco e auditado.
+- Download só pela API, após autorização: `Content-Disposition: attachment` (inline apenas para imagens raster, PDF e vídeo), `X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox`, `Cache-Control: private, no-store`. SVG é sempre anexo.
+- Rascunhos da equipe ficam `internal` até o QA liberar o entregável — o cliente recebe 404.
+- Somente o cliente decide aprovações (`approvals:decide`); a equipe não aprova em nome dele.
+
+## Revisão da Fase 2
+
+- [x] Isolamento A→B para demandas, arquivos, aprovações, tarefas, Brand Vault e calendário (API e banco)
+- [x] FKs compostas em todas as tabelas filhas da operação
+- [x] Upload validado pelo conteúdo, limite de tamanho, SVG em sandbox, antivírus testado com servidor clamd simulado
+- [x] Cliente não vê tarefas internas, notas de QA nem arquivos internos
+- [x] E-mails de notificação enviados apenas a usuários do próprio tenant
+
 ## Revisão da Fase 1
 
 - [x] Toda rota declara política (verificado na inicialização)

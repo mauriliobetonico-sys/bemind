@@ -253,3 +253,39 @@ p { margin: 0; }
 .ds-dl dd { margin: 0; }
 @media (max-width: 640px) { .ds-dl { grid-template-columns: 1fr; } .ds-dl dd { margin-bottom: 8px; } }
 .ds-sidebar-foot .ds-btn { justify-content: flex-start; padding-left: 0; }
+
+/* ---------- FileManager / dropzone ---------- */
+.ds-dropzone { border: 1.5px dashed var(--border-strong); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-4); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; background: var(--surface); transition: border-color 160ms var(--ease), background 160ms var(--ease); }
+.ds-dropzone[data-compact='true'] { padding: var(--space-4); }
+.ds-dropzone[data-over='true'] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+
+/* ---------- Tabs ---------- */
+.ds-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.ds-tab { min-height: 44px; padding: 0 14px; border: none; background: transparent; color: var(--text-2); font: inherit; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.ds-tab[aria-selected='true'] { color: var(--text); border-bottom-color: var(--accent); font-weight: 500; }
+
+/* ---------- Kanban ---------- */
+.ds-board { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: var(--space-3); overflow-x: auto; padding-bottom: 8px; }
+.ds-column { background: var(--surface-2); border-radius: var(--radius-lg); padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); min-height: 200px; }
+.ds-column-head { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 8px; }
+.ds-task { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.ds-task[data-overdue='true'] { border-color: var(--danger-ink); }
+
+/* ---------- Calendar ---------- */
+.ds-cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--border); gap: 1px; }
+.ds-cal-head { background: var(--surface-2); padding: 8px; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.ds-cal-day { background: var(--surface); min-height: 112px; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+.ds-cal-day[data-out='true'] { background: var(--surface-2); color: var(--muted); }
+.ds-cal-day[data-today='true'] .ds-cal-num { background: var(--accent); color: var(--accent-ink); }
+.ds-cal-num { font-size: 12px; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+.ds-cal-item { font-size: 12px; line-height: 1.3; padding: 3px 6px; border-radius: 6px; background: var(--neutral-bg); color: var(--neutral-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; border: none; font-family: inherit; }
+.ds-cal-item[data-kind='delivery'] { background: var(--info-bg); color: var(--info-ink); }
+.ds-cal-item[data-kind='approval'] { background: var(--warn-bg); color: var(--warn-ink); }
+.ds-cal-item[data-kind='task'] { background: var(--surface-2); color: var(--text-2); border: 1px dashed var(--border-strong); }
+.ds-cal-item[data-kind='meeting'] { background: var(--ok-bg); color: var(--ok-ink); }
+@media (max-width: 760px) { .ds-cal-grid { display: none; } }
+
+/* ---------- Approval card ---------- */
+.ds-preview { width: 100%; max-height: 360px; object-fit: contain; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); }
+.ds-swatch { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border-strong); flex-shrink: 0; }
+.ds-agenda-mobile { display: none; } @media (max-width: 760px) { .ds-agenda-mobile { display: block; } }

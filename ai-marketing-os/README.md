@@ -2,7 +2,7 @@
 
 Plataforma SaaS multi-tenant para uma agência de marketing administrar dezenas ou centenas de clientes, cada um com seu ambiente isolado e — nas próximas fases — sua própria equipe de agentes de IA.
 
-> **Status:** Fase 1 (Core) concluída — autenticação, usuários, tenants, RBAC, RLS, auditoria, painel administrativo (Maurílio Desk), CRM de clientes, provisionamento automático do tenant e portal do cliente. Fases 2–8: ver [roadmap](docs/ARCHITECTURE.md#roadmap).
+> **Status:** Fases 1 (Core) e 2 (Operação) concluídas — autenticação, tenants, RBAC, RLS, auditoria, Maurílio Desk, CRM, onboarding, portal do cliente, projetos, demandas, briefings, tarefas, entregáveis com QA, aprovações, arquivos com Brand Vault e calendário. Fases 3–8: ver [roadmap](docs/ARCHITECTURE.md#roadmap).
 
 ## O que já funciona
 
@@ -18,6 +18,12 @@ Plataforma SaaS multi-tenant para uma agência de marketing administrar dezenas 
 | Portal do cliente | Dashboard exclusivo do tenant |
 | Auditoria | Login, logout, negações, CSRF, alterações de cliente, usuários, papéis, tenants — append-only |
 | Outbox + worker | E-mails e eventos de domínio com retry, backoff exponencial e dead-letter |
+| Demandas (F2) | Cliente abre demanda → equipe é avisada → briefing versionado → tarefas → entregáveis → QA → aprovação do cliente → entrega |
+| QA (F2) | Nenhum entregável vai ao cliente sem passar pela revisão interna; reprovação exige motivo e volta ao produtor |
+| Aprovações (F2) | Cliente aprova ou pede alteração (motivo obrigatório); a demanda volta à etapa certa; e-mails para os dois lados |
+| Arquivos (F2) | Upload múltiplo por arrastar-e-soltar, tipo detectado pelo conteúdo, classificação automática ("Identifiquei: 11 imagens, 1 logo…"), rascunhos internos invisíveis ao cliente, ClamAV opcional, download só autenticado |
+| Brand Vault (F2) | Paleta, logos, fontes, manuais, produtos e referências por cliente |
+| Calendário (F2) | Mensal, semanal e diário: eventos + prazos de demandas, aprovações e tarefas (internas só para a equipe) |
 
 Indicadores que dependem de módulos futuros (contratos, pagamentos, tarefas, agentes, custos de IA) aparecem como **“Fase N”** — nunca com números simulados. Sem SMTP configurado, `/api/ready` informa `smtp: integration_pending` e os convites aguardam no outbox.
 
@@ -68,6 +74,7 @@ Os testes criam um banco descartável, aplicam as migrations e rodam contra o Po
 - `rls.test.ts` — isolamento no próprio banco: sem contexto não há linhas; contexto de A não lê nem grava em B; FK composta; auditoria append-only.
 - `auth.test.ts` — cookies, hash de sessão, enumeração, bloqueio, CSRF, origem, logout, ociosidade, recuperação de senha, rate limit.
 - `rbac-and-onboarding.test.ts` — papéis, escalonamento de privilégio, provisionamento transacional, e-mail de boas-vindas, retry de SMTP, histórico, MRR.
+- `operations.test.ts` — fluxo completo demanda→QA→aprovação→entrega, isolamento de demandas/arquivos/aprovações/tarefas/Brand Vault/calendário, upload com extensão falsa, executável, limite de tamanho, SVG em sandbox, antivírus (protocolo clamd), RLS e FKs compostas das novas tabelas.
 
 ## Documentação
 

@@ -30,7 +30,10 @@ export function setActiveTenant(tenantId: string | null) {
   tenantHeader = tenantId;
 }
 
-export async function api<T>(path: string, init: { method?: string; body?: unknown; tenant?: boolean } = {}): Promise<T> {
+export async function api<T>(
+  path: string,
+  init: { method?: string; body?: unknown; tenant?: boolean; tenantId?: string | null; form?: FormData } = {},
+): Promise<T> {
   const method = init.method ?? 'GET';
   const headers: Record<string, string> = { accept: 'application/json' };
   if (init.body !== undefined) headers['content-type'] = 'application/json';
@@ -38,16 +41,17 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
     const token = csrfToken();
     if (token) headers['x-csrf-token'] = token;
   }
-  if (init.tenant !== false && tenantHeader) headers['x-tenant-id'] = tenantHeader;
+  const tenant = init.tenantId ?? (init.tenant !== false ? tenantHeader : null);
+  if (tenant) headers['x-tenant-id'] = tenant;
 
   const res = await fetch(`/api${path}`, {
     method,
     headers,
     credentials: 'same-origin',
-    body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+    body: init.form ?? (init.body !== undefined ? JSON.stringify(init.body) : undefined),
   });
 
-  if (res.status === 204 || res.status === 202) {
+  if (res.status === 204 || (res.status === 202 && !res.headers.get('content-type')?.includes('json'))) {
     return (res.headers.get('content-type')?.includes('json') ? await res.json() : undefined) as T;
   }
   const data = res.headers.get('content-type')?.includes('json') ? await res.json() : null;
@@ -66,3 +70,9 @@ export function fieldErrors(err: unknown): Record<string, string> {
   if (!(err instanceof ApiError) || !err.details) return {};
   return Object.fromEntries(err.details.map((d) => [d.path, d.message]));
 }
+
+export const fmtDate = (d: string | null | undefined) =>
+  d ? new Date(d.length === 10 ? `${d}T12:00:00` : d).toLocaleDateString('pt-BR') : '—';
+export const fmtDateTime = (d: string | null | undefined) => (d ? new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—');
+export const fmtBytes = (n: number) =>
+  n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(0)} KB` : n < 1073741824 ? `${(n / 1048576).toFixed(1)} MB` : `${(n / 1073741824).toFixed(2)} GB`;

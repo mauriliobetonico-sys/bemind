@@ -16,6 +16,14 @@ while true; do
     rm -f "${file}.partial"
     echo "{\"level\":\"error\",\"msg\":\"backup falhou\"}"
   fi
-  find /backups -name 'aimos-*.dump' -mtime "+${BACKUP_RETENTION_DAYS}" -delete
+  # Arquivos dos clientes (volume de storage).
+  if tar -czf "/backups/aimos-files-${ts}.tar.gz.partial" -C /storage . 2>/dev/null; then
+    mv "/backups/aimos-files-${ts}.tar.gz.partial" "/backups/aimos-files-${ts}.tar.gz"
+    echo "{\"level\":\"info\",\"msg\":\"backup de arquivos concluído\"}"
+  else
+    rm -f "/backups/aimos-files-${ts}.tar.gz.partial"
+    echo "{\"level\":\"error\",\"msg\":\"backup de arquivos falhou\"}"
+  fi
+  find /backups \( -name 'aimos-*.dump' -o -name 'aimos-files-*.tar.gz' \) -mtime "+${BACKUP_RETENTION_DAYS}" -delete
   sleep "${BACKUP_INTERVAL_SECONDS}"
 done

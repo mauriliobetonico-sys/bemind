@@ -17,11 +17,23 @@ interface NavItem {
 const STAFF_NAV: NavItem[] = [
   { href: '/desk', label: 'Maurílio Desk', permission: 'dashboard:admin' },
   { href: '/clients', label: 'Clientes', permission: 'clients:read' },
+  { href: '/demands', label: 'Demandas', permission: 'work:read' },
+  { href: '/tasks', label: 'Tarefas', permission: 'tasks:read' },
+  { href: '/approvals', label: 'Aprovações', permission: 'work:read' },
+  { href: '/projects', label: 'Projetos', permission: 'work:read' },
+  { href: '/calendar', label: 'Calendário', permission: 'work:read' },
+  { href: '/files', label: 'Arquivos e marca', permission: 'files:read' },
   { href: '/users', label: 'Equipe e acessos', permission: 'users:read' },
   { href: '/audit', label: 'Auditoria', permission: 'audit:read' },
 ];
 
-const CLIENT_NAV: NavItem[] = [{ href: '/portal', label: 'Dashboard', permission: 'dashboard:client' }];
+const CLIENT_NAV: NavItem[] = [
+  { href: '/portal', label: 'Dashboard', permission: 'dashboard:client' },
+  { href: '/demands', label: 'Demandas', permission: 'work:read' },
+  { href: '/approvals', label: 'Aprovações', permission: 'work:read' },
+  { href: '/calendar', label: 'Calendário', permission: 'work:read' },
+  { href: '/files', label: 'Arquivos e marca', permission: 'files:read' },
+];
 
 function ThemeToggle() {
   const [theme, setTheme] = useState<'dark' | 'light' | null>(null);

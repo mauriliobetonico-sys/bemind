@@ -23,6 +23,8 @@ COPY --from=build /repo/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build /repo/apps/api/dist ./apps/api/dist
 COPY --from=build /repo/apps/api/migrations ./apps/api/migrations
 WORKDIR /app/apps/api
+# Volume de arquivos dos clientes (tenants/{id}/...), gravável pelo usuário sem privilégios.
+RUN mkdir -p /data/storage && chown node:node /data/storage
 USER node
 EXPOSE 4000
 HEALTHCHECK --interval=15s --timeout=3s --retries=5 CMD node -e "fetch('http://127.0.0.1:4000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"

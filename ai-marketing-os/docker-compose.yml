@@ -20,6 +20,10 @@ x-api-env: &api-env
   SMTP_PASSWORD: ${SMTP_PASSWORD:-}
   MAIL_FROM: ${MAIL_FROM:-AI Marketing OS <no-reply@localhost>}
   SUPPORT_EMAIL: ${SUPPORT_EMAIL:-suporte@localhost}
+  STORAGE_DIR: /data/storage
+  MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-200}
+  CLAMAV_HOST: ${CLAMAV_HOST:-}
+  CLAMAV_PORT: ${CLAMAV_PORT:-3310}
 
 services:
   postgres:
@@ -69,6 +73,8 @@ services:
     image: aimos-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment: *api-env
+    volumes:
+      - storage:/data/storage
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
@@ -79,6 +85,8 @@ services:
     restart: unless-stopped
     command: ["node", "dist/worker.mjs"]
     environment: *api-env
+    volumes:
+      - storage:/data/storage
     depends_on:
       migrate: { condition: service_completed_successfully }
     networks: [internal]
@@ -123,8 +131,16 @@ services:
     volumes:
       - ./infra/backup:/backup:ro
       - ${BACKUP_DIR:-./backups}:/backups
+      - storage:/storage:ro
     depends_on:
       postgres: { condition: service_healthy }
+    networks: [internal]
+
+  # Antivírus opcional: docker compose --profile antivirus up -d  e  CLAMAV_HOST=clamav no .env
+  clamav:
+    image: clamav/clamav:stable
+    profiles: ["antivirus"]
+    restart: unless-stopped
     networks: [internal]
 
   # Somente em desenvolvimento: captura de e-mails SMTP com interface web.
@@ -136,6 +152,7 @@ services:
     networks: [internal]
 
 volumes:
+  storage:
   pgdata:
   redisdata:
   caddydata:

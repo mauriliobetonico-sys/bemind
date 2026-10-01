@@ -13,7 +13,13 @@
 		-Server
 	}
 
-	request_body {
+	# Uploads têm limite próprio (a API também valida por arquivo: MAX_UPLOAD_MB).
+	@uploads path /api/files /api/files/*
+	request_body @uploads {
+		max_size 4200MB
+	}
+	@other not path /api/files /api/files/*
+	request_body @other {
 		max_size 2MB
 	}
 

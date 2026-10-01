@@ -26,7 +26,9 @@
 | Usuários, papéis e associações | 1 | `modules/users` |
 | Dashboard admin / Maurílio Desk / portal | 1 | `modules/dashboard`, `apps/web` |
 | Auditoria | 1 | `modules/audit` |
-| Projetos, tarefas, demandas, briefings, arquivos, Brand Vault, calendário, aprovações | 2 | — |
+| Projetos, demandas, briefings, tarefas, entregáveis, QA, aprovações | 2 | `modules/projects`, `modules/demands`, `modules/tasks` |
+| Arquivos, Brand Vault (storage por tenant, detecção de tipo, ClamAV) | 2 | `modules/files`, `storage/` |
+| Calendário | 2 | `modules/calendar` |
 | Propostas, contratos, financeiro, pagamentos, rentabilidade | 3 | — |
 | AI Gateway, Orchestrator, agentes, memória, Agent Room, QA, Chat Global | 4 | ver [AGENTS.md](AGENTS.md) |
 | MCP Hub e integrações | 5 | ver [MCP.md](MCP.md) |
@@ -58,6 +60,10 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 
 **ADR-006 — Tenant = empresa cliente; a agência é um tenant `agency`.** Dados internos da agência (despesas, equipe — fase 3) ficam isolados da mesma forma.
 
+**ADR-008 — Arquivos em volume local, entregues pela API.** Cada arquivo fica em `tenants/{tenant}/{id}` (nome original nunca no caminho) e só sai por `GET /api/files/:id/download` após autorização, com auditoria. Sem URLs públicas. Backup diário do volume. Object storage S3 entra quando houver mais de um servidor (fase 8), atrás da mesma interface `LocalStorage`.
+
+**ADR-009 — Filas: outbox agora, BullMQ na fase 4.** As tarefas assíncronas da fase 2 (e-mails, varredura antivírus) são curtas e cabem no outbox transacional, que já tem retry, backoff e dead-letter. BullMQ entra com os agentes (fase 4), onde há jobs longos e concorrência por fila.
+
 **ADR-007 — Integrações nunca simuladas.** Indicadores e integrações sem implementação retornam a fase prevista ou `integration_pending`.
 
 ## Roadmap
@@ -65,7 +71,7 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 | Fase | Entrega | Critério de saída |
 | --- | --- | --- |
 | **1 · concluída** | Auth, usuários, tenants, RBAC, RLS, auditoria, dashboard, clientes, onboarding | Testes de isolamento A→B passando contra Postgres real |
-| 2 | Projetos, tarefas, demandas, arquivos/Brand Vault, briefings, calendário, aprovações; BullMQ | Download cruzado bloqueado; upload validado; DLQ |
+| **2 · concluída** | Projetos, demandas, briefings, tarefas, entregáveis, QA, aprovações, arquivos/Brand Vault, calendário, notificações por e-mail | Download cruzado bloqueado; upload validado pelo conteúdo; DLQ no outbox |
 | 3 | Propostas (PDF), contratos, financeiro, pagamentos, rentabilidade | Alterações financeiras auditadas e com HITL |
 | 4 | AI Gateway, Orchestrator, agentes, memória, Agent Room, QA, Chat Global | Memória isolada por tenant; custo por run |
 | 5 | MCP Hub, ferramentas, conectores, permissões | Ferramenta HIGH nunca executa sem aprovação |
