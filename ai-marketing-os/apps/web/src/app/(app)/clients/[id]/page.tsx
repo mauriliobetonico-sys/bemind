@@ -136,7 +136,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </div>
         </>
       ) : (
-        <div className="ds-grid" style={{ gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1fr)' }}>
+        <div className="ds-grid ds-split" style={{ gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1fr)' }}>
           <div className="ds-stack" style={{ gap: 'var(--space-4)' }}>
             <Card title="Cadastro">
               <dl className="ds-dl">

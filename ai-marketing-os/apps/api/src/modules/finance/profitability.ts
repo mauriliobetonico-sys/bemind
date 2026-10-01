@@ -23,7 +23,7 @@ export interface ProfitabilityReport {
   thresholdPercent: number;
   totals: { revenueCents: number; costCents: number; marginCents: number; marginPercent: number | null };
   unallocated: { infrastructureCents: number; operationalCents: number };
-  aiCost: { status: 'pending_phase_4'; note: string };
+  aiCost: { status: 'measured'; usdBrlRate: number; totalCents: number; unallocatedCents: number; note: string };
   method: string[];
   clients: ClientProfitability[];
 }
@@ -40,7 +40,7 @@ export function monthRange(month?: string): { month: string; from: string; to: s
  * Rentabilidade por cliente no mês (método documentado e exibido na tela):
  *  - Receita: pagamentos recebidos no mês.
  *  - Custo direto: despesas rateadas ao cliente no mês.
- *  - Custo de IA: consumo registrado (fase 4) — hoje zero, sinalizado.
+ *  - Custo de IA: consumo medido pelo AI Gateway (ai_usage), convertido pela cotação configurada.
  *  - Infraestrutura: despesas de infraestrutura não rateadas ÷ clientes com contrato ativo.
  *  - Operacional: demais despesas não rateadas, proporcionais ao MRR do cliente.
  * Deve rodar em escopo global (despesas ficam no tenant da agência).
@@ -64,6 +64,18 @@ export async function profitabilityReport(tx: Tx, month: string | undefined, thr
     )
   ).rows.map((r) => ({ ...r, mrr: Number(r.mrr), revenue: Number(r.revenue), direct: Number(r.direct) }));
 
+  const rate = Number((await tx.query<{ r: string }>('SELECT usd_brl_rate AS r FROM agency_settings WHERE id = 1')).rows[0]?.r ?? 0);
+  // micro-dólares → centavos de real: µUSD / 1e6 × cotação × 100
+  const toCents = (micros: number) => Math.round((micros * rate) / 10_000);
+  const aiByTenant = new Map(
+    (
+      await tx.query<{ tenant_id: string; micros: string }>(
+        `SELECT tenant_id, sum(cost_usd_micros) AS micros FROM ai_usage
+          WHERE created_at >= $1::date AND created_at < ($2::date + 1) GROUP BY tenant_id`,
+        [from, to],
+      )
+    ).rows.map((r) => [r.tenant_id, toCents(Number(r.micros))]),
+  );
   const unalloc = (
     await tx.query<{ infra: string; other: string }>(
       `SELECT coalesce(sum(amount_cents) FILTER (WHERE category = 'infrastructure'), 0) AS infra,
@@ -78,11 +90,11 @@ export async function profitabilityReport(tx: Tx, month: string | undefined, thr
   const totalMrr = withContract.reduce((a, c) => a + c.mrr, 0);
 
   const rows: ClientProfitability[] = clients
-    .filter((c) => c.mrr > 0 || c.revenue > 0 || c.direct > 0)
+    .filter((c) => c.mrr > 0 || c.revenue > 0 || c.direct > 0 || (aiByTenant.get(c.tenant_id) ?? 0) > 0)
     .map((c) => {
       const infraShare = c.mrr > 0 && withContract.length ? Math.round(infra / withContract.length) : 0;
       const opShare = c.mrr > 0 && totalMrr > 0 ? Math.round((other * c.mrr) / totalMrr) : 0;
-      const aiCost = 0;
+      const aiCost = aiByTenant.get(c.tenant_id) ?? 0;
       const totalCost = c.direct + infraShare + opShare + aiCost;
       const margin = c.revenue - totalCost;
       const marginPercent = c.revenue > 0 ? Math.round((margin / c.revenue) * 1000) / 10 : null;
@@ -114,13 +126,20 @@ export async function profitabilityReport(tx: Tx, month: string | undefined, thr
     thresholdPercent,
     totals: { revenueCents: revenue, costCents: cost, marginCents: revenue - cost, marginPercent: revenue > 0 ? Math.round(((revenue - cost) / revenue) * 1000) / 10 : null },
     unallocated: { infrastructureCents: infra, operationalCents: other },
-    aiCost: { status: 'pending_phase_4', note: 'O consumo de IA por cliente passa a ser medido com os agentes (fase 4).' },
+    aiCost: {
+      status: 'measured',
+      usdBrlRate: rate,
+      totalCents: [...aiByTenant.values()].reduce((a, v) => a + v, 0),
+      // Chat Global e outros usos da agência: custo da agência, fora do rateio por cliente.
+      unallocatedCents: [...aiByTenant.entries()].filter(([t]) => !clients.some((c) => c.tenant_id === t)).reduce((a, [, v]) => a + v, 0),
+      note: `Consumo medido por chamada ao modelo, convertido a R$ ${rate.toFixed(2)} por dólar (ajuste em IA → Orçamento).`,
+    },
     method: [
       'Receita = pagamentos recebidos no mês.',
       'Custo direto = despesas rateadas diretamente ao cliente.',
       'Infraestrutura = despesas de infraestrutura sem rateio, divididas igualmente entre clientes com contrato ativo.',
       'Operacional = demais despesas sem rateio, proporcionais ao MRR do cliente.',
-      'Custo de IA = consumo medido pelo AI Gateway (fase 4).',
+      'Custo de IA = tokens consumidos pelos agentes deste cliente × preço do modelo, convertidos pela cotação configurada.',
     ],
     clients: rows,
   };

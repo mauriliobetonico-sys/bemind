@@ -19,6 +19,9 @@ import { badRequest, conflict, notFound, parse } from '../../lib/errors';
 import type { Access } from '../../security/access';
 import { requestedTenant, requestMeta, requireAccess } from '../../security/plugin';
 import { enqueue } from '../../outbox/outbox';
+import { budgetStatus } from '../../ai/gateway';
+import { INTERNAL_EVENT_TYPES } from '../clients/repository';
+import { queueRun } from '../../ai/runs';
 import { buildUpdate, dateOnly, recordActivity, singleTenantContext } from '../work/common';
 
 const DEMAND_SELECT = `
@@ -40,6 +43,7 @@ const CLIENT_VISIBLE_DELIVERABLES = ['awaiting_client', 'changes_requested', 'ap
 const DELIVERABLE_SELECT = `
   SELECT v.id, v.tenant_id AS "tenantId", v.demand_id AS "demandId", v.title, v.description, v.file_id AS "fileId",
          f.name AS "fileName", f.mime AS "fileMime", v.version, v.status, v.qa_notes AS "qaNotes",
+         v.agent_run_id AS "agentRunId", v.ai_review AS "aiReview",
          v.created_at AS "createdAt", v.updated_at AS "updatedAt",
          (SELECT row_to_json(a) FROM (
             SELECT a.id, a.status, a.message, a.reason, a.version, a.created_at AS "createdAt", a.decided_at AS "decidedAt",
@@ -117,14 +121,14 @@ export async function demandRoutes(app: FastifyInstance, ctx: AppContext) {
           `${DELIVERABLE_SELECT} WHERE v.demand_id = $1 ${staff ? '' : `AND v.status = ANY($2)`} ORDER BY v.created_at`,
           staff ? [id] : [id, CLIENT_VISIBLE_DELIVERABLES],
         )
-      ).rows.map((v) => (staff ? v : { ...v, qaNotes: null }));
+      ).rows.map((v) => (staff ? v : { ...v, qaNotes: null, agentRunId: null, aiReview: null }));
       const activity = (
         await tx.query(
           `SELECT e.id, e.type, e.data, e.created_at AS "createdAt", u.name AS "actorName"
              FROM client_events e LEFT JOIN users u ON u.id = e.actor_user_id
-            WHERE e.tenant_id = $1 AND e.data->>'demandId' = $2 ${staff ? '' : `AND e.type <> ALL($3)`}
+            WHERE e.tenant_id = $1 AND e.data->>'demandId' = $2 ${staff ? '' : `AND e.type <> ALL($3) AND e.type NOT LIKE 'ai.%'`}
             ORDER BY e.created_at DESC LIMIT 100`,
-          staff ? [demand.tenantId, id] : [demand.tenantId, id, ['deliverable.qa_rejected', 'deliverable.submitted_for_qa', 'deliverable.created']],
+          staff ? [demand.tenantId, id] : [demand.tenantId, id, INTERNAL_EVENT_TYPES],
         )
       ).rows;
       const tasks = staff
@@ -153,8 +157,15 @@ export async function demandRoutes(app: FastifyInstance, ctx: AppContext) {
           })
       ).rows[0]!;
       await recordActivity(tx, { tenantId: dbCtx.tenantId, actorUserId: actor, type: 'demand.created', data: { demandId: id, title: input.title, demandType: input.type } });
-      // DEMANDA CRIADA → equipe notificada agora; Orchestrator consome este evento na fase 4.
+      // DEMANDA CRIADA → equipe notificada; com auto-plano ligado, o Orchestrator monta o plano.
       await enqueue(tx, { type: 'demand.created', tenantId: dbCtx.tenantId, payload: { demandId: id } });
+      if (ctx.ai.configured) {
+        const b = await budgetStatus(tx, dbCtx.tenantId);
+        const withinBudget = b.limitUsdMicros === null || b.spentUsdMicros < b.limitUsdMicros;
+        if (b.enabled && b.autoPlanDemands && withinBudget) {
+          await queueRun(tx, { tenantId: dbCtx.tenantId, agentKey: 'orchestrator', kind: 'plan', demandId: id, requestedBy: actor });
+        }
+      }
       await ctx.audit.recordIn(tx, { action: 'demand.create', result: 'success', tenantId: dbCtx.tenantId, actorUserId: actor, resourceType: 'demand', resourceId: id, ...requestMeta(req) });
       return findDemand(tx, id);
     });

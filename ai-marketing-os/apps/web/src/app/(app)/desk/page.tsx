@@ -3,10 +3,10 @@
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { brl } from '@/lib/api';
+import { api, ApiError, brl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useApi } from '@/lib/use-api';
-import { eventLabel, greeting, statusLabel, statusTone } from '@/lib/labels';
+import { eventLabel, greeting, statusLabel, statusTone, usd } from '@/lib/labels';
 import { Alert, Badge, Button, Card, EmptyState, PageHeader, PendingModule, Skeleton, StatCard, Timeline } from '@/design-system/components';
 import type { ClientStatus } from '@aimos/shared';
 
@@ -17,6 +17,7 @@ interface AdminDashboard {
   attention: { clientId: string; tradeName: string; status: string; since: string; reason: string }[];
   timeline: { id: string; type: string; at: string; clientId: string; clientName: string; actorName: string | null }[];
   pendingModules: { key: string; label: string; phase: number }[];
+  ai: { status: string; runsActive: number; runsWithProblems: number; runsDoneThisMonth: number; memoryProposals: number; costThisMonthUsdMicros: number | null } | null;
   operations: {
     openDemands: number;
     newDemands: number;
@@ -40,7 +41,7 @@ interface AdminDashboard {
 }
 
 export default function DeskPage() {
-  const { me } = useAuth();
+  const { me, can } = useAuth();
   const router = useRouter();
   const { data, error, loading } = useApi<AdminDashboard>('/dashboard/admin');
   const [command, setCommand] = useState('');
@@ -48,9 +49,21 @@ export default function DeskPage() {
   const firstName = me?.user.name.split(' ')[0] ?? '';
   const today = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
 
-  function onCommand(e: FormEvent) {
+  const aiChat = can('ai:chat');
+  const [cmdError, setCmdError] = useState<string | null>(null);
+  async function onCommand(e: FormEvent) {
     e.preventDefault();
     const q = command.trim();
+    if (aiChat && q) {
+      // Linguagem natural: vira uma conversa no Chat Global (ferramentas só de leitura).
+      try {
+        const r = await api<{ id: string }>('/ai/chat/threads', { method: 'POST', body: { content: q } });
+        router.push(`/chat?t=${r.id}`);
+      } catch (err) {
+        setCmdError(err instanceof ApiError ? err.message : 'Falha ao enviar.');
+      }
+      return;
+    }
     router.push(q ? `/clients?q=${encodeURIComponent(q)}` : '/clients');
   }
 
@@ -62,13 +75,19 @@ export default function DeskPage() {
         <label htmlFor="cmd" className="ds-eyebrow" style={{ flexShrink: 0 }}>
           Comando
         </label>
-        <input id="cmd" value={command} onChange={(e) => setCommand(e.target.value)} placeholder="O que você deseja fazer? Hoje: buscar um cliente pelo nome, CNPJ ou e-mail." />
-        <Badge>Linguagem natural · fase 4</Badge>
+        <input
+          id="cmd"
+          value={command}
+          onChange={(e) => setCommand(e.target.value)}
+          placeholder={aiChat ? 'Pergunte em linguagem natural: “quais clientes têm fatura vencida?”' : 'Buscar um cliente pelo nome, CNPJ ou e-mail.'}
+        />
+        {aiChat && <Badge tone="info">Chat Global</Badge>}
         <Button type="submit" variant="primary">
           Ir
         </Button>
       </form>
 
+      {cmdError && <Alert tone="danger">{cmdError}</Alert>}
       {error && <Alert tone="danger">{error.message}</Alert>}
 
       <div className="ds-grid ds-grid-4">
@@ -102,7 +121,7 @@ export default function DeskPage() {
         </div>
       )}
 
-      <div className="ds-grid" style={{ gridTemplateColumns: 'minmax(0, 1.25fr) minmax(0, 1fr)' }}>
+      <div className="ds-grid ds-split" style={{ gridTemplateColumns: 'minmax(0, 1.25fr) minmax(0, 1fr)' }}>
         <div className="ds-stack" style={{ gap: 'var(--space-4)' }}>
           <Card title="O que precisa da sua atenção">
             {!data ? (
@@ -151,13 +170,31 @@ export default function DeskPage() {
             )}
             {data && <p className="ds-stat-hint">{data.revenue.basis}.</p>}
           </Card>
-          <Card title="Chegando nas próximas fases">
-            <div className="ds-stack" style={{ gap: 8 }}>
-              {(data?.pendingModules ?? []).map((m) => (
-                <PendingModule key={m.key} label={m.label} phase={m.phase} />
-              ))}
-            </div>
-          </Card>
+          {data?.ai && (
+            <Card title="Equipe de agentes" action={<Link href="/agents">Ver execuções</Link>}>
+              {data.ai.status !== 'configured' && <Alert tone="warn">IA: integration pending — configure ANTHROPIC_API_KEY no servidor.</Alert>}
+              <div className="ds-grid ds-grid-2">
+                <StatCard label="Executando agora" value={data.ai.runsActive} />
+                <StatCard label="Com erro (7 dias)" value={data.ai.runsWithProblems} tone={data.ai.runsWithProblems ? 'warn' : undefined} hint={data.ai.runsWithProblems ? <Link href="/agents">revisar</Link> : undefined} />
+                <StatCard label="Concluídas no mês" value={data.ai.runsDoneThisMonth} />
+                <StatCard label="Memória aguardando você" value={data.ai.memoryProposals} tone={data.ai.memoryProposals ? 'warn' : undefined} hint={data.ai.memoryProposals ? <Link href="/memory">revisar</Link> : undefined} />
+              </div>
+              {data.ai.costThisMonthUsdMicros !== null && (
+                <p className="ds-stat-hint">
+                  Custo de IA no mês: {usd(data.ai.costThisMonthUsdMicros)} · <Link href="/ai-settings">orçamento por cliente</Link>
+                </p>
+              )}
+            </Card>
+          )}
+          {(data?.pendingModules ?? []).length > 0 && (
+            <Card title="Chegando nas próximas fases">
+              <div className="ds-stack" style={{ gap: 8 }}>
+                {(data?.pendingModules ?? []).map((m) => (
+                  <PendingModule key={m.key} label={m.label} phase={m.phase} />
+                ))}
+              </div>
+            </Card>
+          )}
         </div>
         <Card title="Timeline operacional">
           {!data ? (

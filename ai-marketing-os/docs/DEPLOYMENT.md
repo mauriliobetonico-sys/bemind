@@ -92,6 +92,16 @@ docker compose start api worker
 
 Teste a restauração periodicamente em staging.
 
+## Inteligência artificial
+
+```bash
+# no .env: ANTHROPIC_API_KEY=...   (opcional: OPENAI_API_KEY=... para busca semântica)
+docker compose up -d --build                     # aplica a migration 0004 (pgvector)
+docker compose exec worker node dist/ai/ai-test-cli.mjs
+```
+
+O teste faz **uma** chamada mínima (fração de centavo) e mostra modelo, resposta e custo — nunca imprime as chaves. Depois, em **Orçamento de IA**, defina limites mensais por cliente antes de ligar o auto-plano. `GET /api/ready` informa `ai` e `embeddings`.
+
 ## Antivírus (opcional)
 
 ```bash

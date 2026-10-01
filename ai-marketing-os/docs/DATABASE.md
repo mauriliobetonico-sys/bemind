@@ -1,6 +1,6 @@
 # Banco de dados
 
-PostgreSQL 16 (imagem `pgvector/pgvector:pg16`, pronta para embeddings na fase 4). Migrations em `apps/api/migrations/NNNN_nome.sql`, aplicadas em ordem por `pnpm migrate` com a conexão **administrativa**; a aplicação usa o role `aimos_app`.
+PostgreSQL 16 (imagem `pgvector/pgvector:pg16`; a extensão `vector` é usada pela memória dos agentes). Migrations em `apps/api/migrations/NNNN_nome.sql`, aplicadas em ordem por `pnpm migrate` com a conexão **administrativa**; a aplicação usa o role `aimos_app`.
 
 ## Convenções
 
@@ -71,9 +71,23 @@ Todas com `tenant_id` + RLS (`app.enable_tenant_rls`) e FKs compostas entre si.
 | `agency_settings` | global | Dados da agência, instruções de pagamento, limite de margem, antecedência de faturamento (somente global/system) |
 | `action_policies` | global | Política por ação crítica |
 
+## Tabelas da Fase 4 (IA)
+
+| Tabela | Tenant | Descrição |
+| --- | --- | --- |
+| `ai_settings` | cliente | IA ligada/desligada, orçamento mensal (µUSD) e auto-plano por cliente |
+| `agent_runs` | cliente / agência (chat) | Uma execução de agente: tipo (`plan`, `produce`, `qa`, `reply`, `summarize`, `chat`), status, passo, revisão, saída, erro, tokens e custo. FKs compostas para demanda, reunião, conversa, execução-pai e entregável |
+| `agent_messages` | cliente / agência | Mensagens do Agent Room (`meeting_id`) ou do Chat Global (`thread_id`) — exatamente um dos dois |
+| `agent_meetings` | cliente | Reuniões: agentes convidados, status, ata (`outcome`) |
+| `ai_chat_threads` | **agência** | Conversas do Chat Global, por usuário; trigger garante o tenant da agência |
+| `agent_memories` | cliente | Memória por tipo (operacional, conhecimento, estratégica, regras da marca, experiência), status `proposed → approved/rejected/archived`, origem (execução, mensagem, arquivo, manual), quem decidiu, embedding `vector(1536)`. CHECK: aprovada/rejeitada exige `decided_by` |
+| `ai_usage` | cliente / agência | Só INSERT: uma linha por chamada ao modelo (agente, modelo, finalidade, demanda, projeto, tokens, custo em µUSD, `stop_reason`) |
+
+`deliverables` ganhou `agent_run_id` (rascunho produzido por agente) e `ai_review` (parecer do QA da IA). `agency_settings.usd_brl_rate` converte o custo de IA para a rentabilidade.
+
 ## Entidades das próximas fases
 
-Já modeladas na arquitetura (todas com `tenant_id` + RLS): `subscriptions`, `campaigns`, `agents`, `agent_runs`, `agent_memory`, `agent_knowledge`, `agent_policies`, `agent_meetings`, `agent_messages`, `ai_usage`, `integrations`, `mcp_connections`, `mcp_tool_calls`, `notifications`, `daily_reports`, `analytics`, `plans`.
+Já modeladas na arquitetura (todas com `tenant_id` + RLS): `subscriptions`, `campaigns`, `integrations`, `mcp_connections`, `mcp_tool_calls`, `notifications`, `daily_reports`, `analytics`, `plans`.
 
 ## Backup
 

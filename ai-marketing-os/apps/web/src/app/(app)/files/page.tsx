@@ -204,7 +204,7 @@ function BrandVault({
   const others = assets.filter((a) => a.kind !== 'color');
 
   return (
-    <div className="ds-grid" style={{ gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)' }}>
+    <div className="ds-grid ds-split" style={{ gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)' }}>
       <div className="ds-stack" style={{ gap: 'var(--space-4)' }}>
         <Card title="Paleta">
           {colors.length === 0 ? (
@@ -232,7 +232,7 @@ function BrandVault({
           {loading ? (
             <Skeleton height={120} />
           ) : others.length === 0 ? (
-            <EmptyState>Nada cadastrado ainda. Os agentes de IA (fase 4) vão consultar o que estiver aqui.</EmptyState>
+            <EmptyState>Nada cadastrado ainda. Os agentes de IA consultam o que estiver aqui (cores, fontes, tom, produtos).</EmptyState>
           ) : (
             <ul className="ds-list">
               {others.map((a) => (

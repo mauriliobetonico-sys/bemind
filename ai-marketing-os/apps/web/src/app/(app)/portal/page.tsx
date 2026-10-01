@@ -48,7 +48,7 @@ export default function PortalPage() {
           Enviar arquivos
         </Link>
       </div>
-      <div className="ds-grid" style={{ gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)' }}>
+      <div className="ds-grid ds-split" style={{ gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)' }}>
         <div className="ds-stack" style={{ gap: 'var(--space-4)' }}>
           <Card title="Seu plano">
             <dl className="ds-dl">

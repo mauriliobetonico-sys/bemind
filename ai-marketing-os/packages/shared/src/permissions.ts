@@ -36,6 +36,11 @@ export const PERMISSIONS = {
   'finance:write': 'Registrar pagamentos e despesas, emitir faturas',
   'finance:approve': 'Aprovar ações financeiras críticas (HITL)',
   'billing:read': 'Ver o próprio contrato e as próprias faturas (portal)',
+  'ai:read': 'Ver execuções de agentes, Agent Room e memória do cliente',
+  'ai:run': 'Acionar agentes de IA e conversar no Agent Room',
+  'ai:memory_approve': 'Aprovar, corrigir ou rejeitar memória e regras de marca propostas',
+  'ai:settings': 'Orçamento e configurações de IA por cliente',
+  'ai:chat': 'Chat Global da agência com ferramentas internas',
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -83,6 +88,7 @@ export const SYSTEM_ROLES: readonly RoleDefinition[] = [
       'work:read', 'work:manage', 'tasks:read', 'tasks:write', 'demands:create',
       'files:read', 'files:write', 'files:delete', 'approvals:request',
       'proposals:read', 'proposals:write', 'contracts:read',
+      'ai:read', 'ai:run', 'ai:memory_approve',
     ],
   },
   {
@@ -91,7 +97,7 @@ export const SYSTEM_ROLES: readonly RoleDefinition[] = [
     scope: 'tenant',
     permissions: [
       'clients:read', 'dashboard:admin', 'work:read', 'work:manage', 'tasks:read', 'tasks:write',
-      'files:read', 'files:write', 'approvals:request',
+      'files:read', 'files:write', 'approvals:request', 'ai:read', 'ai:run',
     ],
   },
   {

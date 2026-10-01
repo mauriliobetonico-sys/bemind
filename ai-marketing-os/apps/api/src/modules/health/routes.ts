@@ -7,7 +7,7 @@ export async function healthRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/ready', { config: { auth: 'public', rateLimit: false } }, async (_req, reply) => {
     try {
       await ctx.pool.query('SELECT 1');
-      return { status: 'ready', database: 'ok', smtp: ctx.mailer.configured ? 'configured' : 'integration_pending' };
+      return { status: 'ready', database: 'ok', smtp: ctx.mailer.configured ? 'configured' : 'integration_pending', ai: ctx.ai.status().llm, embeddings: ctx.ai.status().embeddings };
     } catch {
       return reply.code(503).send({ status: 'unavailable', database: 'error' });
     }

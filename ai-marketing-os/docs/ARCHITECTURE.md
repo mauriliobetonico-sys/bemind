@@ -65,7 +65,7 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 
 **ADR-008 — Arquivos em volume local, entregues pela API.** Cada arquivo fica em `tenants/{tenant}/{id}` (nome original nunca no caminho) e só sai por `GET /api/files/:id/download` após autorização, com auditoria. Sem URLs públicas. Backup diário do volume. Object storage S3 entra quando houver mais de um servidor (fase 8), atrás da mesma interface `LocalStorage`.
 
-**ADR-009 — Filas: outbox agora, BullMQ na fase 4.** As tarefas assíncronas da fase 2 (e-mails, varredura antivírus) são curtas e cabem no outbox transacional, que já tem retry, backoff e dead-letter. BullMQ entra com os agentes (fase 4), onde há jobs longos e concorrência por fila.
+**ADR-009 — Filas: outbox transacional (revisado na fase 4).** E-mails, antivírus e também as execuções de agentes rodam pelo outbox, que já tem retry com backoff, lease com `SKIP LOCKED` e dead-letter. Na fase 4 avaliamos BullMQ e mantivemos o outbox: a execução nasce na MESMA transação do dado que a originou (nunca há plano sem demanda nem job órfão), e a execução é reivindicada só se estiver `queued` (dois workers nunca rodam o mesmo agente). Execuções presas (worker caiu) viram `failed` visível após 30 min. BullMQ/filas dedicadas voltam à mesa na fase 8, com vários servidores.
 
 **ADR-010 — Links públicos de proposta assinados com HMAC.** O token é `HMAC(APP_SECRET, id:nonce)`; o banco guarda só o SHA-256 dele. O e-mail é montado no worker recalculando o token — nada sensível em claro no outbox. Trocar o nonce revoga o link.
 
@@ -73,7 +73,15 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 
 **ADR-012 — Despesas sempre no tenant da agência.** O rateio para um cliente é uma coluna, não o tenant da linha: nenhuma política de RLS de cliente alcança custos da agência.
 
-**ADR-013 — HITL como infraestrutura.** Ações críticas viram `pending_actions` e só executam após decisão humana, com política por ação (`requires_approval`, `allow_self_approval`). Os agentes da fase 4 usarão o mesmo mecanismo — e nunca terão autoaprovação.
+**ADR-013 — HITL como infraestrutura.** Ações críticas viram `pending_actions` e só executam após decisão humana, com política por ação (`requires_approval`, `allow_self_approval`). Na fase 4 os agentes não têm nenhuma ferramenta capaz de disparar ação crítica (só leem e rascunham); quando ganharem ferramentas de escrita (fase 5, MCP), elas passarão por este mesmo mecanismo — sem autoaprovação.
+
+**ADR-014 — AI Gateway único, provedor injetável.** Toda chamada a modelo passa por `ai/gateway.ts`: checa chave, IA ligada e orçamento do cliente ANTES de chamar; mede tokens e custo de cada tentativa em `ai_usage` (inclusive saídas inválidas e recusas); trata `stop_reason` (recusa, truncamento) como erro explícito. O provedor (`AnthropicProvider`, SDK oficial `@anthropic-ai/sdk`) é uma interface — os testes usam um provedor falso determinístico e nunca chamam a API real. Modelo padrão `claude-opus-5-5`, esforço por agente, saída estruturada validada por Zod, cache automático de prompt, streaming (evita timeout) e fallback do servidor da Anthropic (`fallbacks: "default"`, beta) quando o modelo recusa por política — desligável em `AI_SERVER_FALLBACK`.
+
+**ADR-015 — Agentes produzem rascunhos; humanos decidem.** Agentes não têm ferramentas de escrita externa nesta fase: leem o contexto que o servidor monta (cliente, Brand Vault, demanda, memória aprovada) e devolvem rascunhos (`deliverables` em `draft`, com `agent_run_id`), pareceres de QA (`ai_review`, que nunca muda status) e propostas de memória. Enviar ao cliente, aprovar memória e criar tarefas da ata são cliques humanos. O QA da IA reprova automaticamente qualquer problema `blocker`/`major` (regra do sistema, não do modelo) e devolve ao agente até 2 vezes.
+
+**ADR-016 — Conteúdo de cliente entra no prompt como dado.** Tudo que vem de clientes, arquivos ou mensagens é delimitado em tags (`<demanda>`, `<memoria>`…), com as tags neutralizadas dentro do conteúdo, e o system prompt declara que instruções dentro desses blocos não valem. Cada execução monta o contexto numa transação com RLS restrito ao tenant do job — mesmo um bug no montador não alcança outro cliente.
+
+**ADR-017 — Embeddings opcionais pela OpenAI.** A Anthropic não tem API de embeddings. Com `OPENAI_API_KEY`, memórias aprovadas ganham embedding (`vector(1536)`, pgvector) e o contexto é ordenado por similaridade; sem a chave, a memória funciona por tipo/recência e a tela mostra `integration_pending`. A OpenAI é usada SOMENTE para embeddings.
 
 **ADR-007 — Integrações nunca simuladas.** Indicadores e integrações sem implementação retornam a fase prevista ou `integration_pending`.
 
@@ -84,7 +92,7 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 | **1 · concluída** | Auth, usuários, tenants, RBAC, RLS, auditoria, dashboard, clientes, onboarding | Testes de isolamento A→B passando contra Postgres real |
 | **2 · concluída** | Projetos, demandas, briefings, tarefas, entregáveis, QA, aprovações, arquivos/Brand Vault, calendário, notificações por e-mail | Download cruzado bloqueado; upload validado pelo conteúdo; DLQ no outbox |
 | **3 · concluída** | Propostas (PDF + aceite online), contratos, cobrança automática, pagamentos, despesas, rentabilidade, HITL | Alterações financeiras auditadas e com HITL; cliente nunca alcança custos da agência |
-| 4 | AI Gateway, Orchestrator, agentes, memória, Agent Room, QA, Chat Global | Memória isolada por tenant; custo por run |
+| **4 · concluída** | AI Gateway, Orchestrator, 12 agentes, memória com aprovação humana, Agent Room, QA da IA, Chat Global, orçamento e custo por cliente | Memória e execuções isoladas por tenant (API + RLS + FK composta); custo por run e por cliente na rentabilidade |
 | 5 | MCP Hub, ferramentas, conectores, permissões | Ferramenta HIGH nunca executa sem aprovação |
 | 6 | Daily report, e-mails, notificações, workflows, publicação | Cada cliente recebe só o próprio relatório |
 | 7 | Adobe Connector (APIs oficiais) | Workflow real testado |

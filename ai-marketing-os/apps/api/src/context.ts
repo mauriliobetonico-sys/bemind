@@ -5,6 +5,7 @@ import type { SessionService } from './security/sessions';
 import type { AuditService } from './modules/audit/audit';
 import type { Mailer } from './mail/mailer';
 import type { LocalStorage } from './storage/storage';
+import type { AiGateway } from './ai/gateway';
 
 /** Dependências compartilhadas pela API e pelo worker. */
 export interface AppContext {
@@ -15,4 +16,5 @@ export interface AppContext {
   rolePermissions: RolePermissionCache;
   mailer: Mailer;
   storage: LocalStorage;
+  ai: AiGateway;
 }

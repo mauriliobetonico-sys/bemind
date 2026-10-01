@@ -13,6 +13,7 @@ import { api, ApiError, fmtDate } from '@/lib/api';
 import { useApi } from '@/lib/use-api';
 import { deliverableTone, demandTone, eventLabel, priorityTone } from '@/lib/labels';
 import { FileDrop } from '@/components/file-drop';
+import { AiPanel } from '@/components/ai-panel';
 import { Alert, Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton, Textarea, Timeline } from '@/design-system/components';
 
 interface Approval {
@@ -33,6 +34,8 @@ interface Deliverable {
   version: number;
   status: keyof typeof DELIVERABLE_STATUS_LABELS;
   qaNotes: string | null;
+  agentRunId?: string | null;
+  aiReview?: { approved: boolean; score: number; summary: string; issues: { severity: string; item: string; reason: string }[] } | null;
   lastApproval: Approval | null;
 }
 interface Briefing {
@@ -133,7 +136,7 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
         </div>
       )}
 
-      <div className="ds-grid" style={{ gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)' }}>
+      <div className="ds-grid ds-split" style={{ gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)' }}>
         <div className="ds-stack" style={{ gap: 'var(--space-4)' }}>
           <Card title="Pedido">
             <dl className="ds-dl">
@@ -166,6 +169,8 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
           </Card>
 
           <BriefingCard demand={d} onSaved={() => void run(async () => undefined, 'Briefing salvo.')} />
+
+          {d.canManage && <AiPanel demandId={id} tenantId={d.tenantId} closed={['delivered', 'cancelled'].includes(d.status)} onChange={() => void demand.reload()} />}
 
           <Card title="Entregáveis">
             {d.deliverables.length === 0 ? (
@@ -335,7 +340,8 @@ function DeliverableRow({
     <div className="ds-card" style={{ background: 'var(--surface-2)', padding: 'var(--space-4)' }}>
       <div className="ds-card-header">
         <div>
-          <strong>{v.title}</strong> <span className="ds-stat-hint">v{v.version}</span>
+          <strong>{v.title}</strong> <span className="ds-stat-hint">v{v.version}</span>{' '}
+          {canManage && v.agentRunId && <Badge tone="info">rascunho da IA</Badge>}
         </div>
         <Badge tone={deliverableTone[v.status]}>{DELIVERABLE_STATUS_LABELS[v.status]}</Badge>
       </div>
@@ -345,6 +351,21 @@ function DeliverableRow({
         <a href={`/api/files/${v.fileId}/download`} style={{ fontSize: 14 }}>
           Baixar {v.fileName}
         </a>
+      )}
+      {canManage && v.aiReview && (
+        <Alert tone={v.aiReview.approved ? 'ok' : 'warn'}>
+          QA da IA ({v.aiReview.score}/100): {v.aiReview.summary}
+          {v.aiReview.issues.length > 0 && (
+            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+              {v.aiReview.issues.map((i, n) => (
+                <li key={n}>
+                  [{i.severity}] {i.item}: {i.reason}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="ds-stat-hint">Parecer automático — o envio ao cliente continua sendo decisão da equipe.</div>
+        </Alert>
       )}
       {canManage && v.qaNotes && <Alert tone="warn">QA: {v.qaNotes}</Alert>}
       {v.lastApproval?.status === 'changes_requested' && <Alert tone="danger">Pedido do cliente: “{v.lastApproval.reason}”</Alert>}

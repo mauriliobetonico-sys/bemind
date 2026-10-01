@@ -137,12 +137,14 @@ describe('Onboarding automático', () => {
     expect(Object.keys(last.data.changes!)).toEqual(expect.arrayContaining(['monthlyFeeCents', 'segment']));
   });
 
-  it('painel administrativo calcula MRR a partir dos contratos ativos e declara módulos pendentes', async () => {
+  it('painel administrativo calcula MRR a partir dos contratos ativos e traz o bloco real de agentes', async () => {
     const res = await w.admin.get('/api/dashboard/admin');
     expect(res.statusCode).toBe(200);
-    const body = res.json() as { revenue: { mrrCents: number }; pendingModules: { phase: number }[] };
+    const body = res.json() as { revenue: { mrrCents: number }; pendingModules: { phase: number }[]; ai: { status: string; costThisMonthUsdMicros: number | null } };
     const sum = (await env.admin.query(`SELECT coalesce(sum(round(recurring_amount_cents / CASE periodicity WHEN 'quarterly' THEN 3 WHEN 'yearly' THEN 12 ELSE 1 END)),0)::bigint AS s FROM contracts WHERE status = 'active'`)).rows[0].s;
     expect(body.revenue.mrrCents).toBe(Number(sum));
-    expect(body.pendingModules.length).toBeGreaterThan(0);
+    expect(body.pendingModules).toEqual([]);
+    expect(body.ai.status).toBe('integration_pending'); // ambiente de teste sem chave
+    expect(typeof body.ai.costThisMonthUsdMicros).toBe('number');
   });
 });

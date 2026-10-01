@@ -111,6 +111,31 @@ Criação de recursos exige **um** cliente: usuários com um único tenant não 
 | PUT | `/action-policies/:action` | `platform:settings` | Só SUPER_ADMIN |
 | GET | `/portal/billing` | `billing:read` | Cliente: contrato, faturas, propostas (com link) e instruções de pagamento |
 
+## Inteligência artificial (Fase 4)
+
+Toda execução é assíncrona: a rota grava a execução e o evento na mesma transação e responde `202`; o worker executa. Sem `ANTHROPIC_API_KEY`, as rotas que acionam agentes respondem `409 integration_pending`.
+
+| Método | Rota | Permissão | Descrição |
+| --- | --- | --- | --- |
+| GET | `/ai/status` | `ai:read` | `llm` e `embeddings`: `configured` ou `integration_pending`; modelo; fallback |
+| GET | `/ai/agents` | `ai:read` | Definições da equipe (identidade, objetivo, qualidade, ferramentas proibidas) |
+| POST | `/demands/:id/ai/plan` | `ai:run` | Aciona o Orchestrator (`instruction` opcional). 409 se já houver plano rodando, IA desligada ou orçamento atingido |
+| GET | `/ai/runs` · `/ai/runs/:id` | `ai:read` | Execuções (filtros `demandId`, `status`); detalhe com filhos |
+| POST | `/ai/runs/:id/retry` · `/cancel` | `ai:run` | Repete falha/bloqueio; cancela a execução e tudo que está na fila abaixo dela |
+| GET/POST | `/ai/memory` | `ai:read` / `ai:run` | Lista (filtros `status`, `kind`); registra manualmente (aprovada se quem registra pode aprovar) |
+| POST | `/ai/memory/:id/decide` | `ai:memory_approve` | `approve` (com correção opcional), `reject`, `archive` — auditado |
+| GET/POST | `/ai/meetings` | `ai:read` / `ai:run` | Reuniões do Agent Room (`X-Tenant-Id` para criar) |
+| GET | `/ai/meetings/:id` | `ai:read` | Mensagens, execuções pendentes e ata |
+| POST | `/ai/meetings/:id/messages` | `ai:run` | Mensagem humana; `ask` escolhe quais agentes respondem |
+| POST | `/ai/meetings/:id/close` | `ai:run` | Encerra e gera a ata |
+| POST | `/ai/meetings/:id/tasks` | `tasks:write` | Cria tarefa real a partir de um item da ata (`index`) |
+| GET/POST | `/ai/chat/threads` | `ai:chat` (papel global) | Conversas do próprio usuário; criar já envia a primeira pergunta |
+| GET/DELETE | `/ai/chat/threads/:id` | `ai:chat` | Só o dono vê/exclui (404 para os demais) |
+| POST | `/ai/chat/threads/:id/messages` | `ai:chat` | Nova pergunta (409 enquanto a anterior não foi respondida) |
+| GET | `/ai/settings` · PUT `/ai/settings/:tenantId` | `ai:settings` | Orçamento, IA ligada e auto-plano por cliente; gasto do mês |
+| PUT | `/ai/usd-rate` | `ai:settings` (global) | Cotação usada na rentabilidade |
+| GET | `/ai/usage?month=AAAA-MM` | `ai:settings` | Consumo por cliente, agente, modelo e finalidade |
+
 ## Dashboards e auditoria
 
 | Método | Rota | Permissão | Descrição |

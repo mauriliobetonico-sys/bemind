@@ -37,8 +37,9 @@ export async function clientRoutes(app: FastifyInstance, ctx: AppContext) {
     const access = requireAccess(req);
     const { id } = parse(uuidParam, req.params);
     return withContext(ctx.pool, access.context('clients:read', requestedTenant(req)), async (tx) => {
-      if (!(await findClient(tx, id))) throw notFound();
-      return { items: await listClientEvents(tx, id) };
+      const client = await findClient(tx, id);
+      if (!client) throw notFound();
+      return { items: await listClientEvents(tx, id, 100, { includeInternal: access.can('work:manage', client.tenant_id) }) };
     });
   });
 

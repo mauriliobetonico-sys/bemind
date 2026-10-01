@@ -4,6 +4,9 @@ const bool = z
   .enum(['true', 'false', '1', '0'])
   .transform((v) => v === 'true' || v === '1');
 
+/** Variável opcional: string vazia (padrão do docker compose) conta como ausente. */
+const optionalSecret = z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().min(1).optional());
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   API_HOST: z.string().default('0.0.0.0'),
@@ -52,6 +55,17 @@ const envSchema = z.object({
   /** clamd (ClamAV). Sem host, os arquivos ficam com scan_status = 'skipped'. */
   CLAMAV_HOST: z.string().optional(),
   CLAMAV_PORT: z.coerce.number().int().default(3310),
+
+  /** Chave da Anthropic (somente servidor). Sem ela, os agentes ficam em "integration_pending". */
+  ANTHROPIC_API_KEY: optionalSecret,
+  /** Modelo padrão dos agentes. */
+  AI_MODEL: z.string().default('claude-opus-5-5'),
+  /** Fallback do servidor da Anthropic quando o modelo recusa por política (beta). */
+  AI_SERVER_FALLBACK: bool.default(true),
+  AI_TIMEOUT_MS: z.coerce.number().int().min(10_000).default(300_000),
+  /** Chave da OpenAI usada SOMENTE para embeddings da memória (busca semântica). Opcional. */
+  OPENAI_API_KEY: optionalSecret,
+  EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
 
   OUTBOX_POLL_MS: z.coerce.number().int().min(200).default(2000),
   OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().min(1).default(8),

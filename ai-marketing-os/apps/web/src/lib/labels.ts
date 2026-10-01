@@ -28,6 +28,13 @@ const EVENT_LABELS: Record<string, string> = {
   'approval.approved': 'Cliente aprovou',
   'approval.changes_requested': 'Cliente pediu alteração',
   'files.uploaded': 'Arquivos enviados',
+  'ai.plan_requested': 'Orchestrator acionado',
+  'ai.plan_created': 'Plano de execução montado pela IA',
+  'ai.deliverable_drafted': 'Agente produziu um rascunho',
+  'ai.qa_passed': 'QA da IA aprovou o rascunho',
+  'ai.qa_failed': 'QA da IA devolveu ao agente',
+  'ai.plan_completed': 'Equipe de agentes concluiu o plano — revisão humana',
+  'ai.meeting_opened': 'Reunião aberta no Agent Room',
   'brand.asset_added': 'Item adicionado ao Brand Vault',
 };
 export const eventLabel = (type: string) => EVENT_LABELS[type] ?? type;
@@ -84,3 +91,18 @@ export const proposalTone: Record<string, Tone> = { draft: 'neutral', sent: 'inf
 export const invoiceTone: Record<string, Tone> = { open: 'info', overdue: 'danger', paid: 'ok', cancelled: 'neutral' };
 export const INVOICE_STATUS_LABELS: Record<string, string> = { open: 'Em aberto', overdue: 'Vencida', paid: 'Paga', cancelled: 'Cancelada' };
 export const contractTone: Record<string, Tone> = { active: 'ok', suspended: 'warn', ended: 'neutral', cancelled: 'danger' };
+
+export const runTone: Record<string, Tone> = {
+  queued: 'neutral',
+  running: 'info',
+  succeeded: 'ok',
+  failed: 'danger',
+  blocked: 'warn',
+  cancelled: 'neutral',
+};
+
+export const memoryTone: Record<string, Tone> = { proposed: 'warn', approved: 'ok', rejected: 'danger', archived: 'neutral' };
+
+/** micro-dólares → "US$ 0,0140" */
+export const usd = (micros: number | null | undefined, digits = 2) =>
+  `US$ ${((micros ?? 0) / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: Math.max(digits, 4) })}`;

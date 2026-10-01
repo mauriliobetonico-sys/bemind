@@ -2,6 +2,7 @@ import { createContext } from './bootstrap';
 import { processOutbox } from './outbox/outbox';
 import { outboxHandlers } from './outbox/handlers';
 import { billingTick } from './jobs/billing-tick';
+import { failStaleRuns } from './ai/runs';
 
 /**
  * Worker do outbox (fase 1): entrega e-mails e consome eventos de domínio.
@@ -15,7 +16,7 @@ const log = (msg: string, extra: Record<string, unknown> = {}) =>
   console.log(JSON.stringify({ level: 'info', time: new Date().toISOString(), service: 'worker', msg, ...extra }));
 
 async function loop() {
-  log('worker iniciado', { smtp: ctx.mailer.configured ? 'configured' : 'integration_pending' });
+  log('worker iniciado', { smtp: ctx.mailer.configured ? 'configured' : 'integration_pending', ai: ctx.ai.status() });
   let lastTick = 0;
   while (running) {
     try {
@@ -24,6 +25,8 @@ async function loop() {
         lastTick = Date.now();
         const t = await billingTick(ctx.pool);
         if (t.ran && (t.invoicesCreated || t.overdueReminders || t.expiredProposals)) log('rotina de cobrança', { ...t });
+        const stale = await failStaleRuns(ctx);
+        if (stale) log('execuções de agentes interrompidas marcadas como falha', { stale });
       }
       const r = await processOutbox(ctx.pool, handlers, { maxAttempts: ctx.env.OUTBOX_MAX_ATTEMPTS });
       if (r.processed || r.failed || r.dead) log('lote processado', { ...r });

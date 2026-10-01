@@ -8,6 +8,9 @@ import type { OutboxHandler } from './outbox';
 import { proposalToken } from '../modules/commercial/proposals';
 import { getAgencySettings } from '../modules/finance/settings';
 import { ACTION_LABELS } from '@aimos/shared';
+import { executeRun } from '../ai/runs';
+import { tenantCtx } from '../ai/gateway';
+import { toVectorLiteral } from '../ai/embeddings';
 
 const brl = (c: number | string) => (Number(c) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dmy = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
@@ -66,6 +69,27 @@ export function outboxHandlers(ctx: AppContext): Record<string, OutboxHandler> {
   }
 
   return {
+    // Execução de agente (fila). Erros transitórios voltam para o outbox com backoff.
+    'agent.run': async (event) => {
+      const { runId } = event.payload as { runId: string };
+      if (!event.tenant_id) throw new Error('agent.run sem tenant');
+      await executeRun(ctx, event.tenant_id, runId, { lastAttempt: event.attempts >= ctx.env.OUTBOX_MAX_ATTEMPTS });
+    },
+    // Embedding de uma memória aprovada (busca semântica). Sem chave: nada a fazer.
+    'memory.embed': async (event) => {
+      const { memoryId } = event.payload as { memoryId: string };
+      if (!event.tenant_id || !ctx.ai.embedder.configured) return;
+      const tenantId = event.tenant_id;
+      const mem = await withContext(ctx.pool, tenantCtx(tenantId), async (tx) =>
+        (await tx.query<{ content: string }>(`SELECT content FROM agent_memories WHERE id = $1 AND status = 'approved'`, [memoryId])).rows[0],
+      );
+      if (!mem) return;
+      const [vec] = await ctx.ai.embedder.embed([mem.content]);
+      if (!vec) return;
+      await withContext(ctx.pool, tenantCtx(tenantId), (tx) =>
+        tx.query('UPDATE agent_memories SET embedding = $2::vector, embedding_model = $3 WHERE id = $1', [memoryId, toVectorLiteral(vec), ctx.ai.embedder.model]),
+      );
+    },
     'user.invite': async (event) => {
       const { userId, template, clientId } = event.payload as { userId: string; template: string; clientId?: string };
       const message = await withContext(ctx.pool, SYSTEM, async (tx) => {

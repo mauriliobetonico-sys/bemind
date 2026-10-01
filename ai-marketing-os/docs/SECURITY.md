@@ -70,6 +70,25 @@ Arquitetura prevista (fases 3–5): ações `HIGH` (publicação, alteração fi
 - Ações financeiras críticas passam por HITL; quem não tem `finance:approve` não decide; autoaprovação depende da política; mudar política é exclusivo do SUPER_ADMIN; tudo auditado (`*.requested`, `*.approved`, `*.rejected`).
 - Papel FINANCEIRO: acesso global a contratos e finanças, sem operação, usuários ou auditoria.
 
+## Inteligência artificial (Fase 4)
+
+- Chaves de IA só no servidor (API/worker); o frontend nunca as vê. Variáveis vazias contam como ausentes → `integration_pending`.
+- Execuções carregam `tenant_id`; o worker reabre o contexto de RLS **daquele** tenant para ler contexto e gravar resultado. FKs compostas impedem execução, memória ou mensagem apontando para dado de outro cliente.
+- Prompt injection: conteúdo de cliente/arquivo/mensagem vai delimitado como dado, com as tags neutralizadas; o system prompt declara que instruções dentro dos dados não valem.
+- Agentes não publicam, não enviam, não gastam e não aprovam: produzem rascunhos e propostas. O parecer do QA da IA nunca muda o status do entregável; problemas graves reprovam por regra do sistema.
+- Memória: nasce `proposed`; o banco exige `decided_by` para aprovar/rejeitar; só memória aprovada entra no prompt; decisões auditadas.
+- Chat Global: só papéis globais com `ai:chat`; conversas privadas por usuário; ferramentas **somente leitura**, cada uma revalidando a permissão de quem perguntou (o worker recarrega o usuário do banco — não confia na fila) e rodando com o RLS dele.
+- Orçamento por cliente verificado antes de cada chamada; execução bloqueada (`blocked`) não chama o modelo. Todo consumo, inclusive recusas e saídas inválidas, fica em `ai_usage` (só INSERT).
+- Bastidores (eventos `ai.*`, QA interno, rascunhos) nunca aparecem para o cliente: linha do tempo, portal e demanda filtram no servidor.
+
+## Revisão da Fase 4
+
+- [x] Isolamento: equipe do cliente B não vê execuções, memória, reuniões nem consumo do A (API + RLS); FK composta recusa execução cruzada
+- [x] O prompt de um cliente contém só os dados dele (verificado em todas as chamadas do fluxo)
+- [x] Recusa do modelo e erro transitório nunca viram sucesso; orçamento estourado não chama o modelo
+- [x] Cliente não acessa IA nem vê bastidores; Chat Global privado e restrito a papéis globais
+- [x] Corrigido nesta revisão: a linha do tempo do cliente (`/clients/:id/events`, portal) expunha eventos internos de QA ao próprio cliente — agora filtrados no servidor
+
 ## Revisão da Fase 3
 
 - [x] Isolamento: cliente B não vê propostas, contratos, faturas nem link de A; gestor não vê faturas/despesas; FINANCEIRO não vê operação

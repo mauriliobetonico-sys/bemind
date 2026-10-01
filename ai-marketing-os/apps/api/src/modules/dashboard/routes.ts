@@ -9,10 +9,7 @@ import { listClientEvents, toClientDto, type ClientRow } from '../clients/reposi
  * Indicadores que dependem de módulos ainda não construídos. A API declara
  * explicitamente a fase em vez de devolver números simulados.
  */
-const PENDING_MODULES = [
-  { key: 'agents', label: 'Agentes ativos e com erro', phase: 4 },
-  { key: 'ai_costs', label: 'Custos de IA', phase: 4 },
-];
+const PENDING_MODULES: { key: string; label: string; phase: number }[] = [];
 
 export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/dashboard/admin', { config: { permission: 'dashboard:admin' } }, async (req) => {
@@ -152,7 +149,25 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
             )
           ).rows[0]
         : null;
+      // Agentes: execuções em andamento, problemas recentes, memória aguardando decisão e custo do mês.
+      const ai = access.canAny('ai:read')
+        ? {
+            status: ctx.ai.status().llm,
+            ...(
+              await tx.query(
+                `SELECT (SELECT count(*)::int FROM agent_runs WHERE status IN ('queued', 'running') AND kind <> 'chat') AS "runsActive",
+                        (SELECT count(*)::int FROM agent_runs WHERE status IN ('failed', 'blocked') AND kind <> 'chat' AND created_at > now() - interval '7 days') AS "runsWithProblems",
+                        (SELECT count(*)::int FROM agent_runs WHERE status = 'succeeded' AND kind <> 'chat' AND created_at >= date_trunc('month', now())) AS "runsDoneThisMonth",
+                        (SELECT count(*)::int FROM agent_memories WHERE status = 'proposed') AS "memoryProposals"`,
+              )
+            ).rows[0],
+            costThisMonthUsdMicros: access.canAny('ai:settings')
+              ? Number((await tx.query(`SELECT coalesce(sum(cost_usd_micros), 0)::float8 AS c FROM ai_usage WHERE created_at >= date_trunc('month', now())`)).rows[0].c)
+              : null,
+          }
+        : null;
       return {
+        ai,
         clients: {
           total: totals.total,
           active: totals.active,
@@ -216,7 +231,6 @@ export async function dashboardRoutes(app: FastifyInstance, ctx: AppContext) {
           )
         ).rows[0],
         pendingModules: [
-          { key: 'agents', label: 'Sua equipe de agentes', phase: 4 },
           { key: 'reports', label: 'Relatório diário', phase: 6 },
         ],
       };

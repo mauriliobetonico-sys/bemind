@@ -31,6 +31,12 @@ Todas são validadas na inicialização (`apps/api/src/config/env.ts`); valor in
 | `STORAGE_DIR` | `./data/storage` (Docker: `/data/storage`) | Volume dos arquivos dos clientes |
 | `MAX_UPLOAD_MB` | `200` | Limite por arquivo |
 | `CLAMAV_HOST` / `CLAMAV_PORT` | — / `3310` | clamd. Sem host: `scan_status = skipped` |
+| `ANTHROPIC_API_KEY` | — | Chave da Anthropic (somente servidor). Sem ela: agentes em `integration_pending` |
+| `AI_MODEL` | `claude-opus-5-5` | Modelo dos agentes |
+| `AI_SERVER_FALLBACK` | `true` | Se o modelo recusar por política, a Anthropic refaz no modelo de fallback recomendado (beta `server-side-fallback-2026-07-01`) |
+| `AI_TIMEOUT_MS` | `300000` | Tempo máximo por chamada ao modelo |
+| `OPENAI_API_KEY` | — | Opcional: SOMENTE embeddings da memória (busca semântica) |
+| `EMBEDDING_MODEL` | `text-embedding-3-small` | Modelo de embeddings (1536 dimensões) |
 
 ## Somente migração e seed
 

@@ -7,6 +7,8 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createContext } from '../src/bootstrap';
+import type { AiProvider } from '../src/ai/provider';
+import type { Embedder } from '../src/ai/embeddings';
 import { loadEnv } from '../src/config/env';
 import type { AppContext } from '../src/context';
 import { MemoryMailer } from '../src/mail/mailer';
@@ -25,7 +27,10 @@ export interface TestEnv {
   close: () => Promise<void>;
 }
 
-export async function createTestEnv(overrides: Record<string, string> = {}): Promise<TestEnv> {
+export async function createTestEnv(
+  overrides: Record<string, string> = {},
+  deps: { aiProvider?: AiProvider; embedder?: Embedder } = {},
+): Promise<TestEnv> {
   const mailer = new MemoryMailer();
   const env = loadEnv({
     NODE_ENV: 'test',
@@ -38,7 +43,7 @@ export async function createTestEnv(overrides: Record<string, string> = {}): Pro
     STORAGE_DIR: mkdtempSync(path.join(tmpdir(), 'aimos-storage-')),
     ...overrides,
   });
-  const ctx = createContext({ env, mailer });
+  const ctx = createContext({ env, mailer, ...deps });
   const app = await buildApp(ctx);
   await app.ready();
   const admin = new pg.Pool({ connectionString: inject('adminUrl'), max: 2 });

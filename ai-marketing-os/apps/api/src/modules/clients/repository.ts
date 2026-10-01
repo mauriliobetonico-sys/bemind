@@ -154,15 +154,19 @@ export async function insertClientEvent(
   );
 }
 
-export async function listClientEvents(tx: Tx, clientId: string, limit = 100) {
+/** Eventos de bastidor (QA interno, agentes de IA): só a equipe vê. */
+export const INTERNAL_EVENT_TYPES = ['deliverable.qa_rejected', 'deliverable.submitted_for_qa', 'deliverable.created'];
+
+export async function listClientEvents(tx: Tx, clientId: string, limit = 100, opts: { includeInternal: boolean } = { includeInternal: false }) {
   return (
     await tx.query<{ id: string; type: string; data: Record<string, unknown>; created_at: Date; actor_name: string | null }>(
       `SELECT e.id, e.type, e.data, e.created_at, u.name AS actor_name
          FROM client_events e LEFT JOIN users u ON u.id = e.actor_user_id
         WHERE e.client_id = $1
+          AND ($3 OR (e.type <> ALL($4) AND e.type NOT LIKE 'ai.%'))
         ORDER BY e.created_at DESC
         LIMIT $2`,
-      [clientId, limit],
+      [clientId, limit, opts.includeInternal, INTERNAL_EVENT_TYPES],
     )
   ).rows.map((r) => ({ id: r.id, type: r.type, data: r.data, createdAt: r.created_at, actorName: r.actor_name }));
 }

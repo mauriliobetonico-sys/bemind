@@ -1,8 +1,8 @@
 # AI Marketing OS
 
-Plataforma SaaS multi-tenant para uma agência de marketing administrar dezenas ou centenas de clientes, cada um com seu ambiente isolado e — nas próximas fases — sua própria equipe de agentes de IA.
+Plataforma SaaS multi-tenant para uma agência de marketing administrar dezenas ou centenas de clientes, cada um com seu ambiente isolado e sua própria equipe de agentes de IA.
 
-> **Status:** Fases 1 (Core), 2 (Operação) e 3 (Comercial) concluídas — autenticação, tenants, RBAC, RLS, auditoria, Maurílio Desk, CRM, onboarding, portal do cliente, demandas, QA, aprovações, arquivos/Brand Vault, calendário, propostas com aceite online e PDF, contratos, cobrança, pagamentos, despesas, rentabilidade e aprovação humana para ações financeiras. Fases 4–8: ver [roadmap](docs/ARCHITECTURE.md#roadmap).
+> **Status:** Fases 1 (Core), 2 (Operação), 3 (Comercial) e 4 (IA) concluídas — autenticação, tenants, RBAC, RLS, auditoria, Maurílio Desk, CRM, onboarding, portal do cliente, demandas, QA, aprovações, arquivos/Brand Vault, calendário, propostas com aceite online e PDF, contratos, cobrança, pagamentos, despesas, rentabilidade, aprovação humana para ações financeiras, equipe de agentes Claude (Orchestrator, especialistas, QA), memória por cliente com aprovação humana, Agent Room, Chat Global e orçamento/custo de IA por cliente ([docs/AGENTS.md](docs/AGENTS.md)). Fases 5–8: ver [roadmap](docs/ARCHITECTURE.md#roadmap).
 
 ## O que já funciona
 
@@ -30,7 +30,7 @@ Plataforma SaaS multi-tenant para uma agência de marketing administrar dezenas 
 | HITL (F3) | Cancelar fatura/contrato, alterar valor e excluir despesa viram pedidos que só executam após aprovação humana; políticas configuráveis |
 | Calendário (F2) | Mensal, semanal e diário: eventos + prazos de demandas, aprovações e tarefas (internas só para a equipe) |
 
-Indicadores que dependem de módulos futuros (contratos, pagamentos, tarefas, agentes, custos de IA) aparecem como **“Fase N”** — nunca com números simulados. Sem SMTP configurado, `/api/ready` informa `smtp: integration_pending` e os convites aguardam no outbox.
+Indicadores que dependem de módulos futuros (contratos, pagamentos, tarefas, agentes, custos de IA) aparecem como **“Fase N”** — nunca com números simulados. Sem SMTP configurado, `/api/ready` informa `smtp: integration_pending` e os convites aguardam no outbox; sem `ANTHROPIC_API_KEY`, informa `ai: integration_pending` e os agentes não são acionados.
 
 ## Estrutura
 

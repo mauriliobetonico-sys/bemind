@@ -258,7 +258,7 @@ describe('despesas, rentabilidade e painel financeiro', () => {
   it('rentabilidade por cliente com método explícito e alerta de margem', async () => {
     const r = (await fin.get('/api/finance/profitability')).json();
     expect(r.method.length).toBeGreaterThan(3);
-    expect(r.aiCost.status).toBe('pending_phase_4');
+    expect(r.aiCost.status).toBe('measured');
     const a = r.clients.find((c: { tenantId: string }) => c.tenantId === w.clientA.tenantId);
     expect(a.revenueCents).toBe(150000); // setup pago no mês
     expect(a.directCostCents).toBe(80000);

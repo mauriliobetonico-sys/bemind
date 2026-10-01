@@ -96,7 +96,7 @@ export default function ProfitabilityPage() {
                       </td>
                       <td className="ds-num">{brl(c.revenueCents)}</td>
                       <td className="ds-num">{brl(c.directCostCents)}</td>
-                      <td className="ds-num ds-muted" title="Medido a partir da fase 4">
+                      <td className="ds-num" title="Consumo medido pelo AI Gateway">
                         {brl(c.aiCostCents)}
                       </td>
                       <td className="ds-num">{brl(c.infraCostCents)}</td>

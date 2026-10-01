@@ -23,6 +23,7 @@ import { proposalRoutes } from './modules/commercial/proposals';
 import { contractRoutes } from './modules/commercial/contracts';
 import { financeRoutes } from './modules/finance/routes';
 import { hitlRoutes } from './modules/hitl/actions';
+import { aiRoutes } from './modules/ai/routes';
 
 export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
   const app = Fastify({
@@ -84,6 +85,7 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
       await api.register(contractRoutes, ctx);
       await api.register(financeRoutes, ctx);
       await api.register(hitlRoutes, ctx);
+      await api.register(aiRoutes, ctx);
     },
     { prefix: '/api' },
   );
