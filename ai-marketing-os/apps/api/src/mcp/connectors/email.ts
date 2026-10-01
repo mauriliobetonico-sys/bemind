@@ -12,6 +12,7 @@ export const emailConnector: ConnectorDef = {
 
 export const sendClientEmailTool = defineTool({
   name: 'email.send_to_client',
+  schedulable: true,
   connector: 'email',
   title: 'Enviar e-mail ao cliente',
   description: 'Envia uma mensagem aos usuários ativos do portal deste cliente.',

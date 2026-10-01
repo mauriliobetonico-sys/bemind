@@ -23,8 +23,10 @@ const CALL_SELECT = `
          c.requires_approval AS "requiresApproval", c.params, c.reason, c.requested_by_agent AS "requestedByAgent",
          c.requested_by_user AS "requestedByUser", ru.name AS "requestedByName", c.run_id AS "runId", r.demand_id AS "demandId",
          c.deliverable_id AS "deliverableId", du.name AS "decidedByName", c.decided_at AS "decidedAt", c.decision_note AS "decisionNote",
-         c.result, c.error, c.attempts, c.created_at AS "createdAt", c.started_at AS "startedAt", c.finished_at AS "finishedAt"
+         c.result, c.error, c.attempts, c.created_at AS "createdAt", c.started_at AS "startedAt", c.finished_at AS "finishedAt",
+         c.scheduled_for AS "scheduledFor", c.requested_by_workflow AS "requestedByWorkflow", wr.name AS "workflowName"
     FROM mcp_tool_calls c
+    LEFT JOIN workflow_rules wr ON wr.tenant_id = c.tenant_id AND wr.id = c.requested_by_workflow
     JOIN tenants t ON t.id = c.tenant_id
     LEFT JOIN users ru ON ru.id = c.requested_by_user
     LEFT JOIN users du ON du.id = c.decided_by
@@ -73,6 +75,7 @@ export async function mcpRoutes(app: FastifyInstance, ctx: AppContext) {
         allowedAgents: t.allowedAgents,
         permission: t.permission,
         rateLimitPerMinute: t.rateLimitPerMinute,
+        schedulable: !!t.schedulable,
         enabled: policies.get(t.name)?.enabled ?? true,
         allowSelfApproval: policies.get(t.name)?.allow_self_approval ?? true,
         approval: t.risk === 'HIGH' ? 'always' : t.risk === 'MEDIUM' ? 'when_agent' : 'never',
@@ -242,7 +245,7 @@ export async function mcpRoutes(app: FastifyInstance, ctx: AppContext) {
     const input = parse(requestToolCallInput, req.body);
     const dbCtx = singleTenantContext(access, 'mcp:use', req);
     const out = await withContext(ctx.pool, dbCtx, (tx) =>
-      requestToolCall(tx, ctx, { tenantId: dbCtx.tenantId, tool: input.tool, params: input.params, reason: input.reason, requester: { type: 'user', access }, meta: requestMeta(req) }),
+      requestToolCall(tx, ctx, { tenantId: dbCtx.tenantId, tool: input.tool, params: input.params, reason: input.reason, scheduledFor: input.scheduledFor ?? null, requester: { type: 'user', access }, meta: requestMeta(req) }),
     ).catch(policyHttpError);
     return reply.code(202).send(out);
   });

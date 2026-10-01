@@ -75,6 +75,20 @@ const envSchema = z.object({
   /** Permite integrações em endereços privados (ex.: n8n na mesma rede). Desligado: só hosts públicos e HTTPS. */
   MCP_ALLOW_PRIVATE_HOSTS: bool.default(false),
 
+  /** Fuso da agência: define "hoje" do relatório diário e o horário das rotinas. */
+  APP_TIMEZONE: z.string().default('America/Sao_Paulo').refine((tz) => {
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: tz });
+      return true;
+    } catch {
+      return false;
+    }
+  }, 'APP_TIMEZONE inválido (ex.: America/Sao_Paulo)'),
+  /** Hora local (0–23) a partir da qual o relatório diário é gerado e enviado. */
+  DAILY_REPORT_HOUR: z.coerce.number().int().min(0).max(23).default(18),
+  /** Hora local dos lembretes (prazos, tarefas atrasadas, aprovações paradas). */
+  REMINDERS_HOUR: z.coerce.number().int().min(0).max(23).default(8),
+
   OUTBOX_POLL_MS: z.coerce.number().int().min(200).default(2000),
   OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().min(1).default(8),
 });

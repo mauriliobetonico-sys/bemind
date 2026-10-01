@@ -92,6 +92,22 @@ Arquitetura prevista (fases 3–5): ações `HIGH` (publicação, alteração fi
 - Isolamento: conexões e chamadas com `tenant_id` + RLS + FKs compostas; a validação de parâmetros roda com RLS do cliente (um entregável de outro cliente "não existe").
 - Eventos `mcp.*` nunca aparecem para o cliente.
 
+## Automação (Fase 6)
+
+- Notificações: RLS por tenant + política restritiva por usuário; destinatários sempre consultados no servidor (usuários do portal daquele tenant, equipe responsável).
+- Relatório diário: fatos com RLS do tenant; nada interno (tarefas, QA, agentes, custos); e-mail só para usuários CLIENTE do próprio tenant.
+- Eventos de bastidor (`ai.*`, `mcp.*`, QA interno) seguem invisíveis para o cliente.
+- Workflows: só papéis com `workflows:manage` criam; cada disparo passa pela política do MCP Hub (risco médio/alto exige aprovação), é idempotente e roda com RLS do tenant do evento (parâmetros não alcançam outro cliente).
+- E-mail em fila própria: falha de SMTP não duplica notificações nem reprocessa eventos.
+
+## Revisão da Fase 6
+
+- [x] Relatório: conteúdo e destinatários só do próprio cliente (API, RLS, e-mail) — teste de mutação nos destinatários detectado
+- [x] Ninguém lê notificações de outra pessoa, nem admin global (RLS restritivo)
+- [x] Workflow com parâmetro apontando para outro cliente é recusado pela política
+- [x] Corrigido nesta revisão: falha de SMTP duplicava a notificação interna a cada nova tentativa — e-mails agora vão para fila própria
+- [x] Corrigido: consultas do relatório recebiam parâmetros não usados (o relatório não era gerado)
+
 ## Revisão da Fase 5
 
 - [x] HIGH bloqueado sem aprovação: API, worker e banco (CHECK) — e mutação detectada pelos testes

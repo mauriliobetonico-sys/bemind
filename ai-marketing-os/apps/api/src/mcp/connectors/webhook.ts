@@ -21,6 +21,7 @@ export function signWebhook(secret: string, timestamp: string, body: string): st
 
 export const triggerWebhookTool = defineTool({
   name: 'webhook.trigger',
+  schedulable: true,
   connector: 'webhook',
   title: 'Disparar automação (webhook)',
   description: 'Envia um evento para o fluxo de automação configurado deste cliente.',

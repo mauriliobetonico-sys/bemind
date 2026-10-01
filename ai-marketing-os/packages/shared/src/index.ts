@@ -6,3 +6,4 @@ export * from './schemas/work';
 export * from './schemas/commercial';
 export * from './schemas/ai';
 export * from './schemas/mcp';
+export * from './schemas/automation';

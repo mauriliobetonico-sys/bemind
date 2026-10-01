@@ -207,9 +207,13 @@ export async function executeRun(ctx: AppContext, tenantId: string, runId: strin
   if (!run) return; // cancelada, concluída ou de outro tenant: nada a fazer
 
   const finish = (status: 'failed' | 'blocked', error: string) =>
-    withContext(ctx.pool, tenantCtx(tenantId), (tx) =>
-      tx.query(`UPDATE agent_runs SET status = $2, error = $3, finished_at = now() WHERE id = $1`, [runId, status, error.slice(0, 2000)]),
-    );
+    withContext(ctx.pool, tenantCtx(tenantId), async (tx) => {
+      await tx.query(`UPDATE agent_runs SET status = $2, error = $3, finished_at = now() WHERE id = $1`, [runId, status, error.slice(0, 2000)]);
+      // Problema em execução de demanda → avisa quem acionou (chat e reunião mostram na própria tela).
+      if (run.kind === 'plan' || run.kind === 'produce' || run.kind === 'qa') {
+        await enqueue(tx, { type: 'ai.run_finished', tenantId, payload: { runId, outcome: status } });
+      }
+    });
 
   try {
     switch (run.kind) {
@@ -297,7 +301,11 @@ async function runPlan(ctx: AppContext, run: RunRow) {
         start: i === 0,
       });
     }
-    await tx.query(`UPDATE demands SET status = 'in_production' WHERE id = $1 AND status IN ('submitted', 'planning')`, [run.demand_id]);
+    const moved = await tx.query(`UPDATE demands SET status = 'in_production' WHERE id = $1 AND status IN ('submitted', 'planning') RETURNING id`, [run.demand_id]);
+    if (moved.rowCount) {
+      await recordActivity(tx, { tenantId: run.tenant_id, actorUserId: null, type: 'demand.status_changed', data: { demandId: run.demand_id, to: 'in_production' } });
+      await enqueue(tx, { type: 'demand.status_changed', tenantId: run.tenant_id, payload: { demandId: run.demand_id, to: 'in_production' } });
+    }
     await recordActivity(tx, {
       tenantId: run.tenant_id,
       actorUserId: null,
@@ -487,6 +495,7 @@ async function advancePlan(tx: Tx, run: RunRow, planRunId: string | null) {
   ).rows[0];
   if (next) return startRun(tx, next.id);
   await recordActivity(tx, { tenantId: run.tenant_id, actorUserId: null, type: 'ai.plan_completed', data: { demandId: run.demand_id, runId: planRunId } });
+  await enqueue(tx, { type: 'ai.run_finished', tenantId: run.tenant_id, payload: { runId: planRunId, outcome: 'plan_completed' } });
   await tx.query(`UPDATE demands SET status = 'in_review' WHERE id = $1 AND status = 'in_production'`, [run.demand_id]);
 }
 

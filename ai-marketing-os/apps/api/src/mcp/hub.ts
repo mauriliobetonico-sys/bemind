@@ -29,7 +29,11 @@ export class ToolPolicyError extends Error {
 /** Erro que manda a chamada de volta à fila (backoff do outbox). */
 export class ToolRetryLater extends Error {}
 
-export type Requester = { type: 'user'; access: Access } | { type: 'agent'; agentKey: AgentKey; runId: string | null };
+export type Requester =
+  | { type: 'user'; access: Access }
+  | { type: 'agent'; agentKey: AgentKey; runId: string | null }
+  /** Regra de workflow criada por quem tem workflows:manage; age como um agente (sem permissões próprias). */
+  | { type: 'workflow'; ruleId: string };
 
 interface PolicyRow {
   enabled: boolean;
@@ -44,11 +48,11 @@ export async function toolPolicy(tx: Tx, tool: string): Promise<PolicyRow> {
 /**
  * Regra de aprovação (não configurável para baixo):
  *  - HIGH: sempre exige decisão humana;
- *  - MEDIUM: exige quando quem pede é um agente;
+ *  - MEDIUM: exige quando quem pede é um agente ou um workflow automático;
  *  - LOW: executa direto (ações internas e reversíveis).
  */
 export function needsApproval(risk: ToolDef['risk'], requester: Requester['type']): boolean {
-  return risk === 'HIGH' || (risk === 'MEDIUM' && requester === 'agent');
+  return risk === 'HIGH' || (risk === 'MEDIUM' && requester !== 'user');
 }
 
 async function activeConnection(tx: Tx, tenantId: string, connector: string) {
@@ -66,7 +70,7 @@ async function activeConnection(tx: Tx, tenantId: string, connector: string) {
 export async function requestToolCall(
   tx: Tx,
   app: AppContext,
-  r: { tenantId: string; tool: string; params: unknown; reason: string; requester: Requester; meta?: { ip: string | null; userAgent: string | null } },
+  r: { tenantId: string; tool: string; params: unknown; reason: string; requester: Requester; scheduledFor?: string | null; meta?: { ip: string | null; userAgent: string | null } },
 ): Promise<{ id: string; status: 'pending_approval' | 'queued'; risk: string }> {
   const tool = toolByName(r.tool);
   if (!tool) throw new ToolPolicyError('unknown_tool', `Ferramenta desconhecida: ${r.tool}`);
@@ -84,8 +88,13 @@ export async function requestToolCall(
     if (!r.requester.access.can(tool.permission, r.tenantId) || !r.requester.access.can('mcp:use', r.tenantId)) {
       throw new ToolPolicyError('forbidden', 'Sem permissão para esta ferramenta neste cliente');
     }
-  } else if (!tool.allowedAgents.includes(r.requester.agentKey)) {
+  } else if (r.requester.type === 'agent' && !tool.allowedAgents.includes(r.requester.agentKey)) {
     throw new ToolPolicyError('agent_not_allowed', `O agente ${r.requester.agentKey} não pode usar ${tool.name}`);
+  }
+  if (r.scheduledFor !== undefined && r.scheduledFor !== null) {
+    if (!tool.schedulable) throw new ToolPolicyError('invalid_request', 'Esta ferramenta não aceita agendamento');
+    const t = new Date(r.scheduledFor).getTime();
+    if (!(t > Date.now() + 60_000) || t > Date.now() + 366 * 86_400_000) throw new ToolPolicyError('invalid_request', 'Agende entre 1 minuto e 1 ano a partir de agora');
   }
   const parsed = tool.params.safeParse(r.params);
   if (!parsed.success) {
@@ -106,16 +115,17 @@ export async function requestToolCall(
   const { id } = (
     await tx.query<{ id: string }>(
       `INSERT INTO mcp_tool_calls (tenant_id, connection_id, tool, connector, risk, status, requires_approval, params, reason,
-                                   requested_by_user, requested_by_agent, run_id, deliverable_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
+                                   requested_by_user, requested_by_agent, run_id, deliverable_id, requested_by_workflow, scheduled_for)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`,
       [
         r.tenantId, connectionId, tool.name, tool.connector, tool.risk, status, requiresApproval, JSON.stringify(parsed.data), r.reason.slice(0, 1000),
         userId, r.requester.type === 'agent' ? r.requester.agentKey : null, r.requester.type === 'agent' ? r.requester.runId : null, deliverableId,
+        r.requester.type === 'workflow' ? r.requester.ruleId : null, r.scheduledFor ?? null,
       ],
     )
   ).rows[0]!;
   if (requiresApproval) await enqueue(tx, { type: 'mcp.approval_requested', tenantId: r.tenantId, payload: { callId: id } });
-  else await enqueue(tx, { type: 'mcp.call', tenantId: r.tenantId, payload: { callId: id } });
+  else await enqueue(tx, { type: 'mcp.call', tenantId: r.tenantId, payload: { callId: id }, availableAt: r.scheduledFor ?? null });
   await app.audit.recordIn(tx, {
     action: 'mcp.tool_requested',
     result: 'success',
@@ -124,7 +134,14 @@ export async function requestToolCall(
     resourceType: 'mcp_tool_call',
     resourceId: id,
     ...(r.meta ?? {}),
-    metadata: { tool: tool.name, risk: tool.risk, requiresApproval, agent: r.requester.type === 'agent' ? r.requester.agentKey : undefined },
+    metadata: {
+      tool: tool.name,
+      risk: tool.risk,
+      requiresApproval,
+      scheduledFor: r.scheduledFor ?? undefined,
+      agent: r.requester.type === 'agent' ? r.requester.agentKey : undefined,
+      workflowRule: r.requester.type === 'workflow' ? r.requester.ruleId : undefined,
+    },
   });
   return { id, status, risk: tool.risk };
 }
@@ -137,8 +154,8 @@ export async function decideToolCall(
   r: { id: string; decision: 'approve' | 'reject'; note?: string; meta: { ip: string | null; userAgent: string | null } },
 ): Promise<{ id: string; status: string }> {
   const c = (
-    await tx.query<{ tenant_id: string; tool: string; status: string; requested_by_user: string | null }>(
-      'SELECT tenant_id, tool, status, requested_by_user FROM mcp_tool_calls WHERE id = $1 FOR UPDATE',
+    await tx.query<{ tenant_id: string; tool: string; status: string; requested_by_user: string | null; scheduled_for: Date | null }>(
+      'SELECT tenant_id, tool, status, requested_by_user, scheduled_for FROM mcp_tool_calls WHERE id = $1 FOR UPDATE',
       [r.id],
     )
   ).rows[0];
@@ -154,7 +171,7 @@ export async function decideToolCall(
             finished_at = CASE WHEN $2 = 'rejected' THEN now() ELSE NULL END WHERE id = $1`,
     [r.id, status, actor, r.note ?? null],
   );
-  if (status === 'queued') await enqueue(tx, { type: 'mcp.call', tenantId: c.tenant_id, payload: { callId: r.id } });
+  if (status === 'queued') await enqueue(tx, { type: 'mcp.call', tenantId: c.tenant_id, payload: { callId: r.id }, availableAt: c.scheduled_for });
   await app.audit.recordIn(tx, {
     action: r.decision === 'approve' ? 'mcp.tool_approved' : 'mcp.tool_rejected',
     result: 'success',
@@ -189,12 +206,22 @@ export async function executeToolCall(app: AppContext, tenantId: string, callId:
     (
       await tx.query<CallRow>(
         `UPDATE mcp_tool_calls SET status = 'running', attempts = attempts + 1, started_at = now()
-          WHERE id = $1 AND tenant_id = $2 AND status = 'queued' RETURNING id, tenant_id, tool, connector, connection_id, params, requires_approval, decided_by`,
+          WHERE id = $1 AND tenant_id = $2 AND status = 'queued' AND (scheduled_for IS NULL OR scheduled_for <= now() + interval '30 seconds')
+          RETURNING id, tenant_id, tool, connector, connection_id, params, requires_approval, decided_by`,
         [callId, tenantId],
       )
     ).rows[0],
   );
-  if (!call) return; // cancelada, rejeitada, já executada ou de outro tenant
+  if (!call) {
+    // Evento chegou antes do horário agendado (ex.: relógio/ajuste): reagenda em vez de perder a chamada.
+    await withContext(app.pool, tenantCtx(tenantId), async (tx) => {
+      const early = (
+        await tx.query<{ scheduled_for: Date }>(`SELECT scheduled_for FROM mcp_tool_calls WHERE id = $1 AND tenant_id = $2 AND status = 'queued' AND scheduled_for > now()`, [callId, tenantId])
+      ).rows[0];
+      if (early) await enqueue(tx, { type: 'mcp.call', tenantId, payload: { callId }, availableAt: early.scheduled_for });
+    });
+    return; // cancelada, rejeitada, já executada, agendada ou de outro tenant
+  }
   // Defesa extra (o CHECK do banco já impede): nada que exigia aprovação roda sem decisão.
   if (call.requires_approval && !call.decided_by) return finish(app, call, 'failed', { error: 'sem aprovação humana registrada' });
 

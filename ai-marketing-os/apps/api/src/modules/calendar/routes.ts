@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { calendarQuery, createEventInput, uuidParam } from '@aimos/shared';
 import type { AppContext } from '../../context';
+import { enqueue } from '../../outbox/outbox';
 import { withContext } from '../../db/pool';
 import { badRequest, notFound, parse } from '../../lib/errors';
 import { requestedTenant, requestMeta, requireAccess } from '../../security/plugin';
@@ -95,6 +96,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
           })
       ).rows[0];
       await ctx.audit.recordIn(tx, { action: 'calendar.create', result: 'success', tenantId: dbCtx.tenantId, actorUserId: access.principal.userId, resourceType: 'calendar_event', resourceId: row.id, ...requestMeta(req) });
+      if (input.kind === 'meeting') await enqueue(tx, { type: 'calendar.event_created', tenantId: dbCtx.tenantId, payload: { eventId: row.id } });
       return row;
     });
     return reply.code(201).send(event);

@@ -30,6 +30,8 @@ export interface ToolCall {
   error: string | null;
   createdAt: string;
   finishedAt: string | null;
+  scheduledFor?: string | null;
+  workflowName?: string | null;
 }
 
 export function CallRow({ c, onDone }: { c: ToolCall; onDone: (text: string, tone?: 'ok' | 'danger') => void }) {
@@ -44,7 +46,7 @@ export function CallRow({ c, onDone }: { c: ToolCall; onDone: (text: string, ton
       onDone(err instanceof ApiError ? err.message : 'Falha.', 'danger');
     }
   };
-  const who = c.requestedByAgent ? `agente ${AGENT_LABELS[c.requestedByAgent]}` : c.requestedByName ?? 'equipe';
+  const who = c.requestedByAgent ? `agente ${AGENT_LABELS[c.requestedByAgent]}` : c.workflowName ? `workflow "${c.workflowName}"` : c.requestedByName ?? 'equipe';
   const pending = c.status === 'pending_approval';
   const canCancel = (pending || c.status === 'queued') && (c.requestedByUser === me?.user.id || can('mcp:approve'));
   return (
@@ -66,6 +68,7 @@ export function CallRow({ c, onDone }: { c: ToolCall; onDone: (text: string, ton
           {c.decidedByName && ` · decidido por ${c.decidedByName}`}
         </span>
         {c.reason && <span>Motivo: {c.reason}</span>}
+        {c.scheduledFor && !['succeeded', 'failed', 'rejected', 'cancelled'].includes(c.status) && <span className="ds-stat-hint">Agendada para {fmtDateTime(c.scheduledFor)} — executa a partir desse horário, depois da aprovação.</span>}
         <button type="button" className="ds-stat-hint" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', textAlign: 'left', textDecoration: 'underline' }} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
           {open ? 'Ocultar parâmetros' : 'Ver parâmetros'}
         </button>

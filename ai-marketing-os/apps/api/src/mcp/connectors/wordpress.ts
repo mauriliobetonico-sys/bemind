@@ -135,6 +135,7 @@ export const wordpressDraftTool = defineTool({
 
 export const wordpressPublishTool = defineTool({
   name: 'wordpress.publish_post',
+  schedulable: true,
   connector: 'wordpress',
   title: 'Publicar no WordPress',
   description: 'Publica no site do cliente um entregável já aprovado por ele.',

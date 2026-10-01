@@ -65,6 +65,8 @@ export interface ToolDef<P = unknown> {
   permission: Permission;
   params: z.ZodType<P>;
   rateLimitPerMinute: number;
+  /** Aceita agendamento (executa a partir de um horário, depois da aprovação). */
+  schedulable?: boolean;
   /** Validação de negócio no momento do pedido (ex.: entregável existe neste tenant). */
   validate?(tx: Tx, tenantId: string, params: P): Promise<{ deliverableId?: string } | void>;
   execute(ctx: ToolExecContext, params: P): Promise<ToolResult>;

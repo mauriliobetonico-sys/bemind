@@ -190,6 +190,7 @@ export async function demandRoutes(app: FastifyInstance, ctx: AppContext) {
       });
       if (input.status && input.status !== current.status) {
         await recordActivity(tx, { tenantId: current.tenantId, actorUserId: access.principal.userId, type: 'demand.status_changed', data: { demandId: id, from: current.status, to: input.status } });
+        await enqueue(tx, { type: 'demand.status_changed', tenantId: current.tenantId, payload: { demandId: id, from: current.status, to: input.status } });
       }
       await ctx.audit.recordIn(tx, { action: 'demand.update', result: 'success', tenantId: current.tenantId, actorUserId: access.principal.userId, resourceType: 'demand', resourceId: id, ...requestMeta(req), metadata: { fields: Object.keys(input), status: input.status } });
       return findDemand(tx, id);

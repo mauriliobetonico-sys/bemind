@@ -91,3 +91,38 @@ export function notificationEmail(d: { to: string; title: string; intro: string;
   const text = [d.intro, '', ...(d.details ?? []).map(([k, v]) => `${k}: ${v}`), ...(d.cta ? ['', `${d.cta.label}: ${d.cta.url}`] : []), ...(d.footer ? ['', d.footer] : [])].join('\n');
   return { to: d.to, subject: `${d.title} — AI Marketing OS`, text, html };
 }
+
+/** Relatório diário do cliente: seções em lista, só com dados do próprio cliente. */
+export function dailyReportEmail(d: {
+  to: string;
+  name: string;
+  clientName: string;
+  dateLabel: string;
+  intro: string;
+  sections: { label: string; items: string[] }[];
+  url: string;
+}): MailMessage {
+  const visible = d.sections.filter((s) => s.items.length);
+  const html = layout(
+    `Relatório do dia — ${d.dateLabel}`,
+    `<p style="line-height:1.6">Olá, ${escapeHtml(d.name)}!</p><p style="line-height:1.6">${escapeHtml(d.intro)}</p>` +
+      visible
+        .map(
+          (s) =>
+            `<h3 style="font-size:15px;margin:20px 0 6px">${escapeHtml(s.label)}</h3><ul style="margin:0;padding-left:20px;line-height:1.7;font-size:14px">${s.items
+              .map((i) => `<li>${escapeHtml(i)}</li>`)
+              .join('')}</ul>`,
+        )
+        .join('') +
+      button(d.url, 'Ver no portal'),
+  );
+  const text = [
+    `Olá, ${d.name}!`,
+    '',
+    d.intro,
+    ...visible.flatMap((s) => ['', s.label.toUpperCase(), ...s.items.map((i) => `- ${i}`)]),
+    '',
+    `Ver no portal: ${d.url}`,
+  ].join('\n');
+  return { to: d.to, subject: `Relatório do dia ${d.dateLabel} — ${d.clientName}`, text, html };
+}

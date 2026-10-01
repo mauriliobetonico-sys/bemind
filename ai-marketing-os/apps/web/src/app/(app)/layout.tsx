@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Permission } from '@aimos/shared';
 import { useAuth } from '@/lib/auth';
+import { api } from '@/lib/api';
 import { Avatar, Button, Skeleton } from '@/design-system/components';
 
 interface NavItem {
@@ -30,6 +31,8 @@ const STAFF_NAV: NavItem[] = [
   { href: '/ai-settings', label: 'Orçamento de IA', permission: 'ai:settings' },
   { href: '/integrations', label: 'Integrações', permission: 'mcp:read' },
   { href: '/tool-calls', label: 'Ações das ferramentas', permission: 'mcp:read' },
+  { href: '/workflows', label: 'Workflows', permission: 'workflows:manage' },
+  { href: '/reports', label: 'Relatórios diários', permission: 'reports:read' },
   { href: '/proposals', label: 'Propostas', permission: 'proposals:read' },
   { href: '/contracts', label: 'Contratos', permission: 'contracts:read' },
   { href: '/finance', label: 'Financeiro', permission: 'finance:read' },
@@ -44,8 +47,28 @@ const CLIENT_NAV: NavItem[] = [
   { href: '/approvals', label: 'Aprovações', permission: 'work:read' },
   { href: '/calendar', label: 'Calendário', permission: 'work:read' },
   { href: '/files', label: 'Arquivos e marca', permission: 'files:read' },
+  { href: '/reports', label: 'Relatórios', permission: 'reports:read' },
   { href: '/billing', label: 'Contrato e faturas', permission: 'billing:read' },
 ];
+
+/** Contador de notificações não lidas (atualiza a cada minuto e ao trocar de página). */
+function useUnread(pathname: string) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      api<{ count: number }>('/notifications/unread-count')
+        .then((r) => alive && setCount(r.count))
+        .catch(() => undefined);
+    void load();
+    const t = setInterval(load, 60_000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [pathname]);
+  return count;
+}
 
 function ThemeToggle() {
   const [theme, setTheme] = useState<'dark' | 'light' | null>(null);
@@ -83,6 +106,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const unread = useUnread(pathname);
 
   useEffect(() => {
     if (!loading && !me) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
@@ -108,7 +132,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <span className="ds-brand-mark" /> Marketing OS
         </span>
         <Button size="sm" onClick={() => setMenuOpen((v) => !v)} aria-expanded={menuOpen} aria-controls="sidebar">
-          Menu
+          Menu{unread > 0 ? ` (${unread > 99 ? '99+' : unread})` : ''}
         </Button>
       </div>
       <nav id="sidebar" className="ds-sidebar" data-open={menuOpen} aria-label="Navegação principal">
@@ -121,6 +145,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             Fechar menu
           </Button>
         )}
+        <Link href="/notifications" className="ds-nav-link" aria-current={pathname.startsWith('/notifications') ? 'page' : undefined}>
+          Notificações{' '}
+          {unread > 0 && (
+            <span className="ds-badge ds-badge-info" aria-label={`${unread} não lidas`}>
+              {unread > 99 ? '99+' : unread}
+            </span>
+          )}
+        </Link>
         {nav.map((item) => (
           <Link key={item.href} href={item.href} className="ds-nav-link" aria-current={pathname.startsWith(item.href) ? 'page' : undefined}>
             {item.label}

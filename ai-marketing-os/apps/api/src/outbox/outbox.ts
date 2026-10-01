@@ -17,12 +17,13 @@ export type OutboxHandler = (event: OutboxEvent) => Promise<void>;
  */
 export async function enqueue(
   tx: Tx,
-  event: { type: string; tenantId?: string | null; payload: Record<string, unknown> },
+  event: { type: string; tenantId?: string | null; payload: Record<string, unknown>; availableAt?: string | Date | null },
 ): Promise<void> {
-  await tx.query('INSERT INTO outbox_events (tenant_id, type, payload) VALUES ($1, $2, $3)', [
+  await tx.query('INSERT INTO outbox_events (tenant_id, type, payload, available_at) VALUES ($1, $2, $3, coalesce($4::timestamptz, now()))', [
     event.tenantId ?? null,
     event.type,
     JSON.stringify(event.payload),
+    event.availableAt ?? null,
   ]);
 }
 

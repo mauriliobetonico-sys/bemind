@@ -3,6 +3,7 @@ import { processOutbox } from './outbox/outbox';
 import { outboxHandlers } from './outbox/handlers';
 import { billingTick } from './jobs/billing-tick';
 import { failStaleRuns } from './ai/runs';
+import { automationTick } from './automation/jobs';
 
 /**
  * Worker do outbox (fase 1): entrega e-mails e consome eventos de domínio.
@@ -18,6 +19,7 @@ const log = (msg: string, extra: Record<string, unknown> = {}) =>
 async function loop() {
   log('worker iniciado', { smtp: ctx.mailer.configured ? 'configured' : 'integration_pending', ai: ctx.ai.status() });
   let lastTick = 0;
+  let lastAutomation = 0;
   while (running) {
     try {
       // Rotina do comercial a cada 10 minutos (faturas, vencimentos, propostas expiradas).
@@ -27,6 +29,12 @@ async function loop() {
         if (t.ran && (t.invoicesCreated || t.overdueReminders || t.expiredProposals)) log('rotina de cobrança', { ...t });
         const stale = await failStaleRuns(ctx);
         if (stale) log('execuções de agentes interrompidas marcadas como falha', { stale });
+      }
+      // Relatório diário e lembretes: confere a cada 5 minutos (cada rotina roda 1x por dia).
+      if (Date.now() - lastAutomation > 5 * 60_000) {
+        lastAutomation = Date.now();
+        const a = await automationTick(ctx);
+        if (a.reports || a.reminders) log('rotinas diárias', { ...a });
       }
       const r = await processOutbox(ctx.pool, handlers, { maxAttempts: ctx.env.OUTBOX_MAX_ATTEMPTS });
       if (r.processed || r.failed || r.dead) log('lote processado', { ...r });

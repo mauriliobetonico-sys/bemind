@@ -202,6 +202,7 @@ export async function applyPayment(
   const paid = Number(total) >= Number(invoice.amount_cents);
   if (paid) await tx.query(`UPDATE invoices SET status = 'paid', paid_at = $2 WHERE id = $1`, [invoice.id, payment.paidAt]);
   await recordActivity(tx, { tenantId: invoice.tenant_id, actorUserId: payment.actorUserId, type: paid ? 'invoice.paid' : 'invoice.partial_payment', data: { invoiceId: invoice.id, amountCents: payment.amountCents } });
+  await enqueue(tx, { type: 'payment.received', tenantId: invoice.tenant_id, payload: { invoiceId: invoice.id, amountCents: payment.amountCents } });
   const onboardingStarted = paid ? await startOnboardingIfNeeded(tx, invoice.tenant_id, payment.actorUserId) : false;
   return { paid, onboardingStarted };
 }

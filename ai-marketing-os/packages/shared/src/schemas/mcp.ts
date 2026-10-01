@@ -37,6 +37,8 @@ export const requestToolCallInput = z.strictObject({
   tool: z.string().regex(/^[a-z_]+\.[a-z_]+$/),
   params: z.record(z.string(), z.unknown()).default({}),
   reason: z.string().trim().min(3).max(1000),
+  /** Agendamento (ferramentas que permitem): executa a partir deste horário, depois da aprovação. */
+  scheduledFor: z.iso.datetime({ offset: true }).optional(),
 });
 
 export const decideToolCallInput = z.strictObject({

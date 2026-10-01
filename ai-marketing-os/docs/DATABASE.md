@@ -93,9 +93,21 @@ Todas com `tenant_id` + RLS (`app.enable_tenant_rls`) e FKs compostas entre si.
 | `mcp_tool_calls` | cliente | Cada pedido de ferramenta: risco, status (`pending_approval → queued → running → succeeded/failed`, `rejected`, `cancelled`), parâmetros, motivo, quem pediu (pessoa **ou** agente + execução), entregável, decisão, resultado. CHECKs: HIGH ⇒ exige aprovação; exige aprovação ⇒ só sai da espera com `decided_by` |
 | `mcp_tool_policies` | global | Sobrescritas por ferramenta: ligada/desligada e se quem pediu pode aprovar (escrita só em escopo global) |
 
+## Tabelas da Fase 6 (automação)
+
+| Tabela | Tenant | Descrição |
+| --- | --- | --- |
+| `notifications` | cliente/agência + **usuário** | Notificação interna (categoria, título, texto, link interno, lida em). RLS por tenant + política RESTRITIVA `user_id = app.current_user_id()` |
+| `notification_preferences` | usuário | E-mail ligado/desligado por categoria (padrão: ligado) |
+| `daily_reports` | cliente | Um por cliente e dia: seções (fatos), abertura, gerador (`template`/`ai`), envio por e-mail |
+| `workflow_rules` / `workflow_runs` | cliente | Regras "quando X → ferramenta Y" e cada disparo (único por regra + evento), com a chamada de ferramenta gerada |
+| `job_runs` | sistema | Controle das rotinas diárias (uma execução por dia) |
+
+`clients` ganhou `daily_report_enabled` e `daily_report_weekdays_only`; `mcp_tool_calls` ganhou `requested_by_workflow` (exatamente um solicitante: pessoa, agente ou workflow) e `scheduled_for` (publicação agendada).
+
 ## Entidades das próximas fases
 
-Já modeladas na arquitetura (todas com `tenant_id` + RLS): `subscriptions`, `campaigns`, `notifications`, `daily_reports`, `analytics`, `plans`.
+Já modeladas na arquitetura (todas com `tenant_id` + RLS): `subscriptions`, `campaigns`, `analytics`, `plans`.
 
 ## Backup
 

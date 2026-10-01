@@ -43,6 +43,9 @@ export class FakeProvider implements AiProvider {
   }
 
   private structured(req: ProviderRequest): unknown {
+    if (req.system.includes('Customer Success de uma agência')) {
+      return { intro: 'Dia produtivo: seguimos avançando nas suas demandas.', observations: ['Vale revisar os itens aguardando aprovação.'] };
+    }
     // Decide pela linha "Tarefa atual" (o objetivo do agente pode citar outras tarefas).
     const s = req.system.match(/^Tarefa atual: .*$/m)?.[0] ?? '';
     const u = userText(req);

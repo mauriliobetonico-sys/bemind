@@ -35,7 +35,7 @@
 | Rotina de cobrança (worker) | 3 | `jobs/billing-tick.ts` |
 | AI Gateway, Orchestrator, agentes, memória, Agent Room, QA, Chat Global | 4 | ver [AGENTS.md](AGENTS.md) |
 | MCP Hub e integrações | 5 | ver [MCP.md](MCP.md) |
-| Notificações, daily report, workflows, publicação | 6 | — |
+| Notificações, daily report, workflows, publicação | 6 | `notifications/`, `automation/`, `modules/automation/` |
 | Adobe Connector | 7 | ver [MCP.md](MCP.md#adobe-connector) |
 | Planos, billing, observabilidade, custos | 8 | — |
 
@@ -89,6 +89,12 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 
 **ADR-020 — Só integrações com API oficial e credenciais reais.** WordPress (REST API + senha de aplicativo), webhooks assinados (n8n/Make/Zapier) e e-mail (SMTP da plataforma) funcionam hoje. Meta, Google, Ads e WhatsApp exigem apps aprovados pelos provedores: aparecem como `integration_pending` com o que falta, e entram como novos arquivos de conector quando houver credenciais.
 
+**ADR-021 — Notificações são do usuário; e-mail em fila própria.** Toda notificação passa por `deliver()`: grava a notificação interna (tabela com RLS por tenant **e** política restritiva `user_id = usuário da sessão` — nem um admin global lê a de outra pessoa) e enfileira um evento `mail.send` por e-mail, respeitando a preferência por categoria. O e-mail tem retry próprio: falha de SMTP nunca reprocessa o evento de domínio nem duplica a notificação interna. Destinatários vêm sempre de consultas do servidor.
+
+**ADR-022 — Relatório diário só com fatos visíveis ao cliente.** As seções vêm de consultas ao banco com RLS do tenant (demandas, entregáveis enviados/aprovados, aprovações pendentes, agenda visível). Tarefas internas, QA, agentes e custos nunca entram. O agente Customer Success pode escrever a abertura e observações a partir desses fatos; sem IA, o texto é padrão. Rotinas diárias rodam uma vez por dia (tabela `job_runs` + advisory lock) no fuso `APP_TIMEZONE`.
+
+**ADR-023 — Workflows são pedidos ao MCP Hub.** "Quando X → ferramenta Y" com parâmetros por marcadores; cada disparo é um pedido com solicitante `workflow` (mesma regra dos agentes: risco médio/alto exige aprovação humana), idempotente por (regra, evento) e executado com RLS restrito ao tenant do evento.
+
 **ADR-007 — Integrações nunca simuladas.** Indicadores e integrações sem implementação retornam a fase prevista ou `integration_pending`.
 
 ## Roadmap
@@ -100,6 +106,6 @@ Toda requisição percorre `USER → TENANT → ROLE → PERMISSION → RESOURCE
 | **3 · concluída** | Propostas (PDF + aceite online), contratos, cobrança automática, pagamentos, despesas, rentabilidade, HITL | Alterações financeiras auditadas e com HITL; cliente nunca alcança custos da agência |
 | **4 · concluída** | AI Gateway, Orchestrator, 12 agentes, memória com aprovação humana, Agent Room, QA da IA, Chat Global, orçamento e custo por cliente | Memória e execuções isoladas por tenant (API + RLS + FK composta); custo por run e por cliente na rentabilidade |
 | **5 · concluída** | MCP Hub, ferramentas declarativas, conectores (interno, e-mail, webhook/n8n, WordPress), credenciais cifradas, políticas, aprovação humana, circuit breaker, SSRF | Ferramenta HIGH nunca executa sem aprovação (código + CHECK no banco + teste de mutação) |
-| 6 | Daily report, e-mails, notificações, workflows, publicação | Cada cliente recebe só o próprio relatório |
+| **6 · concluída** | Notificações internas e por e-mail com preferências, relatório diário por cliente, lembretes (prazos, tarefas, aprovações), workflows, publicação agendada | Cada cliente recebe só o próprio relatório (RLS + destinatários do servidor + teste de mutação) |
 | 7 | Adobe Connector (APIs oficiais) | Workflow real testado |
 | 8 | Planos e limites, billing, observabilidade, otimização | Limites aplicados no backend |

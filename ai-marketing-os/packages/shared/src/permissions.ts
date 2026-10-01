@@ -45,6 +45,9 @@ export const PERMISSIONS = {
   'mcp:use': 'Acionar ferramentas de integração (risco baixo e médio)',
   'mcp:approve': 'Aprovar ou rejeitar chamadas de ferramenta que exigem decisão humana',
   'mcp:manage': 'Conectar, configurar e desligar integrações e políticas de ferramenta',
+  'reports:read': 'Ver relatórios diários',
+  'reports:manage': 'Gerar e reenviar relatórios diários e configurar o envio por cliente',
+  'workflows:manage': 'Criar e alterar workflows de automação',
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -93,7 +96,7 @@ export const SYSTEM_ROLES: readonly RoleDefinition[] = [
       'files:read', 'files:write', 'files:delete', 'approvals:request',
       'proposals:read', 'proposals:write', 'contracts:read',
       'ai:read', 'ai:run', 'ai:memory_approve',
-      'mcp:read', 'mcp:use', 'mcp:approve',
+      'mcp:read', 'mcp:use', 'mcp:approve', 'reports:read', 'reports:manage',
     ],
   },
   {
@@ -102,14 +105,14 @@ export const SYSTEM_ROLES: readonly RoleDefinition[] = [
     scope: 'tenant',
     permissions: [
       'clients:read', 'dashboard:admin', 'work:read', 'work:manage', 'tasks:read', 'tasks:write',
-      'files:read', 'files:write', 'approvals:request', 'ai:read', 'ai:run', 'mcp:read', 'mcp:use',
+      'files:read', 'files:write', 'approvals:request', 'ai:read', 'ai:run', 'mcp:read', 'mcp:use', 'reports:read',
     ],
   },
   {
     key: 'CLIENTE',
     name: 'Cliente',
     scope: 'tenant',
-    permissions: ['clients:read', 'dashboard:client', 'work:read', 'demands:create', 'files:read', 'files:write', 'approvals:decide', 'billing:read'],
+    permissions: ['clients:read', 'dashboard:client', 'work:read', 'demands:create', 'files:read', 'files:write', 'approvals:decide', 'billing:read', 'reports:read'],
   },
 ];
 

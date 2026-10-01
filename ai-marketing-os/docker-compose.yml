@@ -34,6 +34,10 @@ x-api-env: &api-env
   # Integrações (MCP Hub): chave que cifra as credenciais; hosts privados só se você precisar (ex.: n8n local).
   CREDENTIALS_KEY: ${CREDENTIALS_KEY:-}
   MCP_ALLOW_PRIVATE_HOSTS: ${MCP_ALLOW_PRIVATE_HOSTS:-false}
+  # Automação: fuso da agência e horários das rotinas diárias (relatório e lembretes).
+  APP_TIMEZONE: ${APP_TIMEZONE:-America/Sao_Paulo}
+  DAILY_REPORT_HOUR: ${DAILY_REPORT_HOUR:-18}
+  REMINDERS_HOUR: ${REMINDERS_HOUR:-8}
 
 services:
   postgres:

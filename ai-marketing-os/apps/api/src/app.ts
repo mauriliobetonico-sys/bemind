@@ -25,6 +25,7 @@ import { financeRoutes } from './modules/finance/routes';
 import { hitlRoutes } from './modules/hitl/actions';
 import { aiRoutes } from './modules/ai/routes';
 import { mcpRoutes } from './modules/mcp/routes';
+import { automationRoutes } from './modules/automation/routes';
 
 export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
   const app = Fastify({
@@ -88,6 +89,7 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
       await api.register(hitlRoutes, ctx);
       await api.register(aiRoutes, ctx);
       await api.register(mcpRoutes, ctx);
+      await api.register(automationRoutes, ctx);
     },
     { prefix: '/api' },
   );

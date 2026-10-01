@@ -152,6 +152,23 @@ Toda execução é assíncrona: a rota grava a execução e o evento na mesma tr
 | POST | `/mcp/tool-calls/:id/cancel` | `mcp:use` | Quem pediu ou um aprovador; só antes de executar |
 | PUT | `/mcp/policies/:tool` | `mcp:manage` (global) | `{ enabled, allowSelfApproval }` — risco alto continua exigindo aprovação |
 
+## Automação (Fase 6)
+
+| Método | Rota | Permissão | Descrição |
+| --- | --- | --- | --- |
+| GET | `/notifications` · `/notifications/unread-count` | sessão | Só as do próprio usuário (`unread=true` filtra) |
+| POST | `/notifications/read` | sessão | `{ ids }` ou `{ all: true }` |
+| GET/PUT | `/notifications/preferences` | sessão | `{ email: { categoria: boolean } }` |
+| GET | `/reports` · `/reports/:id` | `reports:read` | Relatórios diários (o cliente vê só os seus) |
+| POST | `/reports/generate` | `reports:manage` | `{ date?, send }` — gera/regenera na fila (202) |
+| POST | `/reports/:id/send` | `reports:manage` | Reenvia aos usuários do cliente |
+| GET/PUT | `/reports/settings` · `/reports/settings/:tenantId` | `reports:manage` | Envio diário ligado e "só dias úteis" por cliente |
+| GET/POST | `/workflows` | `workflows:manage` | Regras por cliente; marcadores validados por gatilho |
+| PUT/DELETE | `/workflows/:id` | `workflows:manage` | Alterar/pausar/excluir |
+| GET | `/workflows/:id/runs` | `workflows:manage` | Histórico de disparos |
+
+`POST /mcp/tool-calls` aceita `scheduledFor` (ISO, entre 1 min e 1 ano) nas ferramentas agendáveis (publicar no WordPress, e-mail ao cliente, webhook): a execução acontece a partir do horário, depois da aprovação.
+
 ## Dashboards e auditoria
 
 | Método | Rota | Permissão | Descrição |
