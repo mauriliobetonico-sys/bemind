@@ -59,6 +59,16 @@ export default function FilesPage() {
     }
   };
 
+  const rescan = async (f: FileItem) => {
+    try {
+      const r = await api<{ scanStatus: string }>(`/files/${f.id}/rescan`, { method: 'POST', body: {}, tenantId: f.tenantId });
+      setMsg(r.scanStatus === 'pending' ? `"${f.name}" voltou para a verificação do antivírus.` : `"${f.name}" liberado (antivírus não está ativo no servidor).`);
+      await files.reload();
+    } catch (err) {
+      setMsg(err instanceof ApiError ? err.message : 'Falha ao verificar de novo');
+    }
+  };
+
   return (
     <>
       <PageHeader eyebrow="Biblioteca" title="Arquivos e marca" />
@@ -134,9 +144,15 @@ export default function FilesPage() {
                         </td>
                         <td>
                           <div className="ds-row" style={{ gap: 6 }}>
-                            <a className="ds-btn ds-btn-sm" href={`/api/files/${f.id}/download`}>
-                              Baixar
-                            </a>
+                            {f.scanStatus === 'error' && can('files:write') ? (
+                              <Button size="sm" onClick={() => void rescan(f)}>
+                                Verificar novamente
+                              </Button>
+                            ) : (
+                              <a className="ds-btn ds-btn-sm" href={`/api/files/${f.id}/download`}>
+                                Baixar
+                              </a>
+                            )}
                             {can('files:delete') && (
                               <Button size="sm" variant="ghost" onClick={() => void remove(f)} aria-label={`Excluir ${f.name}`}>
                                 Excluir

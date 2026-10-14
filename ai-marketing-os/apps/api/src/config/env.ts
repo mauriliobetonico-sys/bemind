@@ -61,13 +61,19 @@ const envSchema = z.object({
   /** Workspace da Anthropic (obrigatório quando a chave não é de um workspace específico). */
   ANTHROPIC_WORKSPACE_ID: optionalSecret,
   /** Modelo padrão dos agentes. */
-  AI_MODEL: z.string().default('claude-opus-5-5'),
+  AI_MODEL: z.string().trim().default('claude-haiku-4-5'),
   /** Fallback do servidor da Anthropic quando o modelo recusa por política (beta). */
   AI_SERVER_FALLBACK: bool.default(true),
   AI_TIMEOUT_MS: z.coerce.number().int().min(10_000).default(300_000),
   /** Chave da OpenAI usada SOMENTE para embeddings da memória (busca semântica). Opcional. */
   OPENAI_API_KEY: optionalSecret,
   EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+  /** Gerador de imagens (OpenAI Images API, modelos GPT Image). */
+  OPENAI_IMAGE_MODEL: z.string().trim().default('gpt-image-2'),
+  /** Valor fora do esperado vira "medium" em vez de impedir o sistema de subir. */
+  OPENAI_IMAGE_QUALITY: z.preprocess((v) => (typeof v === 'string' ? v.trim().toLowerCase() : v), z.enum(['low', 'medium', 'high', 'auto']).catch('medium')).default('medium'),
+  /** Endpoint da OpenAI. Só muda em testes (servidor local). */
+  OPENAI_BASE_URL: z.url().default('https://api.openai.com/v1'),
 
   /** Chave (64 hex = 32 bytes) que cifra as credenciais das integrações. Sem ela, não é possível salvar segredos. */
   CREDENTIALS_KEY: z.preprocess(
@@ -76,9 +82,6 @@ const envSchema = z.object({
   ),
   /** Permite integrações em endereços privados (ex.: n8n na mesma rede). Desligado: só hosts públicos e HTTPS. */
   MCP_ALLOW_PRIVATE_HOSTS: bool.default(false),
-  /** Endpoints oficiais da Adobe (IMS e Firefly Services). Só mudam em testes. */
-  ADOBE_IMS_URL: z.url().default('https://ims-na1.adobelogin.com'),
-  ADOBE_FIREFLY_URL: z.url().default('https://firefly-api.adobe.io'),
 
   /** Fuso da agência: define "hoje" do relatório diário e o horário das rotinas. */
   APP_TIMEZONE: z.string().default('America/Sao_Paulo').refine((tz) => {

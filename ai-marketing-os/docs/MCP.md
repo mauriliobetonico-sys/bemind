@@ -55,7 +55,7 @@ Adicionar uma integração = um arquivo em `mcp/connectors/` + registro em `mcp/
 | Webhook / n8n | configurar URL + segredo | `webhook.trigger` (médio) — corpo assinado `X-AIMOS-Signature: sha256=HMAC(segredo, timestamp.corpo)` |
 | WordPress | URL + usuário + senha de aplicativo | `wordpress.create_draft` (médio), `wordpress.publish_post` (alto, só entregável aprovado pelo cliente; atualiza o rascunho já criado) |
 | Meta, Google Workspace, GA4, Ads, WhatsApp | **integration pending** | dependem de app/credenciais oficiais (OAuth, revisão de app) |
-| Adobe Firefly Services | Client ID + Client Secret (OAuth Server-to-Server) | `adobe.generate_image` (médio), `adobe.expand_image` (médio) — ver [Adobe Connector](#adobe-connector) |
+| Gerador de imagens (OpenAI) | `OPENAI_API_KEY` no servidor (chave da agência) | `images.generate` (médio), `images.edit` (médio) — ver [Gerador de imagens](#gerador-de-imagens) |
 
 O conteúdo publicado vem sempre do entregável no banco (Markdown convertido com escape de HTML; as "Observações do agente" são removidas) — nunca de texto livre de quem pede.
 
@@ -79,24 +79,17 @@ Cliente HTTP próprio (`mcp/http.ts`): só http(s); HTTPS obrigatório para host
 
 No prompt, cada agente recebe só as ferramentas permitidas a ele **e** conectadas no cliente, com o JSON Schema dos parâmetros. Ele pode propor até 3 ações (`actionRequests`) na primeira versão de um entregável ou numa resposta do Agent Room; para o entregável que está produzindo usa `"deliverableId": "ESTE_ENTREGAVEL"`. Cada proposta passa pelo Hub como qualquer pedido; recusas da política ficam registradas na execução do agente.
 
-## Adobe Connector
+## Gerador de imagens
 
-Regra da Fase 7: **somente interfaces oficiais e documentadas pela Adobe**. O contrato foi conferido nos pacotes oficiais publicados pela Adobe no npm (`@adobe/firefly-apis` — especificação OpenAPI da Firefly API — e `@adobe/firefly-services-common-apis` — autenticação). Capacidades sem API oficial aparecem como **indisponíveis**, com o motivo, no card da integração; nada é simulado.
+Substitui a integração Adobe (removida — ADR-024). Usa a **OpenAI Images API** oficial, modelos GPT Image (contrato conferido no SDK oficial `openai`), com a chave da agência no servidor (`OPENAI_API_KEY`; nunca no navegador). Sem a chave, o conector aparece como *integration pending* e nenhum pedido é aceito.
 
-| Capacidade | Status | Interface oficial / motivo |
+| Ferramenta | Endpoint | O que faz |
 | --- | --- | --- |
-| Gerar imagens a partir de texto | disponível | `POST https://firefly-api.adobe.io/v3/images/generate` |
-| Expandir imagem (mudar formato) | disponível | `POST /v2/storage/image` (upload) + `POST /v3/images/expand` |
-| Photoshop API (remover fundo, máscaras, PSD) | indisponível | a API lê/grava em armazenamento de nuvem (S3, Azure, Dropbox) por URL pré-assinada; o storage atual é local — entra com o storage em nuvem |
-| InDesign API | indisponível | mesma exigência de armazenamento em nuvem |
-| Illustrator, Premiere Pro, After Effects | indisponível | sem API REST pública oficial para automação no servidor |
+| `images.generate` | `POST /v1/images/generations` (JSON) ou, com referências, `POST /v1/images/edits` (multipart, `image[]`) | 1–4 imagens a partir da descrição; formatos 1024×1024, 1536×1024, 1024×1536; até 4 imagens do cliente como referência (logo, produto) |
+| `images.edit` | `POST /v1/images/edits` | Nova versão de uma imagem do cliente seguindo uma instrução (fundo, formato, elementos); o original não muda |
 
-**Autenticação:** OAuth Server-to-Server — `POST https://ims-na1.adobelogin.com/ims/token/v3` com `grant_type=client_credentials`, `client_id`, `client_secret` e escopos (padrão `openid,AdobeID,session,additional_info,read_organizations,firefly_api,ff_apis`). Cada chamada à Firefly envia `Authorization: Bearer <token>` e `x-api-key: <client id>`. O token fica em cache em memória por conexão (renovado antes de expirar e, se a Adobe responder 401, uma vez na hora). "Testar conexão" só emite um token — **não consome créditos**.
-
-**Resultados:** as imagens são baixadas das URLs pré-assinadas da Adobe (expiram em 1 h; HTTPS público, até 30 MB, tipo conferido pelo conteúdo: JPEG/PNG/WEBP) e gravadas como **arquivos internos** do cliente (`files.visibility = 'internal'`), vinculados à demanda quando informada; o cliente só vê depois que a equipe anexar a um entregável e enviar para aprovação. Na expansão, a origem precisa ser imagem do mesmo cliente, liberada pelo antivírus; o original não é alterado.
-
-**Custos e repetição:** cada imagem consome créditos generativos do contrato Adobe da agência. Erros da Adobe 429/5xx/408 voltam à fila; 4xx (ex.: 403 sem direito ao Firefly) falham com orientação. Depois que a Adobe gerou as imagens, uma falha local ao baixar/salvar **não** é repetida automaticamente (repetir geraria e cobraria de novo) e não deixa arquivo órfão.
-
-**Como obter as credenciais:** [Adobe Developer Console](https://developer.adobe.com/console) → criar projeto → *Add API* → **Firefly Services** (exige contrato Firefly Services/enterprise na organização Adobe) → credencial **OAuth Server-to-Server** → copiar *Client ID* e *Client Secret* → em Integrações, card "Adobe Firefly Services", conectar por cliente e clicar em "Testar conexão".
-
-**Interface:** "Estúdio criativo" (`/creative`) gera e expande imagens para o cliente escolhido e mostra os resultados com miniaturas; o agente Designer pode propor as mesmas ferramentas (sempre com aprovação humana, por ser risco médio pedido por agente).
+- **Na marca do cliente:** com "usar identidade" (padrão), o pedido leva segmento/nicho do cliente e cores, fontes e referências do Brand Vault — lidos com RLS do próprio tenant (nunca de outro cliente). Texto na arte é pedido em português correto.
+- **Resultados:** a resposta vem em `b64_json`; o tipo é conferido pelo conteúdo (PNG/JPEG/WEBP) e as imagens viram **arquivos internos** do cliente (vinculados à demanda quando informada).
+- **Referências:** só imagens do mesmo cliente, JPEG/PNG/WEBP até 20 MB, liberadas pelo antivírus.
+- **Custos e erros:** cobrado pela OpenAI na conta da agência (modelo em `OPENAI_IMAGE_MODEL`, qualidade em `OPENAI_IMAGE_QUALITY` ou por pedido). 5xx/408/429-de-limite voltam à fila; cota esgotada, chave inválida, organização não verificada e bloqueio de conteúdo falham com orientação. Falha local depois da geração **não** é repetida (não cobra em dobro) e não deixa arquivo órfão.
+- **Interface:** "Estúdio criativo" (`/creative`). Agentes: Designer (`generate`, `edit`) e Social Media (`generate`), sempre com aprovação humana.

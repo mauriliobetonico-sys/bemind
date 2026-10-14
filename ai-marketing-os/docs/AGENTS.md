@@ -31,7 +31,7 @@ defineAgent({
 
 Master Orchestrator · Diretor de Marketing · Pesquisador · Copywriter · Social Media · Designer · Vídeo · Tráfego · Analytics · Customer Success · Financeiro (consultivo, só no Agent Room) · QA.
 
-Designer e Vídeo entregam briefing visual, especificações e roteiro; o Designer pode propor `adobe.generate_image` e `adobe.expand_image` (Adobe Firefly, sempre com aprovação humana); vídeo final segue sem API oficial disponível (ver [MCP.md](MCP.md#adobe-connector)).
+Designer e Vídeo entregam briefing visual, especificações e roteiro; o Designer pode propor `images.generate` e `images.edit` (gerador de imagens da OpenAI, sempre com aprovação humana quando é o agente que pede) e o Social Media `images.generate`; vídeo final segue sem integração. Modelo padrão dos agentes: `claude-haiku-4-5` (econômico) — troque em `AI_MODEL` (ex.: `claude-sonnet-5-5` ou `claude-opus-5-5`); o sistema só envia `effort` e o fallback do servidor aos modelos que os aceitam.
 
 ## Fluxo de uma demanda
 

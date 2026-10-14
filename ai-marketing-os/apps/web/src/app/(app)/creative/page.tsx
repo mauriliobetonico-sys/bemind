@@ -12,29 +12,33 @@ import { CallRow, type ToolCall } from '@/components/tool-call-row';
 import { Alert, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton, Textarea } from '@/design-system/components';
 
 const SIZES = [
-  { value: 'square', label: 'Quadrado 1:1 (2048×2048)' },
-  { value: 'portrait', label: 'Retrato 3:4 (1792×2304)' },
-  { value: 'landscape', label: 'Paisagem 4:3 (2304×1792)' },
-  { value: 'widescreen', label: 'Widescreen 16:9 (2688×1536)' },
+  { value: 'square', label: 'Quadrado 1:1 (feed)' },
+  { value: 'portrait', label: 'Retrato 2:3 (stories, pin)' },
+  { value: 'landscape', label: 'Paisagem 3:2 (banner, blog)' },
 ];
-const VARIATIONS = ['1', '2', '3', '4'].map((v) => ({ value: v, label: `${v} ${v === '1' ? 'imagem' : 'imagens'}` }));
+const QUALITIES = [
+  { value: '', label: 'Padrão do servidor' },
+  { value: 'low', label: 'Rascunho (mais barato)' },
+  { value: 'medium', label: 'Média' },
+  { value: 'high', label: 'Alta (mais cara)' },
+];
+const COUNTS = ['1', '2', '3', '4'].map((v) => ({ value: v, label: `${v} ${v === '1' ? 'imagem' : 'imagens'}` }));
+const IMAGE_MIMES = ['image/png', 'image/jpeg', 'image/webp'];
 
-interface Connection {
-  tenantId: string;
-  connector: string;
-  status: 'active' | 'disabled' | 'error';
+interface Catalog {
+  connectors: { key: string; availability: string; requirements: string | null }[];
 }
 interface FileItem {
   id: string;
   name: string;
   mime: string;
   scanStatus: string;
+  category: string;
 }
 interface Demand {
   id: string;
   title: string;
 }
-
 type Msg = { tone: 'ok' | 'danger' | 'warn'; text: string } | null;
 
 function useRequest(tenantId: string, setMsg: (m: Msg) => void, onQueued: () => Promise<void>) {
@@ -47,7 +51,7 @@ function useRequest(tenantId: string, setMsg: (m: Msg) => void, onQueued: () => 
       setMsg(
         r.status === 'pending_approval'
           ? { tone: 'warn', text: `Risco ${RISK_LABELS[r.risk].toLowerCase()}: aguardando aprovação em "Ações das ferramentas".` }
-          : { tone: 'ok', text: 'Na fila da Adobe: as imagens aparecem abaixo em instantes.' },
+          : { tone: 'ok', text: 'Gerando: as imagens aparecem abaixo em até 1–2 minutos.' },
       );
       await onQueued();
       return true;
@@ -61,43 +65,94 @@ function useRequest(tenantId: string, setMsg: (m: Msg) => void, onQueued: () => 
   return { busy, request };
 }
 
-function GenerateCard({ tenantId, demands, setMsg, onQueued }: { tenantId: string; demands: Demand[]; setMsg: (m: Msg) => void; onQueued: () => Promise<void> }) {
+function useClientImages(tenantId: string, version: number) {
+  const files = useApi<{ items: FileItem[] }>('/files', { tenantId });
+  const reload = files.reload;
+  useEffect(() => {
+    if (version > 0) void reload();
+  }, [version, reload]);
+  const usable = (files.data?.items ?? []).filter((f) => IMAGE_MIMES.includes(f.mime) && (f.scanStatus === 'clean' || f.scanStatus === 'skipped'));
+  return { loaded: !!files.data, usable };
+}
+
+function GenerateCard({ tenantId, demands, images, setMsg, onQueued }: { tenantId: string; demands: Demand[]; images: FileItem[]; setMsg: (m: Msg) => void; onQueued: () => Promise<void> }) {
   const [prompt, setPrompt] = useState('');
-  const [negative, setNegative] = useState('');
+  const [avoid, setAvoid] = useState('');
   const [size, setSize] = useState('square');
   const [n, setN] = useState('1');
-  const [contentClass, setContentClass] = useState('');
+  const [quality, setQuality] = useState('');
+  const [useBrand, setUseBrand] = useState(true);
+  const [refs, setRefs] = useState<string[]>([]);
   const [demandId, setDemandId] = useState('');
   const { busy, request } = useRequest(tenantId, setMsg, onQueued);
+  const toggleRef = (id: string) => setRefs((r) => (r.includes(id) ? r.filter((x) => x !== id) : r.length >= 4 ? r : [...r, id]));
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const params = {
       prompt,
       size,
-      numVariations: Number(n),
-      ...(negative.trim() ? { negativePrompt: negative.trim() } : {}),
-      ...(contentClass ? { contentClass } : {}),
+      n: Number(n),
+      useBrand,
+      ...(avoid.trim() ? { avoid: avoid.trim() } : {}),
+      ...(quality ? { quality } : {}),
+      ...(refs.length ? { referenceFileIds: refs } : {}),
       ...(demandId ? { demandId } : {}),
     };
-    if (await request('adobe.generate_image', params, 'Geração de imagem no Estúdio criativo')) setPrompt('');
+    if (await request('images.generate', params, 'Geração de imagem no Estúdio criativo')) setPrompt('');
   };
 
   return (
     <Card title="Gerar imagem">
       <form className="ds-stack" onSubmit={(e) => void submit(e)}>
-        <Textarea label="Descreva a imagem" required minLength={3} maxLength={1024} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ex.: xícara de café fumegante sobre mesa de madeira, luz suave da manhã, fotografia de produto" />
-        <Input label="Evitar (opcional)" maxLength={1024} value={negative} onChange={(e) => setNegative(e.target.value)} placeholder="Ex.: texto, marcas d'água, pessoas" />
+        <Textarea
+          label="Descreva a imagem"
+          required
+          minLength={3}
+          maxLength={4000}
+          rows={5}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder={'Ex.: post para Instagram anunciando o café gelado de verão. Copo com gelo sobre balcão de madeira, luz natural, clima alegre. Texto na imagem: "Verão gelado — 20% off"'}
+        />
+        <span className="ds-stat-hint">Dica: diga o objetivo (post, banner, anúncio), o cenário, o clima e, se quiser texto na arte, escreva entre aspas exatamente o que deve aparecer.</span>
+        <Input label="Evitar (opcional)" maxLength={500} value={avoid} onChange={(e) => setAvoid(e.target.value)} placeholder="Ex.: pessoas, fundo escuro, marcas concorrentes" />
         <div className="ds-grid ds-grid-2">
           <Select label="Formato" value={size} onChange={(e) => setSize(e.target.value)} options={SIZES} />
-          <Select label="Quantidade" value={n} onChange={(e) => setN(e.target.value)} options={VARIATIONS} />
-          <Select label="Estilo" value={contentClass} onChange={(e) => setContentClass(e.target.value)} options={[{ value: '', label: 'Automático' }, { value: 'photo', label: 'Fotográfico' }, { value: 'art', label: 'Artístico' }]} />
+          <Select label="Quantidade" value={n} onChange={(e) => setN(e.target.value)} options={COUNTS} />
+          <Select label="Qualidade" value={quality} onChange={(e) => setQuality(e.target.value)} options={QUALITIES} />
           <Select label="Vincular à demanda (opcional)" value={demandId} onChange={(e) => setDemandId(e.target.value)} options={[{ value: '', label: 'Nenhuma' }, ...demands.map((d) => ({ value: d.id, label: d.title }))]} />
         </div>
-        <span className="ds-stat-hint">Cada imagem consome créditos generativos do contrato Adobe da agência. O resultado fica nos arquivos internos do cliente (ele só vê depois de enviado para aprovação).</span>
+        <label className="ds-check">
+          <input type="checkbox" checked={useBrand} onChange={(e) => setUseBrand(e.target.checked)} /> Usar a identidade do cliente (segmento, cores e fontes do Brand Vault)
+        </label>
+        {images.length > 0 && (
+          <fieldset className="ds-stack" style={{ gap: 6, border: 0, padding: 0, margin: 0 }}>
+            <legend className="ds-label">Imagens de referência (opcional, até 4) — logo, produto, foto</legend>
+            <div className="ds-thumbs" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))' }}>
+              {images.slice(0, 24).map((f) => {
+                const on = refs.includes(f.id);
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => toggleRef(f.id)}
+                    aria-pressed={on}
+                    title={f.name}
+                    style={{ padding: 0, border: on ? '3px solid var(--accent)' : '3px solid transparent', borderRadius: 'var(--radius)', background: 'none', cursor: 'pointer' }}
+                  >
+                    <img src={`/api/files/${f.id}/download?inline=1`} alt={f.name} loading="lazy" />
+                  </button>
+                );
+              })}
+            </div>
+            {refs.length > 0 && <span className="ds-stat-hint">{refs.length} selecionada(s): o gerador preserva formas e cores delas.</span>}
+          </fieldset>
+        )}
+        <span className="ds-stat-hint">Cada imagem é cobrada pela OpenAI na conta da agência. O resultado fica nos arquivos internos do cliente — ele só vê depois de enviado para aprovação.</span>
         <div>
           <Button type="submit" variant="primary" disabled={busy || prompt.trim().length < 3}>
-            {busy ? 'Enviando…' : 'Gerar com Adobe Firefly'}
+            {busy ? 'Enviando…' : 'Gerar imagem'}
           </Button>
         </div>
       </form>
@@ -105,43 +160,36 @@ function GenerateCard({ tenantId, demands, setMsg, onQueued }: { tenantId: strin
   );
 }
 
-function ExpandCard({ tenantId, version, setMsg, onQueued }: { tenantId: string; version: number; setMsg: (m: Msg) => void; onQueued: () => Promise<void> }) {
-  const files = useApi<{ items: FileItem[] }>('/files?category=image', { tenantId });
-  const reloadFiles = files.reload;
-  // Imagens recém-geradas passam a valer como origem.
-  useEffect(() => {
-    if (version > 0) void reloadFiles();
-  }, [version, reloadFiles]);
-  const usable = (files.data?.items ?? []).filter((f) => ['image/png', 'image/jpeg', 'image/webp'].includes(f.mime) && (f.scanStatus === 'clean' || f.scanStatus === 'skipped'));
+function EditCard({ tenantId, images, loaded, setMsg, onQueued }: { tenantId: string; images: FileItem[]; loaded: boolean; setMsg: (m: Msg) => void; onQueued: () => Promise<void> }) {
   const [fileId, setFileId] = useState('');
-  const [size, setSize] = useState('widescreen');
-  const [prompt, setPrompt] = useState('');
+  const [instruction, setInstruction] = useState('');
+  const [size, setSize] = useState('');
   const { busy, request } = useRequest(tenantId, setMsg, onQueued);
-  const chosen = fileId || usable[0]?.id || '';
+  const chosen = fileId || images[0]?.id || '';
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    await request('adobe.expand_image', { fileId: chosen, size, ...(prompt.trim().length >= 3 ? { prompt: prompt.trim() } : {}) }, 'Expansão de imagem no Estúdio criativo');
+    if (await request('images.edit', { fileId: chosen, instruction, ...(size ? { size } : {}) }, 'Ajuste de imagem no Estúdio criativo')) setInstruction('');
   };
 
   return (
-    <Card title="Expandir imagem (mudar formato)">
-      {!files.data ? (
+    <Card title="Ajustar uma imagem">
+      {!loaded ? (
         <Skeleton height={160} />
-      ) : usable.length === 0 ? (
+      ) : images.length === 0 ? (
         <EmptyState>
-          Nenhuma imagem JPEG, PNG ou WEBP deste cliente. Envie em <Link href="/files">Arquivos e marca</Link>.
+          Nenhuma imagem JPEG, PNG ou WEBP deste cliente. Envie em <Link href="/files">Arquivos e marca</Link> ou gere uma ao lado.
         </EmptyState>
       ) : (
         <form className="ds-stack" onSubmit={(e) => void submit(e)}>
-          <Select label="Imagem de origem" value={chosen} onChange={(e) => setFileId(e.target.value)} options={usable.map((f) => ({ value: f.id, label: f.name }))} />
-          {chosen && <img className="ds-preview" style={{ maxHeight: 200 }} src={`/api/files/${chosen}/download?inline=1`} alt="Prévia da imagem de origem" />}
-          <Select label="Novo formato" value={size} onChange={(e) => setSize(e.target.value)} options={SIZES} />
-          <Input label="O que preencher nas bordas (opcional)" maxLength={1024} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ex.: continuação da mesa de madeira" />
-          <span className="ds-stat-hint">O original não é alterado; a versão expandida entra como novo arquivo interno.</span>
+          <Select label="Imagem" value={chosen} onChange={(e) => setFileId(e.target.value)} options={images.map((f) => ({ value: f.id, label: f.name }))} />
+          {chosen && <img className="ds-preview" style={{ maxHeight: 200 }} src={`/api/files/${chosen}/download?inline=1`} alt="Prévia da imagem escolhida" />}
+          <Textarea label="O que mudar" required minLength={3} maxLength={4000} value={instruction} onChange={(e) => setInstruction(e.target.value)} placeholder="Ex.: troque o fundo por uma praia ao pôr do sol; deixe no formato de stories" />
+          <Select label="Formato" value={size} onChange={(e) => setSize(e.target.value)} options={[{ value: '', label: 'Manter automático' }, ...SIZES]} />
+          <span className="ds-stat-hint">O original não é alterado; a nova versão entra como arquivo interno.</span>
           <div>
-            <Button type="submit" disabled={busy || !chosen}>
-              {busy ? 'Enviando…' : 'Expandir com Adobe Firefly'}
+            <Button type="submit" disabled={busy || !chosen || instruction.trim().length < 3}>
+              {busy ? 'Enviando…' : 'Criar nova versão'}
             </Button>
           </div>
         </form>
@@ -154,35 +202,32 @@ export default function CreativeStudioPage() {
   const { can } = useAuth();
   const [tenantId, setTenantId] = useState('');
   const [msg, setMsg] = useState<Msg>(null);
-  const conns = useApi<{ items: Connection[] }>('/mcp/connections');
+  const catalog = useApi<Catalog>('/mcp/catalog');
   const demands = useApi<{ items: Demand[] }>(tenantId ? '/demands?open=true&limit=100' : null, { tenantId });
-  const calls = useApi<{ items: ToolCall[] }>(tenantId ? '/mcp/tool-calls?connector=adobe&limit=20' : null, { tenantId });
+  const calls = useApi<{ items: ToolCall[] }>(tenantId ? '/mcp/tool-calls?connector=images&limit=20' : null, { tenantId });
   const items = calls.data?.items ?? [];
   usePolling(items.some((c) => c.status === 'queued' || c.status === 'running'), calls.reload);
-  const conn = conns.data?.items.find((c) => c.tenantId === tenantId && c.connector === 'adobe');
-  const ready = conn?.status === 'active' || conn?.status === 'error';
+  const images = useClientImages(tenantId, items.filter((c) => c.status === 'succeeded').length);
+  const gen = catalog.data?.connectors.find((c) => c.key === 'images');
 
   return (
     <>
-      <PageHeader eyebrow="Adobe Firefly Services" title="Estúdio criativo" actions={<Link href="/integrations">Integrações</Link>} />
-      <p className="ds-text-2">Gere e adapte imagens com a API oficial do Adobe Firefly. Toda chamada passa pelo MCP Hub: fica registrada, respeita os limites e, quando um agente pede, espera aprovação humana.</p>
+      <PageHeader eyebrow="Imagens com IA" title="Estúdio criativo" actions={<Link href="/tool-calls">Ações das ferramentas</Link>} />
+      <p className="ds-text-2">Crie artes a partir de uma descrição, na identidade visual do cliente e usando as imagens dele como referência. Toda geração fica registrada e, quando um agente pede, espera aprovação humana.</p>
       {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
       <Card>
         <ClientPicker value={tenantId} onChange={(v) => { setTenantId(v); setMsg(null); }} />
       </Card>
-      {!tenantId ? (
+      {!catalog.data ? (
+        <Skeleton height={120} />
+      ) : gen?.availability !== 'available' ? (
+        <Alert tone="warn">O gerador de imagens ainda não está ativo: {gen?.requirements ?? 'configure OPENAI_API_KEY no .env do servidor.'}</Alert>
+      ) : !tenantId ? (
         <EmptyState>Escolha um cliente para começar.</EmptyState>
-      ) : !conns.data ? (
-        <Skeleton height={200} />
-      ) : !ready ? (
-        <Alert tone="warn">
-          A Adobe ainda não está conectada para este cliente{conn?.status === 'disabled' ? ' (conexão desativada)' : ''}.{' '}
-          {can('mcp:manage') ? <Link href="/integrations">Conectar em Integrações</Link> : 'Peça a um administrador para conectar em Integrações.'}
-        </Alert>
       ) : can('mcp:use') ? (
         <div className="ds-grid ds-grid-2">
-          <GenerateCard key={`g-${tenantId}`} tenantId={tenantId} demands={demands.data?.items ?? []} setMsg={setMsg} onQueued={calls.reload} />
-          <ExpandCard key={`e-${tenantId}`} tenantId={tenantId} version={items.filter((c) => c.status === 'succeeded').length} setMsg={setMsg} onQueued={calls.reload} />
+          <GenerateCard key={`g-${tenantId}`} tenantId={tenantId} demands={demands.data?.items ?? []} images={images.usable} setMsg={setMsg} onQueued={calls.reload} />
+          <EditCard key={`e-${tenantId}`} tenantId={tenantId} images={images.usable} loaded={images.loaded} setMsg={setMsg} onQueued={calls.reload} />
         </div>
       ) : null}
       {tenantId && (
@@ -191,7 +236,7 @@ export default function CreativeStudioPage() {
           {!calls.data ? (
             <Skeleton height={120} />
           ) : items.length === 0 ? (
-            <EmptyState>Nenhuma geração ainda para este cliente.</EmptyState>
+            <EmptyState>Nenhuma imagem gerada ainda para este cliente.</EmptyState>
           ) : (
             <ul className="ds-list">
               {items.map((c) => (

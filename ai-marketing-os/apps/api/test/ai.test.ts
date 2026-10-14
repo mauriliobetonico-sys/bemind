@@ -17,7 +17,7 @@ let nameA: string;
 let nameB: string;
 
 beforeAll(async () => {
-  env = await createTestEnv({}, { aiProvider: fake });
+  env = await createTestEnv({ AI_MODEL: 'claude-opus-5-5' }, { aiProvider: fake }) // contas de custo abaixo usam a tabela do Opus 5.5;
   w = await buildWorld(env);
   const names = await env.admin.query<{ tenant_id: string; trade_name: string }>('SELECT tenant_id, trade_name FROM clients WHERE tenant_id = ANY($1)', [[w.clientA.tenantId, w.clientB.tenantId]]);
   nameA = names.rows.find((r) => r.tenant_id === w.clientA.tenantId)!.trade_name;

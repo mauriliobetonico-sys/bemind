@@ -1,6 +1,7 @@
 import type { AgentKey } from '@aimos/shared';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import type { Env } from '../config/env';
 import { withContext, type Tx } from '../db/pool';
 import { enqueue } from '../outbox/outbox';
 import { recordActivity } from '../modules/work/common';
@@ -78,6 +79,8 @@ export async function requestToolCall(
   if (!policy.enabled) throw new ToolPolicyError('tool_disabled', 'Ferramenta desligada pela política da agência');
   const connector = connectorByKey(tool.connector)!;
   if (connector.availability !== 'available') throw new ToolPolicyError('integration_pending', `${connector.name}: integration pending`);
+  const missing = connector.ready?.(app.env);
+  if (missing) throw new ToolPolicyError('integration_pending', `${connector.name}: integration pending — ${missing}`);
   let connectionId: string | null = null;
   if (!connector.builtIn) {
     const conn = await activeConnection(tx, r.tenantId, connector.key);
@@ -320,7 +323,7 @@ async function connectionHealth(app: AppContext, tenantId: string, connectionId:
 }
 
 /** Ferramentas que um agente pode propor para um cliente agora (para o prompt). */
-export async function toolsForAgent(tx: Tx, tenantId: string, agentKey: AgentKey) {
+export async function toolsForAgent(tx: Tx, tenantId: string, agentKey: AgentKey, env?: Env) {
   const conns = new Map(
     (await tx.query<{ connector: string; status: string }>('SELECT connector, status FROM mcp_connections WHERE tenant_id = $1', [tenantId])).rows.map((c) => [c.connector, c.status]),
   );
@@ -328,6 +331,7 @@ export async function toolsForAgent(tx: Tx, tenantId: string, agentKey: AgentKey
   return TOOLS.filter((t) => {
     const c = connectorByKey(t.connector)!;
     if (!t.allowedAgents.includes(agentKey) || disabled.has(t.name) || c.availability !== 'available') return false;
+    if (env && c.ready?.(env)) return false;
     return c.builtIn || (conns.has(c.key) && conns.get(c.key) !== 'disabled');
   }).map((t) => ({ name: t.name, title: t.title, description: t.description, risk: t.risk, schema: z.toJSONSchema(t.params) }));
 }

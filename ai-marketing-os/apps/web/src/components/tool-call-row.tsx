@@ -34,7 +34,7 @@ export interface ToolCall {
   workflowName?: string | null;
 }
 
-/** Imagens salvas por uma ferramenta (ex.: Adobe Firefly) — arquivos internos, só a equipe vê. */
+/** Imagens salvas por uma ferramenta (ex.: gerador de imagens) — arquivos internos, só a equipe vê. */
 export function GeneratedImages({ files }: { files: { id: string; name: string }[] }) {
   return (
     <div className="ds-thumbs">

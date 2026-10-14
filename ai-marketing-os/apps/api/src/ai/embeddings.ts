@@ -25,7 +25,7 @@ export class OpenAiEmbedder implements Embedder {
 
   async embed(texts: string[]): Promise<number[][]> {
     if (!this.env.OPENAI_API_KEY) throw new Error('integration_pending: OPENAI_API_KEY não configurada');
-    const res = await fetch('https://api.openai.com/v1/embeddings', {
+    const res = await fetch(`${this.env.OPENAI_BASE_URL.replace(/\/+$/, '')}/embeddings`, {
       method: 'POST',
       headers: { authorization: `Bearer ${this.env.OPENAI_API_KEY}`, 'content-type': 'application/json' },
       body: JSON.stringify({ model: this.model, input: texts.map((t) => t.slice(0, 8000)), dimensions: EMBEDDING_DIMENSIONS }),

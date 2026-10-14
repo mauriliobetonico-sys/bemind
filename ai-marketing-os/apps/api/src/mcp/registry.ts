@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import type { AgentKey, Permission, RiskLevel } from '@aimos/shared';
+import type { Env } from '../config/env';
 import type { AppContext } from '../context';
 import type { Tx } from '../db/pool';
 
@@ -37,6 +38,8 @@ export interface ConnectorDef {
   fields: ConnectorField[];
   /** Capacidades do produto e por que cada uma está (ou não) disponível. */
   capabilities?: { name: string; status: 'available' | 'unavailable'; note: string }[];
+  /** Pré-requisito no servidor (ex.: chave no .env). Devolve o motivo quando falta, ou null quando pronto. */
+  ready?(env: Env): string | null;
   /** Testa as credenciais sem efeito colateral. Devolve uma frase de diagnóstico. */
   test?(app: AppContext, conn: ConnectionInfo): Promise<string>;
 }

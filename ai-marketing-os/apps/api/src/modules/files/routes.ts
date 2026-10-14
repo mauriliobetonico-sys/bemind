@@ -165,6 +165,26 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       .send(ctx.storage.open(file.tenantId, id));
   });
 
+  /**
+   * Nova verificação de um arquivo cuja varredura falhou (ex.: antivírus fora
+   * do ar no envio). Com antivírus configurado, volta para a fila; sem ele,
+   * fica como "não verificado" — o mesmo tratamento de um envio novo.
+   */
+  app.post('/files/:id/rescan', { config: { permission: 'files:write' } }, async (req) => {
+    const access = requireAccess(req);
+    const { id } = parse(uuidParam, req.params);
+    return withContext(ctx.pool, access.context('files:write', requestedTenant(req)), async (tx) => {
+      const file = await findVisibleFile(tx, access, id);
+      if (!file) throw notFound();
+      if (file.scanStatus !== 'error') throw new AppError(409, 'not_failed', 'Só arquivos com falha na verificação podem ser verificados de novo');
+      const next = ctx.env.CLAMAV_HOST ? 'pending' : 'skipped';
+      await tx.query(`UPDATE files SET scan_status = $2 WHERE id = $1`, [id, next]);
+      if (next === 'pending') await enqueue(tx, { type: 'file.uploaded', tenantId: file.tenantId, payload: { fileId: id } });
+      await ctx.audit.recordIn(tx, { action: 'file.rescan', result: 'success', tenantId: file.tenantId, actorUserId: access.principal.userId, resourceType: 'file', resourceId: id, metadata: { scanStatus: next }, ...requestMeta(req) });
+      return { id, scanStatus: next };
+    });
+  });
+
   /** Exclusão: some da listagem e do storage; o registro fica para auditoria. */
   app.delete('/files/:id', { config: { permission: 'files:delete' } }, async (req, reply) => {
     const access = requireAccess(req);

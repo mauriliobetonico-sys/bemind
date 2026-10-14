@@ -15,8 +15,8 @@ import { requestToolCall, toolsForAgent, ToolPolicyError } from '../mcp/hub';
 export const THIS_DELIVERABLE = 'ESTE_ENTREGAVEL';
 
 /** Ferramentas disponíveis para o agente neste cliente, descritas para o prompt. */
-async function toolsPrompt(tx: Tx, tenantId: string, agentKey: AgentKey, withDeliverable: boolean): Promise<string> {
-  const tools = await toolsForAgent(tx, tenantId, agentKey);
+async function toolsPrompt(ctx: AppContext, tx: Tx, tenantId: string, agentKey: AgentKey, withDeliverable: boolean): Promise<string> {
+  const tools = await toolsForAgent(tx, tenantId, agentKey, ctx.env);
   if (!tools.length) return 'Ferramentas: nenhuma disponível para você neste cliente — deixe actionRequests vazio.';
   return [
     'Ferramentas que você pode PROPOR em actionRequests (o servidor aplica a política; risco médio/alto vai para aprovação humana):',
@@ -338,7 +338,7 @@ async function runProduce(ctx: AppContext, run: RunRow) {
       plan,
       previous,
       current,
-      tools: run.revision === 0 ? await toolsPrompt(tx, run.tenant_id, run.agent_key, true) : 'Ferramentas: não proponha ações numa revisão — deixe actionRequests vazio.',
+      tools: run.revision === 0 ? await toolsPrompt(ctx, tx, run.tenant_id, run.agent_key, true) : 'Ferramentas: não proponha ações numa revisão — deixe actionRequests vazio.',
       client: await clientContext(tx, run.tenant_id),
       memory: await memoryContext(tx, run.tenant_id, agent.memoryScopes, `${d.title}\n${run.instruction ?? ''}`, ctx.ai.embedder),
     };
@@ -523,7 +523,7 @@ async function runReply(ctx: AppContext, run: RunRow) {
     return {
       m,
       transcript,
-      tools: await toolsPrompt(tx, run.tenant_id, run.agent_key, false),
+      tools: await toolsPrompt(ctx, tx, run.tenant_id, run.agent_key, false),
       client: await clientContext(tx, run.tenant_id),
       memory: await memoryContext(tx, run.tenant_id, agent.memoryScopes, `${m.title}\n${m.agenda ?? ''}`, ctx.ai.embedder),
     };

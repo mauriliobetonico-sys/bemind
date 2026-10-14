@@ -66,6 +66,30 @@ export interface AiProvider {
 /** Erro do provedor que vale nova tentativa (fila com backoff). */
 export class ProviderRetryableError extends Error {}
 
+/**
+ * Recursos que variam por modelo. `effort` não existe no Haiku 4.5 (nem nos
+ * Sonnet/Opus 4.5 e anteriores) e o fallback do servidor só vale para os
+ * modelos com classificadores de segurança (Opus 5.x, Sonnet 5.x, Fable).
+ * Enviar o recurso para um modelo que não o aceita gera erro 400.
+ */
+export function modelFeatures(model: string): { effort: boolean; serverFallback: boolean } {
+  const legacy = /^claude-(haiku-|sonnet-4-5|sonnet-4-0|opus-4-0|opus-4-1|3)/.test(model);
+  return {
+    effort: !legacy,
+    serverFallback: /^claude-(opus-5|sonnet-5|fable-5|mythos-5)/.test(model),
+  };
+}
+
+/** Mensagem clara para erros de conta (sem créditos, chave inválida) em vez do JSON cru da API. */
+export function friendlyAnthropicError(status: number | undefined, message: string): string {
+  if (/credit balance is too low/i.test(message)) {
+    return 'Sem créditos na conta Anthropic: adicione créditos em console.anthropic.com → Plans & Billing e clique em "Repetir".';
+  }
+  if (status === 401) return 'Chave da Anthropic inválida ou revogada (ANTHROPIC_API_KEY no .env).';
+  if (status === 404 && /model/i.test(message)) return `Modelo não encontrado ou sem acesso: confira AI_MODEL no .env (${message.slice(0, 160)})`;
+  return `anthropic ${status ?? ''}: ${message.slice(0, 500)}`;
+}
+
 export class AnthropicProvider implements AiProvider {
   readonly name = 'anthropic';
   readonly configured: boolean;
@@ -85,6 +109,7 @@ export class AnthropicProvider implements AiProvider {
 
   async create(req: ProviderRequest): Promise<ProviderResponse> {
     if (!this.client) throw new Error('integration_pending: ANTHROPIC_API_KEY não configurada');
+    const features = modelFeatures(req.model);
     const params: Anthropic.Beta.MessageCreateParamsNonStreaming = {
       model: req.model,
       max_tokens: req.maxTokens,
@@ -92,14 +117,18 @@ export class AnthropicProvider implements AiProvider {
       cache_control: { type: 'ephemeral' },
       system: req.system,
       messages: req.messages as Anthropic.Beta.BetaMessageParam[],
-      output_config: {
-        effort: req.effort,
-        ...(req.jsonSchema ? { format: { type: 'json_schema' as const, schema: req.jsonSchema } } : {}),
-      },
+      ...(features.effort || req.jsonSchema
+        ? {
+            output_config: {
+              ...(features.effort ? { effort: req.effort } : {}),
+              ...(req.jsonSchema ? { format: { type: 'json_schema' as const, schema: req.jsonSchema } } : {}),
+            },
+          }
+        : {}),
       ...(req.tools?.length
         ? { tools: req.tools.map((t) => ({ ...t, strict: true })) as Anthropic.Beta.BetaToolUnion[] }
         : {}),
-      ...(this.env.AI_SERVER_FALLBACK ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const } : {}),
+      ...(this.env.AI_SERVER_FALLBACK && features.serverFallback ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const } : {}),
     };
     let msg: Anthropic.Beta.BetaMessage;
     try {
@@ -116,7 +145,7 @@ export class AnthropicProvider implements AiProvider {
       if (err instanceof Anthropic.APIError) {
         // 529 (overloaded) também é transitório.
         if (err.status === 529) throw new ProviderRetryableError('anthropic: sobrecarregado');
-        throw new Error(`anthropic ${err.status ?? ''}: ${err.message}`);
+        throw new Error(friendlyAnthropicError(err.status, err.message));
       }
       throw err;
     }
