@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Be Mind — Boas-vindas</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg" width="1920" height="1080"></canvas>
+
+  <!-- CENA 1 — Boas-vindas -->
+  <section class="scene" id="s1">
+    <svg id="net" width="1920" height="1080"></svg>
+    <h1 class="headline center" id="s1-title"><span>Seu domínio é o primeiro passo.</span></h1>
+    <div class="pill" id="s1-pill">
+      <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.8 3 2.8 16 0 19M12 2.5c-2.8 3-2.8 16 0 19"/></svg>
+      <span id="s1-domain"></span><i class="caret" id="s1-caret"></i>
+      <span class="regchip" id="s1-reg"><svg class="okico" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Registrado</span>
+    </div>
+  </section>
+
+  <!-- CENA 2 — DNS -->
+  <section class="scene" id="s2">
+    <div class="col-text">
+      <div class="step"><b>01.</b> Configuração<br>de DNS</div>
+      <p class="lead" id="s2-lead">Seu domínio passa a apontar para a infraestrutura da Be Mind.</p>
+    </div>
+    <div class="panel" id="dns">
+      <div class="panel-head">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.8 3 2.8 16 0 19M12 2.5c-2.8 3-2.8 16 0 19"/></svg>
+        <span class="dom">seunegocio.com.br</span>
+        <span class="chip">Painel do domínio</span>
+      </div>
+      <div class="label">Servidores DNS</div>
+      <div class="row" id="r1"><span class="k">DNS 1</span>
+        <span class="old">ns1.provedor-atual.com</span>
+        <span class="new">Servidor DNS Be Mind <em>atualizado</em></span></div>
+      <div class="row" id="r2"><span class="k">DNS 2</span>
+        <span class="old">ns2.provedor-atual.com</span>
+        <span class="new">Servidor DNS Be Mind <em>atualizado</em></span></div>
+      <div class="status" id="dns-status">
+        <div class="status-line">
+          <span class="spin" id="dns-spin"></span>
+          <svg class="okico" id="dns-ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+          <span class="st-a" id="st-a">Propagação DNS em andamento</span>
+          <span class="st-b" id="st-b">Domínio conectado à infraestrutura Be Mind</span>
+        </div>
+        <div class="bar"><i id="dns-bar"></i></div>
+        <div class="note">A propagação pode levar algumas horas, conforme o provedor e o cache DNS.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CENA 3 — Cloud próprio -->
+  <section class="scene" id="s3">
+    <div class="col-text">
+      <h2 class="headline left" id="s3-h"><span class="l1">Seu próprio Cloud.</span><span class="l2">Sua própria operação.</span></h2>
+      <p class="lead" id="s3-sub">Infraestrutura dedicada ao seu projeto.</p>
+    </div>
+    <svg id="cloudworld" width="1920" height="1080"></svg>
+    <div class="browser mini" id="s3-browser">
+      <div class="bbar"><i></i><i></i><i></i><span>seunegocio.com.br</span></div>
+      <div class="wire">
+        <div class="w nav"></div>
+        <div class="w h1"></div><div class="w h2"></div>
+        <div class="w btn"></div>
+        <div class="w img"></div>
+        <div class="w c c1"></div><div class="w c c2"></div><div class="w c c3"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CENA 4 — Desenvolvimento e SSL -->
+  <section class="scene" id="s4">
+    <div class="steps4">
+      <div class="step sm" id="st2"><svg class="okico" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><b>02.</b> Desenvolvimento</div>
+      <div class="step sm" id="st3"><b>03.</b> Segurança SSL</div>
+    </div>
+    <div class="code" id="code"></div>
+    <div class="browser" id="s4-browser">
+      <div class="bbar">
+        <i></i><i></i><i></i>
+        <div class="url" id="url">
+          <svg class="lock" id="url-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path id="url-shackle" d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>
+          <span class="proto" id="proto">http://</span><span>seunegocio.com.br</span>
+          <span class="secure" id="secure">Conexão segura</span>
+        </div>
+      </div>
+      <div class="site" id="site4"></div>
+      <div class="bigLock" id="bigLock">
+        <div class="ring" id="ring1"></div><div class="ring" id="ring2"></div>
+        <svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path id="big-shackle" d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- CENA 5 — Publicação e suporte -->
+  <section class="scene" id="s5">
+    <div class="col-text" id="s5-text">
+      <h2 class="headline left" id="s5-h"><span>Seu site pronto<br>para o mundo.</span></h2>
+      <div class="support" id="support">
+        <span class="sico"><svg viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.6"/><rect x="17" y="13" width="4" height="6" rx="1.6"/><path d="M19 19c0 1.5-1.5 2.5-4 2.5h-2"/></svg></span>
+        <span>Suporte 24 horas, <b>grátis.</b></span>
+      </div>
+    </div>
+    <div class="panel check" id="checklist">
+      <div class="label">Antes de publicar</div>
+      <div class="ck" id="ck1"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Testes concluídos</div>
+      <div class="ck" id="ck2"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Aprovação do cliente</div>
+      <div class="publish" id="publish"><span id="pub-a">Publicar site</span><span id="pub-b">Publicado</span><i id="ripple"></i></div>
+    </div>
+    <svg class="cursor" id="cursor" viewBox="0 0 24 24"><path d="M5 3l14 8-6.2 1.6L10 19z"/></svg>
+    <div class="devices" id="devices">
+      <div class="laptop" id="laptop">
+        <div class="screen">
+          <div class="bbar"><i></i><i></i><i></i>
+            <div class="url"><svg class="lock on" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg><span>https://seunegocio.com.br</span></div>
+          </div>
+          <div class="site" id="site5"></div>
+        </div>
+        <div class="base"></div>
+      </div>
+      <div class="phone" id="phone"><div class="notch"></div><div class="site mobile" id="site5m"></div></div>
+      <div class="online" id="online"><i></i>Online</div>
+    </div>
+  </section>
+
+  <!-- CENA 6 — Oferta -->
+  <section class="scene" id="s6">
+    <div class="rings" id="rings"><i></i><i></i><i></i></div>
+    <div class="offer" id="offer">
+      <div class="eyebrow">SEU PRÓPRIO CLOUD</div>
+      <div class="price"><span class="cur">R$</span>150,00<span class="per">/mês</span></div>
+      <div class="incl">
+        <span><svg class="okico" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Certificado SSL</span>
+        <span class="plus">+</span>
+        <span><svg class="okico" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>suporte 24h grátis</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Encerramento: logotipo se formando -->
+  <div id="light"></div>
+  <canvas id="particles" width="1920" height="1080"></canvas>
+  <div id="endcard">
+    <div id="logoWrap"><img id="logoImg" src="../assets/logo-bemind.png" alt="Be Mind Marketing"><div id="shine"></div></div>
+    <div id="tagline">Tecnologia para sua operação crescer.</div>
+    <div id="endoffer">Seu próprio Cloud <b>·</b> R$ 150,00/mês <b>·</b> SSL + suporte 24h grátis</div>
+  </div>
+
+  <!-- Elementos persistentes -->
+  <div id="badge"><img src="../assets/logo-bemind.png" alt=""></div>
+  <div id="rail"></div>
+  <div id="caption"><span id="captext"></span></div>
+</div>
+<script src="timeline.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
