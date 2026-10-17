@@ -1,0 +1,152 @@
+{
+  "duration": 30.0,
+  "voice": "pm_alex",
+  "speed": 1.32,
+  "scenes": [
+    0.0,
+    4.773,
+    8.759,
+    14.044,
+    18.917,
+    24.008
+  ],
+  "phrases": [
+    {
+      "scene": 1,
+      "text": "Seu domínio está registrado.",
+      "start": 0.35,
+      "end": 1.747
+    },
+    {
+      "scene": 1,
+      "text": "Agora, vamos transformar essa ideia em um site de verdade.",
+      "start": 1.844,
+      "end": 4.796
+    },
+    {
+      "scene": 2,
+      "text": "Primeiro, configuramos os DNS para conectar seu domínio à nossa infraestrutura.",
+      "start": 4.973,
+      "end": 8.781
+    },
+    {
+      "scene": 3,
+      "text": "Seu site terá seu próprio ambiente Cloud, preparado para executar sua operação de forma independente.",
+      "start": 8.959,
+      "end": 14.067
+    },
+    {
+      "scene": 4,
+      "text": "A Be Mind desenvolve seu site, configura o certificado SSL e prepara tudo para entrar no ar.",
+      "start": 14.244,
+      "end": 18.939
+    },
+    {
+      "scene": 5,
+      "text": "Depois dos testes e da sua aprovação, publicamos seu site, com suporte 24 horas incluído.",
+      "start": 19.117,
+      "end": 24.031
+    },
+    {
+      "scene": 6,
+      "text": "Tudo isso por R$ 150,00 por mês.",
+      "start": 24.208,
+      "end": 26.517
+    },
+    {
+      "scene": 6,
+      "text": "Be Mind Marketing.",
+      "start": 26.614,
+      "end": 27.655
+    },
+    {
+      "scene": 6,
+      "text": "Sua operação, conectada ao futuro.",
+      "start": 27.752,
+      "end": 29.4
+    }
+  ],
+  "captions": [
+    {
+      "text": "Seu domínio está registrado.",
+      "start": 0.35,
+      "end": 1.844
+    },
+    {
+      "text": "Agora, vamos transformar essa",
+      "start": 1.844,
+      "end": 3.346
+    },
+    {
+      "text": "ideia em um site de verdade.",
+      "start": 3.346,
+      "end": 4.973
+    },
+    {
+      "text": "Primeiro, configuramos os DNS para",
+      "start": 4.973,
+      "end": 6.633
+    },
+    {
+      "text": "conectar seu domínio à nossa infraestrutura.",
+      "start": 6.633,
+      "end": 8.959
+    },
+    {
+      "text": "Seu site terá seu próprio ambiente Cloud,",
+      "start": 8.959,
+      "end": 11.074
+    },
+    {
+      "text": "preparado para executar sua",
+      "start": 11.074,
+      "end": 12.467
+    },
+    {
+      "text": "operação de forma independente.",
+      "start": 12.467,
+      "end": 14.244
+    },
+    {
+      "text": "A Be Mind desenvolve seu site,",
+      "start": 14.244,
+      "end": 15.809
+    },
+    {
+      "text": "configura o certificado SSL e",
+      "start": 15.809,
+      "end": 17.322
+    },
+    {
+      "text": "prepara tudo para entrar no ar.",
+      "start": 17.322,
+      "end": 19.117
+    },
+    {
+      "text": "Depois dos testes e da sua aprovação,",
+      "start": 19.117,
+      "end": 21.183
+    },
+    {
+      "text": "publicamos seu site, com suporte 24 horas incluído.",
+      "start": 21.183,
+      "end": 24.208
+    },
+    {
+      "text": "Tudo isso por R$ 150,00 por mês.",
+      "start": 24.208,
+      "end": 26.614
+    },
+    {
+      "text": "Be Mind Marketing.",
+      "start": 26.614,
+      "end": 27.752
+    },
+    {
+      "text": "Sua operação, conectada ao futuro.",
+      "start": 27.752,
+      "end": 29.8
+    }
+  ],
+  "logoForm": 26.264
+}

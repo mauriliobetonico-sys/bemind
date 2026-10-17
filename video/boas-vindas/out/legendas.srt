@@ -1,0 +1,64 @@
+1
+00:00:00,350 --> 00:00:01,844
+Seu domínio está registrado.
+
+2
+00:00:01,844 --> 00:00:03,346
+Agora, vamos transformar essa
+
+3
+00:00:03,346 --> 00:00:04,973
+ideia em um site de verdade.
+
+4
+00:00:04,973 --> 00:00:06,633
+Primeiro, configuramos os DNS para
+
+5
+00:00:06,633 --> 00:00:08,959
+conectar seu domínio à nossa infraestrutura.
+
+6
+00:00:08,959 --> 00:00:11,074
+Seu site terá seu próprio ambiente Cloud,
+
+7
+00:00:11,074 --> 00:00:12,467
+preparado para executar sua
+
+8
+00:00:12,467 --> 00:00:14,244
+operação de forma independente.
+
+9
+00:00:14,244 --> 00:00:15,809
+A Be Mind desenvolve seu site,
+
+10
+00:00:15,809 --> 00:00:17,322
+configura o certificado SSL e
+
+11
+00:00:17,322 --> 00:00:19,117
+prepara tudo para entrar no ar.
+
+12
+00:00:19,117 --> 00:00:21,183
+Depois dos testes e da sua aprovação,
+
+13
+00:00:21,183 --> 00:00:24,208
+publicamos seu site, com suporte 24 horas incluído.
+
+14
+00:00:24,208 --> 00:00:26,614
+Tudo isso por R$ 150,00 por mês.
+
+15
+00:00:26,614 --> 00:00:27,752
+Be Mind Marketing.
+
+16
+00:00:27,752 --> 00:00:29,800
+Sua operação, conectada ao futuro.
+
