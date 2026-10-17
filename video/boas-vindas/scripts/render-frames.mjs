@@ -2,6 +2,7 @@
 // Uso:
 //   node scripts/render-frames.mjs video  [saida.mp4] [fps]   → vídeo sem áudio
 //   node scripts/render-frames.mjs stills 1.2 5.5 ...          → PNGs de conferência em out/stills/
+// Com FORMAT=story renderiza a versão vertical 1080×1920 (Stories/Reels).
 import { createServer } from "node:http";
 import { readFile, mkdir } from "node:fs/promises";
 import { spawn } from "node:child_process";
@@ -25,10 +26,12 @@ const server = createServer(async (req, res) => {
   } catch { res.writeHead(404); res.end(); }
 });
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
-const url = `http://127.0.0.1:${server.address().port}/src/index.html`;
+const STORY = process.env.FORMAT === "story";
+const [VW, VH] = STORY ? [1080, 1920] : [1920, 1080];
+const url = `http://127.0.0.1:${server.address().port}/src/index.html${STORY ? "?format=story" : ""}`;
 
 const browser = await playwright.chromium.launch({ args: ["--font-render-hinting=none", "--disable-lcd-text"] });
-const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: 1 });
 page.on("pageerror", (e) => console.error("Erro na página:", e.message));
 await page.goto(url);
 await page.evaluate(() => window.READY);
@@ -38,7 +41,7 @@ if (mode === "stills") {
   await mkdir(path.join(ROOT, "out/stills"), { recursive: true });
   for (const t of rest.map(Number)) {
     await page.evaluate((tt) => window.render(tt), t);
-    await page.screenshot({ path: path.join(ROOT, `out/stills/t${t.toFixed(2)}.png`) });
+    await page.screenshot({ path: path.join(ROOT, `out/stills/${STORY ? "story-" : ""}t${t.toFixed(2)}.png`) });
   }
 } else {
   const out = rest[0] || path.join(ROOT, "out/video-sem-audio.mp4");

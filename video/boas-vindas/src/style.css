@@ -201,3 +201,42 @@ svg { overflow: visible; }
   background: rgba(74, 222, 128, .12); border: 1px solid rgba(74, 222, 128, .4); padding: 8px 18px 8px 12px; border-radius: 999px; }
 .regchip .okico { width: 24px; height: 24px; }
 .laptop .site { width: 910px; height: 526px; transform: scale(.8747); }
+
+/* ---------- Formato Story 9:16 (1080×1920) ----------
+   Conteúdo principal entre y≈230 e y≈1620, fora das áreas cobertas pela interface do Instagram/WhatsApp. */
+.story, .story body, .story #stage { width: 1080px; height: 1920px; }
+.story .headline.center { top: 640px; font-size: 84px; padding: 0 90px; }
+.story .pill { left: 130px; top: 898px; width: 820px; padding: 0 36px; gap: 16px; font-size: 36px; }
+.story .pill .ico { width: 34px; height: 34px; }
+.story .regchip { font-size: 20px; padding: 7px 14px 7px 10px; }
+.story .col-text { left: 80px; right: 80px; width: auto; top: 460px; height: auto; display: block; padding: 0; }
+.story .step { font-size: 80px; }
+.story .headline.left { font-size: 76px; }
+.story .lead { font-size: 32px; margin-top: 22px; max-width: 900px; }
+.story #dns { left: 60px; top: 800px; width: 960px; }
+.story #s3-browser { left: 260px; top: 790px; width: 560px; height: 360px; }
+.story .steps4 { left: 80px; top: 450px; }
+.story .code { left: 60px; top: 640px; width: 760px; height: 420px; }
+.story #s4-browser { left: 120px; top: 900px; width: 900px; height: 620px; }
+.story #checklist { left: 90px; top: 700px; width: 900px; }
+.story .support { margin-top: 36px; }
+.story .laptop { left: 130px; top: 860px; width: 820px; }
+.story .phone { left: 790px; top: 1020px; }
+.story .online { left: 430px; top: 790px; }
+.story .rings { left: 540px; top: 1060px; }
+.story .offer { top: 720px; }
+.story .eyebrow { font-size: 32px; }
+.story .price { font-size: 160px; }
+.story .price .cur { font-size: 64px; vertical-align: 70px; margin-right: 12px; }
+.story .price .per { font-size: 56px; }
+.story .incl { font-size: 31px; gap: 16px; padding: 18px 32px; margin-top: 40px; }
+.story .incl .okico { width: 28px; height: 28px; }
+.story #logoWrap { left: 240px; top: 560px; width: 600px; height: 547px; }
+.story #tagline { top: 1180px; font-size: 42px; padding: 0 60px; }
+.story #endoffer { top: 1280px; font-size: 23px; padding: 12px 26px; }
+.story #rail { top: 372px; }
+.story #rail .st { font-size: 15px; gap: 7px; }
+.story #rail .dot { width: 10px; height: 10px; }
+.story #rail .seg { width: 22px; margin: 0 9px; }
+.story #caption { top: 1560px; padding: 0 60px; }
+.story #captext { max-width: 960px; font-size: 40px; }

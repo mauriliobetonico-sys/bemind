@@ -2,14 +2,34 @@
 // Tudo é função pura do tempo: window.render(t) desenha o quadro exato do segundo t,
 // o que permite exportar quadro a quadro (scripts/render-frames.mjs) sem perder sincronia.
 (() => {
+  const $ = (id) => document.getElementById(id);
   const TL = window.TIMELINE;
   const S = TL.scenes;            // início de cada cena (s)
   const LOGO = TL.logoForm;       // início da formação do logotipo
   const END = TL.duration;
   const SSL = S[3] + 1.7;         // "configura o certificado SSL"
 
+  // Formato: 16:9 (padrão) ou Story 9:16 (index.html?format=story).
+  const STORY = new URLSearchParams(location.search).get("format") === "story";
+  document.documentElement.classList.toggle("story", STORY);
+  const G = STORY ? {
+    W: 1080, H: 1920, hor: 1150, pill: [130, 950, 950], arcs: [[540, 470], [540, 1560]],
+    nodes: [[100, 600], [230, 1180], [80, 1320], [320, 1440], [980, 600], [850, 1180], [1000, 1320], [760, 1440]],
+    others: [[120, 1290], [960, 1290]], box: [540, 1260, 300, 100], cloud: [540, 960, 1260, 1.15, 0.3],
+    beam: [522, 1148, 36, 40], envLabel: [406, 1462], lockFly: [-315, -281], cursor: [900, 1480, 590, 1010],
+    logo: [240, 560, 600, 547], burst: [540, 840], badge: [60, 230],
+  } : {
+    W: 1920, H: 1080, hor: 640, pill: [560, 1360, 600], arcs: [[960, 90], [960, 960]],
+    nodes: [[150, 250], [260, 480], [130, 720], [360, 870], [1770, 250], [1660, 480], [1790, 720], [1560, 870]],
+    others: [[960, 640], [1790, 600]], box: [1320, 690, 340, 130], cloud: [1320, 430, 690, 1.25, 0.35],
+    beam: [1300, 548, 40, 60], envLabel: [1520, 836], lockFly: [-320, -330], cursor: [1560, 930, 1010, 590],
+    logo: [700, 176, 520, 474], burst: [960, 470], badge: [48, 30],
+  };
+  const { W, H } = G;
+  for (const id of ["bg", "particles"]) { $(id).width = W; $(id).height = H; }
+  for (const id of ["net", "cloudworld"]) { $(id).setAttribute("width", W); $(id).setAttribute("height", H); }
+
   // ---------- utilitários ----------
-  const $ = (id) => document.getElementById(id);
   const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
   const p = (t, a, b) => clamp((t - a) / (b - a));
   const eo = (x) => 1 - Math.pow(1 - x, 3);
@@ -50,23 +70,23 @@
 
   // ---------- fundo ----------
   const bg = $("bg").getContext("2d");
-  const dust = Array.from({ length: 46 }, (_, i) => { const r = rng(100 + i); return [r() * 1920, r() * 1080, 0.6 + r() * 1.6, r() * 6.28, 0.2 + r() * 0.5]; });
+  const dust = Array.from({ length: 46 }, (_, i) => { const r = rng(100 + i); return [r() * W, r() * H, 0.6 + r() * 1.6, r() * 6.28, 0.2 + r() * 0.5]; });
   function camPan(t) {
     let x = t * 14;
     for (let k = 1; k < S.length; k++) x += eio(p(t, S[k] - 0.25, S[k] + 0.7)) * 300;
     return x;
   }
   function drawBg(t) {
-    const g = bg.createLinearGradient(0, 0, 0, 1080);
+    const g = bg.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, "#070a12"); g.addColorStop(1, "#0b111c");
-    bg.fillStyle = g; bg.fillRect(0, 0, 1920, 1080);
+    bg.fillStyle = g; bg.fillRect(0, 0, W, H);
     const cam = camPan(t);
     // brilhos ambientes que acompanham a jornada
-    const glow = (x, y, r, c) => { const rg = bg.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, c); rg.addColorStop(1, "rgba(0,0,0,0)"); bg.fillStyle = rg; bg.fillRect(0, 0, 1920, 1080); };
-    glow(1350 + Math.sin(t * 0.35) * 140, 380 + Math.cos(t * 0.27) * 60, 820, "rgba(253,112,98,0.13)");
-    glow(420 + Math.cos(t * 0.3) * 120, 820, 760, "rgba(70,110,200,0.10)");
+    const glow = (x, y, r, c) => { const rg = bg.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, c); rg.addColorStop(1, "rgba(0,0,0,0)"); bg.fillStyle = rg; bg.fillRect(0, 0, W, H); };
+    glow(W * 0.7 + Math.sin(t * 0.35) * 140, H * 0.35 + Math.cos(t * 0.27) * 60, 820, "rgba(253,112,98,0.13)");
+    glow(W * 0.22 + Math.cos(t * 0.3) * 120, H * 0.76, 760, "rgba(70,110,200,0.10)");
     // piso em perspectiva
-    const hor = 640, f = 560, h = 380;
+    const hor = G.hor, f = 560, h = 380, cx = W / 2;
     bg.lineWidth = 1;
     const off = cam % 140;
     for (let i = -30; i <= 30; i++) {
@@ -74,7 +94,7 @@
       const z0 = 260, z1 = 7000;
       const a = 0.09 * (1 - Math.min(Math.abs(xw) / 4200, 1));
       bg.strokeStyle = `rgba(150,170,210,${a})`;
-      bg.beginPath(); bg.moveTo(960 + (xw * f) / z0, hor + (h * f) / z0); bg.lineTo(960 + (xw * f) / z1, hor + (h * f) / z1); bg.stroke();
+      bg.beginPath(); bg.moveTo(cx + (xw * f) / z0, hor + (h * f) / z0); bg.lineTo(cx + (xw * f) / z1, hor + (h * f) / z1); bg.stroke();
     }
     const zoff = (t * 160) % 260;
     for (let j = 0; j < 26; j++) {
@@ -83,23 +103,23 @@
       const y = hor + (h * f) / z;
       const a = 0.11 * Math.min(1, (y - hor) / 160);
       bg.strokeStyle = `rgba(150,170,210,${a})`;
-      bg.beginPath(); bg.moveTo(0, y); bg.lineTo(1920, y); bg.stroke();
+      bg.beginPath(); bg.moveTo(0, y); bg.lineTo(W, y); bg.stroke();
     }
     // horizonte: brilho suave
     const hg = bg.createLinearGradient(0, hor - 120, 0, hor + 60);
     hg.addColorStop(0, "rgba(7,10,18,0)"); hg.addColorStop(0.75, "rgba(253,112,98,0.05)"); hg.addColorStop(1, "rgba(7,10,18,0)");
-    bg.fillStyle = hg; bg.fillRect(0, hor - 120, 1920, 180);
+    bg.fillStyle = hg; bg.fillRect(0, hor - 120, W, 180);
     // poeira digital discreta
     for (const [x, y, sz, ph, sp] of dust) {
-      const xx = ((x - cam * sp * 0.6) % 1920 + 1920) % 1920;
+      const xx = ((x - cam * sp * 0.6) % W + W) % W;
       const a = 0.12 + 0.12 * Math.sin(t * 1.3 + ph);
       bg.fillStyle = `rgba(220,230,255,${a})`;
       bg.beginPath(); bg.arc(xx, y + Math.sin(t * 0.4 + ph) * 10, sz, 0, 6.283); bg.fill();
     }
     // vinheta
-    const v = bg.createRadialGradient(960, 540, 500, 960, 540, 1250);
+    const v = bg.createRadialGradient(W / 2, H / 2, 500, W / 2, H / 2, Math.max(W, H) * 0.65);
     v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,0.55)");
-    bg.fillStyle = v; bg.fillRect(0, 0, 1920, 1080);
+    bg.fillStyle = v; bg.fillRect(0, 0, W, H);
   }
 
   // ---------- cena 1: domínio + rede ----------
@@ -114,9 +134,9 @@
   svgEl("feGaussianBlur", { stdDeviation: 4, result: "b" }, glowF);
   const mg = svgEl("feMerge", {}, glowF); svgEl("feMergeNode", { in: "b" }, mg); svgEl("feMergeNode", { in: "SourceGraphic" }, mg);
 
-  const nodes = [[150, 250], [260, 480], [130, 720], [360, 870], [1770, 250], [1660, 480], [1790, 720], [1560, 870]];
+  const nodes = G.nodes;
   const links = nodes.map(([nx, ny], i) => {
-    const left = i < 4, sx = left ? 560 : 1360, sy = 600;
+    const left = i < 4, sx = left ? G.pill[0] : G.pill[1], sy = G.pill[2];
     const c1 = left ? sx - 160 : sx + 160;
     const d = `M${sx} ${sy} C ${c1} ${sy}, ${(c1 + nx) / 2} ${ny}, ${nx} ${ny}`;
     const path = svgEl("path", { d, fill: "none", stroke: "url(#lg)", "stroke-width": 2, filter: "url(#glow)" }, net);
@@ -124,7 +144,7 @@
   });
   const mesh = [[0, 1], [1, 2], [2, 3], [4, 5], [5, 6], [6, 7], [0, 4], [3, 7]].map(([a, b]) => {
     const [ax, ay] = nodes[a], [bx, by] = nodes[b];
-    const d = a === 0 && b === 4 ? `M${ax} ${ay} Q 960 90 ${bx} ${by}` : a === 3 && b === 7 ? `M${ax} ${ay} Q 960 960 ${bx} ${by}` : `M${ax} ${ay} L ${bx} ${by}`;
+    const d = a === 0 && b === 4 ? `M${ax} ${ay} Q ${G.arcs[0][0]} ${G.arcs[0][1]} ${bx} ${by}` : a === 3 && b === 7 ? `M${ax} ${ay} Q ${G.arcs[1][0]} ${G.arcs[1][1]} ${bx} ${by}` : `M${ax} ${ay} L ${bx} ${by}`;
     const path = svgEl("path", { d, fill: "none", stroke: "rgba(160,180,220,.22)", "stroke-width": 1.2 }, net);
     return { path, len: path.getTotalLength() };
   });
@@ -232,12 +252,12 @@
     }
     return { g, ring, bound, top, leds, len: bound.getTotalLength() };
   }
-  const others = [isoBox(cw, 960, 640, 130, 52, { small: true }), isoBox(cw, 1790, 600, 130, 52, { small: true })];
-  const box = isoBox(cw, 1320, 690, 340, 130);
-  const beam = svgEl("rect", { x: 1300, y: 548, width: 40, height: 60, fill: "url(#cg)" }, cw);
+  const others = G.others.map(([x, y]) => isoBox(cw, x, y, 130, 52, { small: true }));
+  const box = isoBox(cw, ...G.box);
+  const beam = svgEl("rect", { x: G.beam[0], y: G.beam[1], width: G.beam[2], height: G.beam[3], fill: "url(#cg)" }, cw);
   const envLabel = svgEl("g", {}, cw);
-  svgEl("rect", { x: 1520, y: 836, width: 268, height: 46, rx: 23, fill: "rgba(16,22,34,.9)", stroke: "rgba(253,112,98,.6)" }, envLabel);
-  const lt = svgEl("text", { x: 1654, y: 866, "text-anchor": "middle", fill: "#f4f6fa", "font-size": 20, "font-weight": 600, "font-family": "Inter" }, envLabel);
+  svgEl("rect", { x: G.envLabel[0], y: G.envLabel[1], width: 268, height: 46, rx: 23, fill: "rgba(16,22,34,.9)", stroke: "rgba(253,112,98,.6)" }, envLabel);
+  const lt = svgEl("text", { x: G.envLabel[0] + 134, y: G.envLabel[1] + 30, "text-anchor": "middle", fill: "#f4f6fa", "font-size": 20, "font-weight": 600, "font-family": "Inter" }, envLabel);
   lt.textContent = "Ambiente dedicado";
   const cloud = svgEl("g", {}, cw);
   const cloudPath = svgEl("path", { d: "M-150 70 H150 A85 85 0 0 0 128 -96 A120 120 0 0 0 -70 -120 A100 100 0 0 0 -175 -10 A80 80 0 0 0 -150 70 Z", fill: "url(#cg)", stroke: "#fd7062", "stroke-width": 3.5, filter: "url(#cglow)" }, cloud);
@@ -257,18 +277,18 @@
     const ck = eio(p(u, 0.1, 1.0)), cs = eio(p(u, 1.2, 1.9));
     cloudPath.style.strokeDasharray = cloudLen; cloudPath.style.strokeDashoffset = cloudLen * (1 - ck);
     cloudPath.style.fillOpacity = ck;
-    const cy = lerp(430, 690, cs), sc = lerp(1.25, 0.35, cs);
-    cloud.setAttribute("transform", `translate(1320 ${cy}) scale(${sc})`);
+    const [cx0, cy0, cy1, s0, s1] = G.cloud, cy = lerp(cy0, cy1, cs), sc = lerp(s0, s1, cs);
+    cloud.setAttribute("transform", `translate(${cx0} ${cy}) scale(${sc})`);
     cloud.style.opacity = 1 - p(u, 1.6, 1.95);
     const bk = back(p(u, 1.45, 2.05));
     box.g.style.opacity = clamp(bk * 1.5);
-    box.g.style.transformOrigin = "1320px 760px";
+    box.g.style.transformOrigin = `${G.box[0]}px ${G.box[1] + G.box[3] * 0.55}px`;
     box.g.style.transform = `translateY(${(1 - clamp(bk)) * 40}px) scale(${0.7 + 0.3 * bk})`;
     box.leds.forEach((l, i) => (l.style.opacity = 0.35 + 0.65 * (Math.sin(u * 7 + i * 2.1) > 0.2 ? 1 : 0)));
     const rk = eio(p(u, 1.9, 2.6));
     box.bound.style.strokeDashoffset = 0;
     box.ring.style.opacity = rk;
-    box.ring.style.transformOrigin = "1320px 830px";
+    box.ring.style.transformOrigin = `${G.box[0]}px ${G.box[1] + G.box[3] + 8}px`;
     box.ring.style.transform = `scale(${0.85 + 0.15 * rk})`;
     set(envLabel, { o: eo(p(u, 2.3, 2.8)), x: (1 - eo(p(u, 2.3, 2.8))) * 20 });
     others.forEach((o, i) => {
@@ -345,7 +365,7 @@
     const lk = back(p(us, 0.15, 0.55)), fly = eio(p(us, 1.2, 1.7));
     const closed = eo(p(us, 0.45, 0.7));
     $("big-shackle").setAttribute("transform", `translate(0 ${-3.2 * (1 - closed)})`);
-    set($("bigLock"), { o: clamp(lk * 1.4) * (1 - p(us, 1.55, 1.75)), s: (0.6 + 0.4 * lk) * lerp(1, 0.2, fly), x: -320 * fly, y: -330 * fly });
+    set($("bigLock"), { o: clamp(lk * 1.4) * (1 - p(us, 1.55, 1.75)), s: (0.6 + 0.4 * lk) * lerp(1, 0.2, fly), x: G.lockFly[0] * fly, y: G.lockFly[1] * fly });
     [["ring1", 0.65], ["ring2", 0.85]].forEach(([id, a]) => { const k = p(us, a, a + 0.7); set($(id), { o: (1 - k) * (k > 0 ? 1 : 0), s: 1 + k * 1.2 }); });
     const secure = us >= 1.62;
     $("proto").textContent = secure ? "https://" : "http://";
@@ -374,7 +394,7 @@
     const CLICK = 2.2;
     const mv = eio(p(u, 1.55, 2.1));
     const press = u > CLICK && u < CLICK + 0.12 ? 0.85 : 1;
-    set($("cursor"), { o: eo(p(u, 1.5, 1.7)) * (1 - out), x: lerp(1560, 1010, mv), y: lerp(930, 590, mv), s: press });
+    set($("cursor"), { o: eo(p(u, 1.5, 1.7)) * (1 - out), x: lerp(G.cursor[0], G.cursor[2], mv), y: lerp(G.cursor[1], G.cursor[3], mv), s: press });
     const pb = $("publish");
     pb.style.transform = `scale(${u > CLICK && u < CLICK + 0.15 ? 0.97 : 1})`;
     const rp = p(u, CLICK, CLICK + 0.6);
@@ -417,7 +437,7 @@
 
   // Partículas que formam o logotipo
   const pc = $("particles").getContext("2d");
-  const LW = 520, LH = 474, LX = 700, LY = 176;
+  const [LX, LY, LW, LH] = G.logo;
   let parts = [];
   function buildParticles() {
     const c = document.createElement("canvas"); c.width = LW; c.height = LH;
@@ -429,14 +449,14 @@
       const ang = r() * Math.PI * 2, rad = 380 + r() * 820;
       parts.push({
         tx: LX + xx, ty: LY + yy,
-        sx: 960 + Math.cos(ang) * rad, sy: 470 + Math.sin(ang) * rad * 0.62,
+        sx: G.burst[0] + Math.cos(ang) * rad, sy: G.burst[1] + Math.sin(ang) * rad * (STORY ? 1.1 : 0.62),
         c: `rgb(${d[i]},${d[i + 1]},${d[i + 2]})`,
         delay: 0.42 * r() + 0.3 * (xx / LW), curl: (r() - 0.5) * 260, sz: 1.5 + r() * 1.5,
       });
     }
   }
   function drawParticles(t) {
-    pc.clearRect(0, 0, 1920, 1080);
+    pc.clearRect(0, 0, W, H);
     const u = t - LOGO - 0.1;
     const fadeOut = 1 - p(t, LOGO + 1.5, LOGO + 1.85);
     if (u < 0 || fadeOut <= 0) return;
@@ -445,7 +465,7 @@
       if (u < q.delay) continue;
       const bend = Math.sin(k * Math.PI) * q.curl;
       const x = lerp(q.sx, q.tx, k) + bend * 0.5, y = lerp(q.sy, q.ty, k) - bend * 0.3;
-      const sz = lerp(q.sz, 4.6, k);
+      const sz = lerp(q.sz, STORY ? 5.2 : 4.6, k);
       pc.globalAlpha = clamp((u - q.delay) / 0.15) * fadeOut;
       pc.fillStyle = q.c;
       pc.fillRect(x - sz / 2, y - sz / 2, sz, sz);
@@ -495,7 +515,7 @@
     const bk = back(p(t, 0.7, 1.3)), bo = 1 - eio(p(t, LOGO, LOGO + 0.35));
     const b = $("badge");
     b.style.opacity = clamp(eo(p(t, 0.7, 1.1))) * bo;
-    b.style.transform = `translate(48px, 30px) scale(${0.26 * (0.7 + 0.3 * bk)})`;
+    b.style.transform = `translate(${G.badge[0]}px, ${G.badge[1]}px) scale(${0.26 * (0.7 + 0.3 * bk)})`;
     b.style.filter = t < 1.1 ? `blur(${(1 - eo(p(t, 0.7, 1.1))) * 6}px)` : "none";
     // legendas
     const caps = TL.captions;

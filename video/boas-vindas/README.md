@@ -8,6 +8,8 @@ Vídeo institucional para clientes que acabaram de registrar um domínio: domín
 |---|---|
 | `bemind-boas-vindas-30s.mp4` | Vídeo final 1920×1080, 30 fps, exatamente 30,0 s, H.264 + AAC 256 kbps, −14 LUFS, legendas gravadas na imagem |
 | `bemind-boas-vindas-30s-cc.mp4` | Mesmo vídeo + faixa de legenda selecionável (pt-BR) |
+| `bemind-boas-vindas-30s-story.mp4` | **Versão Story/Reels 9:16** (1080×1920, 30 fps, 30,0 s), mesmo áudio e legendas, layout vertical com o conteúdo dentro das áreas seguras do Instagram/WhatsApp |
+| `bemind-boas-vindas-30s-story-cc.mp4` | Versão Story + faixa de legenda selecionável |
 | `legendas.srt` | Legendas sincronizadas (para YouTube, redes sociais, players) |
 | `narracao.wav` | Stem de narração já posicionado na linha do tempo |
 | `trilha.wav` | Stem da trilha eletrônica (sem ducking) |
@@ -46,11 +48,14 @@ Requisitos: `python3`, `node` 18+, `playwright` (Chromium) e `ffmpeg`.
 cd video/boas-vindas
 scripts/build.sh            # voz pm_alex, velocidade 1.32
 scripts/build.sh pf_dora    # mesma peça com voz feminina
+FORMAT=story scripts/build.sh   # versão vertical 9:16 para Stories/Reels/TikTok
 ```
+
+No formato Story, logotipo, barra de etapas, textos e preço ficam entre y≈230 e y≈1620 (de 1920), e as legendas em y≈1560. Assim, nada essencial fica sob o nome do perfil (topo) ou o campo de resposta (rodapé) do Instagram e do WhatsApp. O layout vertical está em `src/style.css` (bloco `.story`) e em `src/main.js` (objeto `G`).
 
 Na primeira execução, o script cria `.work/` com o ambiente Python e baixa o modelo de voz (~350 MB, do GitHub). A renderização leva cerca de 10 minutos.
 
-- Pré-visualizar a animação em tempo real: sirva a pasta (`npx http-server .`) e abra `src/index.html?play`.
+- Pré-visualizar a animação em tempo real: sirva a pasta (`npx http-server .`) e abra `src/index.html?play` (ou `src/index.html?format=story&play`).
 - Conferir quadros específicos: `node scripts/render-frames.mjs stills 3.5 12 27.8` (gera PNGs em `out/stills/`).
 
 Arquivos-fonte:

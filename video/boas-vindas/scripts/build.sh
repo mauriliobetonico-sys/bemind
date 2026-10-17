@@ -2,6 +2,7 @@
 # Gera o vídeo final de 30 s: narração → trilha/efeitos → quadros → mixagem → MP4.
 # Requisitos: python3, node 18+, playwright (Chromium), ffmpeg.
 # Uso: scripts/build.sh [voz] [velocidade]   (padrão: pm_alex 1.32)
+#      FORMAT=story scripts/build.sh          → versão vertical 1080×1920 (Stories/Reels)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -9,7 +10,10 @@ VOICE="${1:-pm_alex}"
 SPEED="${2:-1.32}"
 WORK="${WORK:-.work}"
 MODEL="$WORK/kokoro"
-OUT=out/bemind-boas-vindas-30s.mp4
+FORMAT="${FORMAT:-}"
+export FORMAT
+SUFFIX="${FORMAT:+-$FORMAT}"
+OUT=out/bemind-boas-vindas-30s$SUFFIX.mp4
 
 mkdir -p "$WORK" out "$MODEL"
 if [ ! -x "$WORK/venv/bin/python" ]; then
@@ -24,13 +28,13 @@ echo "1/4 Narração"
 "$WORK/venv/bin/python" -I scripts/narracao.py "$MODEL" "$VOICE" "$SPEED"
 echo "2/4 Trilha e efeitos"
 "$WORK/venv/bin/python" -I scripts/trilha.py
-echo "3/4 Quadros (1920×1080, 30 fps)"
-node scripts/render-frames.mjs video "$WORK/video.mp4" 30
+echo "3/4 Quadros (30 fps, formato: ${FORMAT:-16:9})"
+node scripts/render-frames.mjs video "$WORK/video$SUFFIX.mp4" 30
 
 echo "4/4 Mixagem e exportação"
 # Narração com leve compressão; trilha com ducking (sidechain) sob a voz; efeitos discretos.
 ffmpeg -y -loglevel error \
-  -i "$WORK/video.mp4" -i out/narracao.wav -i out/trilha.wav -i out/efeitos.wav \
+  -i "$WORK/video$SUFFIX.mp4" -i out/narracao.wav -i out/trilha.wav -i out/efeitos.wav \
   -filter_complex "
     [1:a]aformat=channel_layouts=stereo,highpass=f=80,acompressor=threshold=-20dB:ratio=3:attack=5:release=80,volume=1.0,asplit=2[vo][key];
     [2:a]volume=0.42[mus];
@@ -41,7 +45,7 @@ ffmpeg -y -loglevel error \
 
 # Versão com legendas como faixa selecionável (além das legendas já gravadas na imagem).
 ffmpeg -y -loglevel error -i "$OUT" -i out/legendas.srt -map 0 -map 1 -c copy -c:s mov_text \
-  -metadata:s:s:0 language=por out/bemind-boas-vindas-30s-cc.mp4
+  -metadata:s:s:0 language=por "out/bemind-boas-vindas-30s$SUFFIX-cc.mp4"
 
 ffprobe -v error -show_entries format=duration -of default=nw=1 "$OUT"
 echo "Pronto: $OUT"
